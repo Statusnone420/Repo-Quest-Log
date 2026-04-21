@@ -3,6 +3,7 @@ const { pathToFileURL } = require("node:url");
 const { mkdir, writeFile } = require("node:fs/promises");
 
 const { app, BrowserWindow, ipcMain } = require("electron");
+const { screen } = require("electron");
 
 const repoRoot = path.resolve(__dirname, "..", "..");
 const targetRoot = normalizeCliPath(process.argv[2] || process.cwd());
@@ -57,14 +58,17 @@ async function importModule(relativePath) {
 }
 
 function createWindow() {
+  const workArea = screen.getPrimaryDisplay().workAreaSize;
   win = new BrowserWindow({
-    width: 1560,
-    height: 980,
-    minWidth: 1100,
-    minHeight: 760,
+    width: Math.max(1280, Math.min(workArea.width, Math.round(workArea.width * 0.96))),
+    height: Math.max(820, Math.min(workArea.height, Math.round(workArea.height * 0.94))),
+    minWidth: 1200,
+    minHeight: 800,
     backgroundColor: "#0b0d10",
     title: "Repo Quest Log",
     autoHideMenuBar: true,
+    resizable: true,
+    show: false,
     webPreferences: {
       preload: path.join(__dirname, "preload.cjs"),
       contextIsolation: true,
@@ -78,6 +82,14 @@ function createWindow() {
 
   win.webContents.on("did-finish-load", () => {
     initialLoadComplete = true;
+  });
+
+  win.once("ready-to-show", () => {
+    if (!win || win.isDestroyed()) {
+      return;
+    }
+    win.maximize();
+    win.show();
   });
 }
 

@@ -24,12 +24,14 @@ export interface WatchAppProps {
 
 export function formatStaticFrame(
   state: QuestState,
-  options: { scanning?: boolean; error?: string | null; interactive?: boolean } = {},
+  options: { scanning?: boolean; error?: string | null; interactive?: boolean; columns?: number; rows?: number } = {},
 ): string {
-  const width = 110;
+  const width = Math.max(80, options.columns ?? process.stdout.columns ?? 110);
+  const rows = Math.max(24, options.rows ?? process.stdout.rows ?? 40);
   const topWidth = width - 4;
   const leftWidth = Math.max(34, Math.floor((topWidth - 3) / 2));
   const rightWidth = topWidth - leftWidth - 3;
+  const changeLimit = Math.max(4, Math.min(8, rows > 0 ? Math.floor((rows - 24) / 3) : 4));
 
   const footer = `watching ${state.scannedFiles.length} files · ${options.scanning ? "scanning..." : `last scan ${state.lastScan}`} · ${options.interactive ? "[q] quit [r] rescan" : "read-only output"}${options.error ? ` · error: ${options.error}` : ""}`;
 
@@ -57,7 +59,7 @@ export function formatStaticFrame(
       leftWidth,
     ),
     "",
-    plainPanel("RECENT CHANGES", topWidth, renderChanges(state, topWidth)),
+    plainPanel("RECENT CHANGES", topWidth, renderChanges(state, topWidth, changeLimit)),
     "",
     truncate(footer, width - 1),
   ].join("\n");
@@ -167,11 +169,13 @@ function renderFrame(
   error: string | null,
   isRawModeSupported: boolean,
 ) {
-  const width = Math.max(72, Math.min(process.stdout.columns || 110, 120));
+  const width = Math.max(80, process.stdout.columns || 110);
+  const rows = Math.max(24, process.stdout.rows || 40);
   const topWidth = width - 4;
   const columnGap = 3;
   const leftWidth = Math.max(34, Math.floor((topWidth - columnGap) / 2));
   const rightWidth = topWidth - leftWidth - columnGap;
+  const changeLimit = Math.max(4, Math.min(8, Math.floor((rows - 24) / 3)));
 
   const header = boxPanel({
     title: "repo quest log",
@@ -227,7 +231,7 @@ function renderFrame(
     title: "RECENT CHANGES",
     color: palette.green,
     width: topWidth,
-    lines: renderChanges(state, topWidth),
+    lines: renderChanges(state, topWidth, changeLimit),
   });
 
   const footer = `watching ${state.scannedFiles.length} files · ${scanning ? "scanning..." : `last scan ${state.lastScan}`} · ${isRawModeSupported ? "[q] quit [r] rescan" : "read-only output"}${error ? ` · error: ${error}` : ""}`;
@@ -346,15 +350,23 @@ function renderAgents(state: QuestState, width: number): string[] {
   ]);
 }
 
-function renderChanges(state: QuestState, width: number): string[] {
+function renderChanges(state: QuestState, width: number, limit = 6): string[] {
   if (state.recentChanges.length === 0) {
     return [" no recent changes yet"];
   }
 
-  return state.recentChanges.slice(0, 6).flatMap((change) => {
+  const visible = state.recentChanges.slice(0, limit);
+  const lines = visible.flatMap((change) => {
     const diff = change.diff ? ` ${change.diff}` : "";
     return wrapWithPrefix(`${change.file}${diff} · ${change.at}`, " ", width - 2, "   ");
   });
+
+  const hiddenCount = state.recentChanges.length - visible.length;
+  if (hiddenCount > 0) {
+    lines.push(` ${hiddenCount} more changes`);
+  }
+
+  return lines;
 }
 
 function row(label: string, value: string, width: number): string {

@@ -18,7 +18,7 @@ v0.1 close-out: fit-to-window desktop layout, TUI visual parity with the desktop
 - Updated tests for the new layout expectations; all 11 tests pass, `tsc` clean
 
 ## Resume Note
-> In-flight: HUD v2 polish batch. #7 landed — `Decision { at, text, doc, line? }` added to QuestState, heuristic extractor pulls bullets under `/recent decisions|decisions|decision log/i` from STATE.md or `*_log.md`, and a right-column Decisions tile renders the latest 5 with inline "show all" expansion (hidden entirely when empty).
+> HUD v2 polish batch finished (6 commits). Last in: #8 empty-state onboarding — when `scannedFiles < 2` or (mission empty AND now = 0), desktop swaps header-strip + cockpit + board for a dashed ghost banner, three dashed example-markdown tiles, and a per-expected-file checklist (`PLAN.md`, `STATE.md`, `AGENTS.md`, `CLAUDE.md`). Topbar + watcher stay visible so the live-refresh swap is obvious. Ready for review before next batch.
 
 Last touched: `src/web/render.ts`
 

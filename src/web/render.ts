@@ -426,6 +426,46 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     .spark-del { background: rgba(248,132,113,0.92); }
     .change-age { color: var(--dim); font-family: var(--mono); font-size: var(--tiny-size); min-width: 34px; text-align: right; }
 
+    /* ---- EMPTY STATE ---- */
+    .empty-state {
+      flex: 1; min-height: 0;
+      display: flex; flex-direction: column; gap: var(--tile-gap);
+      padding: var(--pad-y) var(--pad-x) var(--pad-x);
+      overflow-y: auto;
+    }
+    .empty-banner {
+      padding: var(--tile-pad);
+      background: var(--tile); border: 1px dashed var(--tile-border);
+      border-radius: 10px;
+      color: var(--faint);
+    }
+    .empty-banner .kicker { color: var(--dim); }
+    .empty-banner .ghost { font-size: var(--headline-size); color: var(--faint); font-style: italic; }
+    .empty-grid {
+      display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: var(--tile-gap);
+    }
+    .empty-tile {
+      padding: var(--tile-pad); background: var(--tile);
+      border: 1px dashed var(--tile-border); border-radius: 10px;
+      display: flex; flex-direction: column; gap: 8px;
+      color: var(--faint);
+    }
+    .empty-tile pre {
+      margin: 0; padding: 8px 10px; background: rgba(255,255,255,0.02);
+      border-radius: 6px; font-family: var(--mono); font-size: var(--tiny-size);
+      color: var(--dim); white-space: pre-wrap; overflow-wrap: anywhere;
+    }
+    .empty-missing {
+      display: flex; gap: 12px; flex-wrap: wrap; padding: 10px var(--tile-pad);
+      font-family: var(--mono); font-size: var(--small-size); color: var(--faint);
+      border-top: 1px solid var(--tile-border);
+    }
+    .empty-missing .slot { display: inline-flex; align-items: center; gap: 6px; }
+    .empty-missing .slot.present { color: var(--muted); }
+    .empty-missing .slot .mark { font-weight: 600; }
+    @media (max-width: 1099px) { .empty-grid { grid-template-columns: 1fr; } }
+
     /* ---- DECISIONS ---- */
     .decision-row {
       display: grid; grid-template-columns: 84px minmax(0, 1fr);
@@ -570,7 +610,7 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
         <button type="button" data-ui-density="compact">Compact</button>
       </div>
     </header>
-
+    ${isEmptyRepo(state) ? renderEmptyState(state) : `
     <section class="header-strip">
       <div class="strip-cell mission">
         <div class="kicker">Mission</div>
@@ -622,6 +662,7 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
         ${renderDecisionsTile(state.decisions)}
       </div>
     </section>
+    `}
   </div>
 
   <div class="palette-overlay" data-palette data-open="false" role="dialog" aria-label="Resume-prompt palette">
@@ -1423,6 +1464,45 @@ function escapeHtml(value: string): string {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
+}
+
+function isEmptyRepo(state: QuestState): boolean {
+  if (state.scannedFiles.length < 2) return true;
+  if (!state.mission.trim() && state.now.length === 0) return true;
+  return false;
+}
+
+function renderEmptyState(state: QuestState): string {
+  const expectedFiles = ["PLAN.md", "STATE.md", "AGENTS.md", "CLAUDE.md"];
+  const scanned = new Set(state.scannedFiles.map((f) => f.split(/[\\/]/).pop()?.toUpperCase()));
+  const slots = expectedFiles.map((f) => {
+    const present = scanned.has(f.toUpperCase());
+    return `<span class="slot ${present ? "present" : ""}"><span class="mark">${present ? "✓" : "+"}</span>${escapeHtml(f)}</span>`;
+  }).join("");
+  const now = "## Now\n- [ ] your current task here\n- [ ] second task (optional)";
+  const next = "## Next\n- [ ] queued task\n- [ ] another queued task";
+  const blocked = "## Blocked\n- [ ] thing waiting on X";
+  return `<div class="empty-state">
+    <div class="empty-banner">
+      <div class="kicker">Mission</div>
+      <div class="ghost">Your repo's mission appears here — write one sentence in PLAN.md under \`## Mission\`.</div>
+    </div>
+    <div class="empty-grid">
+      <div class="empty-tile">
+        <div class="kicker">Now</div>
+        <pre>${escapeHtml(now)}</pre>
+      </div>
+      <div class="empty-tile">
+        <div class="kicker">Next</div>
+        <pre>${escapeHtml(next)}</pre>
+      </div>
+      <div class="empty-tile">
+        <div class="kicker">Blocked</div>
+        <pre>${escapeHtml(blocked)}</pre>
+      </div>
+    </div>
+    <div class="empty-missing">${slots}</div>
+  </div>`;
 }
 
 function isResumeFresh(since: string): boolean {

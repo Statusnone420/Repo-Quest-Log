@@ -166,12 +166,15 @@ export interface QuestState {
 
 ```json
 {
+  "excludes": ["docs/Archived"],
   "writeback": false,
   "prompts": { "dir": "~/.repolog/prompts" }
 }
 ```
 
 - Missing file → all defaults.
+- `excludes` / `exclude` / `ignore` / `ignored` may contain repo-relative paths or folder names to skip from scanning and watcher-based recent-changes. Folder-name excludes match any path segment; path excludes match that subtree exactly.
+- `archive`, `archives`, and `archived` are ignored by default even without a config file so stale planning docs do not pollute the HUD.
 - `writeback: true` enables **checkbox toggles only** (see below). Nothing else is ever written.
 - Invalid JSON → log a warning and fall back to defaults; never crash the scan.
 

@@ -3,26 +3,19 @@
 Live "where we are." Update this as work progresses. The normalizer reads this to build the Resume Note.
 
 ## Current Focus
-v0.1 close-out: fit-to-window desktop layout, TUI visual parity with the desktop HUD, and renaming "Active Quest" → "Objective" in UI copy. v0.2 wedge (resume-prompt palette, git panel, agent activity feed, standup export, opt-in write-back) begins only after the v0.1 punch list is green.
+v0.1 close-out: finish TUI visual parity, clean remaining UI-copy drift, and keep the desktop / VS Code / TUI surfaces aligned to one shared `QuestState`. v0.2 wedge work starts only after the v0.1 punch list is green.
 
 ## Last Session
-- Packaged rebuild is blocked because `release-fresh\win-unpacked` is currently open and locks the packaged `app.asar`. The refresh button now exists in source in the top-right control strip of `src/web/render.ts`, but the exe will not show it until the desktop app is closed and rebuilt.
-- User asked about the generated desktop preview files. `repolog desktop` writes `.repolog/desktop-preview.html` as a snapshot, while the Electron shell writes `.repolog/desktop-live.html` at runtime; neither is a source file. Added a visible desktop refresh button in the renderer so the desktop shell can rescan like TUI `r`, now placed in the top-right control strip.
-- User reported the desktop shell still scrolled vertically at near-full screen and felt like a "Word doc" instead of a tool — wanted cockpit density, info-at-a-glance
-- Claude took the wheel on desktop UI/UX and rewrote `src/web/render.ts`:
-  - Killed outer scroll for real — new grid is `auto auto auto 1fr` with a single-row 3-column board, no `auto`-rowed bottom tile
-  - Collapsed mission + objective + resume into one compact top strip with left-edge color accents (blue / green / amber)
-  - Added cockpit stat bar: `● 3 NOW · ○ 5 NEXT · ⏸ 1 BLOCKED · N AGENTS · N FILES WATCHED · tail context`
-  - Task rows are now single-line with a colored priority bar, agent chip, and doc chip — truncated to line with hover tooltip — scans by shape not reading
-  - Board columns: (Now + Blocked stacked) | (Next + Recent changes stacked) | (Agents full-height)
-- Pulled **resume-prompt palette forward into v0.1** (was v0.2): `Ctrl+K` opens an overlay with 6 presets — Resume for Claude / Codex / Gemini, Daily standup, Blocker summary, Repo intent briefing. Each builds its message from live QuestState and copies to clipboard. Toast confirms the copy.
-- "Active Quest" → "Objective" label done in desktop copy (schema key stays `activeQuest` until v0.2 schema v2)
-- Updated tests for the new layout expectations; all 11 tests pass, `tsc` clean
+- Desktop shell is now in a usable state: packaged rebuild succeeds, the direct exe in `release\win-unpacked\Repo Quest Log.exe` is the preferred test target, click-to-open works, and the shell has in-app refresh + window controls.
+- Desktop readability pass landed in `src/web/render.ts`: larger defaults, clearer agent chips (`CX` / `CL` / `GM`), less cryptic Ctrl+K copy, and better header-strip fit without outer scroll.
+- Repo-level excludes are now live via `.repolog.json`; `archive` / `archives` / `archived` are ignored by default so stale docs stop polluting Recent changes.
+- TUI parity work advanced in `src/tui/App.tsx`: top repo line, separate Mission / Objective / Resume strip, cockpit line, compact task rows, and Ctrl+K prompt overlay are all in place. Visual cleanup and parity verification still remain.
+- Tests now cover the TUI frame plus exclude behavior; `npm run lint` and `npm test` are green.
 
 ## Resume Note
-> HUD v2 polish batch finished (6 commits). Last in: #8 empty-state onboarding — when `scannedFiles < 2` or (mission empty AND now = 0), desktop swaps header-strip + cockpit + board for a dashed ghost banner, three dashed example-markdown tiles, and a per-expected-file checklist (`PLAN.md`, `STATE.md`, `AGENTS.md`, `CLAUDE.md`). Topbar + watcher stay visible so the live-refresh swap is obvious. Ready for review before next batch.
+> Desktop is stable enough for screenshot comparison. Current repo state should show 3 Now / 5 Next / 1 Blocked / 3 Agents with archived docs filtered out. Main remaining implementation task is TUI visual parity cleanup, not desktop shell rescue.
 
-Last touched: `src/web/render.ts`
+Last touched: `src/tui/App.tsx`
 
 ## Recent Decisions
 - TypeScript over Rust for v0.1 (faster iteration, Ink for TUI)
@@ -33,4 +26,5 @@ Last touched: `src/web/render.ts`
 - Drop the RPG metaphor from UI copy; keep the brand
 - Resume-prompt palette is the v0.2 wedge — everything else in v0.2 serves it or is cut
 - Opt-in write-back allowed from v0.2, scoped strictly to checkbox toggles, off by default, with a persistent on-screen banner when on
+- `.repolog.json` excludes are acceptable in v0.1 as a repo-legibility control; no full settings UI yet
 - Timers, pomodoros, streaks, and any gamification are permanently out of scope

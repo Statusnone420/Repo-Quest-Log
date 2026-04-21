@@ -39,4 +39,4 @@ When you finish a plan, add a task to `PLAN.md` under "Now" in the form:
 Then stop. The human will prompt Codex to pick it up.
 
 ## Current Handoff
-First v0.1 close-out task for Codex: **fit-to-window desktop layout** — responsive density in `src/web/render.ts` that auto-tightens type / padding to fit the viewport, breaks to 2-col ≥1100px and 3-col ≥1600px, and falls back to inner-panel scrolling (never outer) below ~600px tall. The shell must never show an outer scrollbar on 1080p+. After that lands: TUI visual parity with the desktop HUD, then the "Active Quest" → "Objective" copy rename (schema key stays `activeQuest` until v0.2 schema v2).
+Current Codex handoff: **finish TUI visual parity and remaining copy drift** — the desktop shell is now stable enough for screenshot-based comparison, archive/exclude filtering is live, and root docs should stay aligned with the current HUD state. After TUI parity: noisy-fixture coverage, VS Code click-to-open parity, then v0.2 scoping.

@@ -40,4 +40,4 @@ Instructions for any coding agent working in this repo (Codex, generic agents, C
 Keep the CLI, desktop app, and VS Code extension on one shared `QuestState` and one design-faithful renderer.
 
 ## Last Task
-Wired the first desktop and VS Code hosts around the shared renderer; next is shell hardening and packaging.
+Desktop shell hardening landed: packaged rebuild works, click-to-open works in desktop, archive/exclude filtering is live, and the current push is TUI visual parity plus root-doc sync.

@@ -14,7 +14,7 @@ All surfaces stay pinned to one shared `QuestState` pipeline and one renderer. v
 - [x] Desktop cockpit rewrite: compact top strip, stat bar, single-row 3-col board, priority-bar task rows (claude, touches: src/web/render.ts)
 - [x] Resume-prompt palette (Ctrl+K) pulled forward from v0.2 — 6 presets, in-memory templates, clipboard + toast (claude, touches: src/web/render.ts)
 - [x] Rename "Active Quest" → "Objective" in desktop UI copy (schema key stays `activeQuest` until v0.2 schema v2)
-- [ ] **TUI visual parity** — mirror the new desktop HUD: cockpit stat bar, 3-column layout where terminal width allows, single-line priority-bar task rows, matching palette, same section order. Add Ctrl+K palette parity via an input overlay. (agent: codex, touches: src/tui/App.tsx)
+- [ ] **TUI visual parity** — top strip + cockpit + compact task rows + Ctrl+K overlay landed in `src/tui/App.tsx`; finish visual cleanup and verify parity against the desktop HUD. (agent: codex, touches: src/tui/App.tsx)
 - [ ] Rename "Active Quest" → "Objective" in TUI and VS Code surfaces (agent: codex, touches: src/tui/App.tsx, extensions/vscode/)
 - [ ] Fixture coverage for noisy / imperfect repo docs under tests/fixtures/ (agent: codex, touches: tests/)
 - [ ] Click-to-open doc links verified in every remaining surface (agent: codex, touches: extensions/vscode/)

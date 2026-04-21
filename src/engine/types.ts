@@ -63,6 +63,13 @@ export interface FileChange {
   diff?: string;
 }
 
+export interface Decision {
+  at: string;
+  text: string;
+  doc: string;
+  line?: number;
+}
+
 export interface QuestState {
   schemaVersion: 1;
   name: string;
@@ -82,4 +89,5 @@ export interface QuestState {
   blocked: BlockedTask[];
   agents: AgentProfile[];
   recentChanges: FileChange[];
+  decisions: Decision[];
 }

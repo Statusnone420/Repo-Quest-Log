@@ -18,7 +18,7 @@ v0.1 close-out: fit-to-window desktop layout, TUI visual parity with the desktop
 - Updated tests for the new layout expectations; all 11 tests pass, `tsc` clean
 
 ## Resume Note
-> In-flight: HUD v2 polish batch. #4 landed — agent-status dot pulses once (opacity 0.4→1 over 600ms) on `lastTask` change, fades between statuses via CSS transition, desaturates on active→idle, and honors `prefers-reduced-motion`.
+> In-flight: HUD v2 polish batch. #7 landed — `Decision { at, text, doc, line? }` added to QuestState, heuristic extractor pulls bullets under `/recent decisions|decisions|decision log/i` from STATE.md or `*_log.md`, and a right-column Decisions tile renders the latest 5 with inline "show all" expansion (hidden entirely when empty).
 
 Last touched: `src/web/render.ts`
 

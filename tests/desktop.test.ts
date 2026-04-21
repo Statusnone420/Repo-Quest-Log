@@ -126,5 +126,6 @@ function sampleState(): QuestState {
       },
     ],
     recentChanges: [{ file: "PLAN.md", at: "1m", diff: "+3 -1" }],
+    decisions: [],
   };
 }

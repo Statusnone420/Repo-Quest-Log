@@ -20,6 +20,7 @@ export const HEADING_PATTERNS = {
   blocked: /\b(blocked|waiting|paused|on\s+hold)\b/i,
   mission: /\b(mission|vision|purpose|what\s+this\s+is)\b/i,
   activeQuest: /\b(active\s+quest|current\s+objective|focus)\b/i,
+  decisions: /\b(recent\s+decisions|decisions|decision\s+log)\b/i,
 } as const;
 
 export const AGENT_FILES = [

@@ -4,6 +4,7 @@ import { rankBuckets } from "./rank.js";
 import type {
   AgentId,
   BlockedTask,
+  Decision,
   FileChange,
   ParsedDoc,
   ParsedSection,
@@ -51,6 +52,7 @@ export function normalizeQuestState(
   const ranked = rankBuckets({ now, next, blocked }, { docOrder: scannedFiles });
   const agents = extractAgentProfiles(sortedDocs);
   const recentChanges = dedupeRecentChanges(options.recentChanges ?? []);
+  const decisions = extractDecisions(sortedDocs);
   const topTask = ranked.now[0] ?? ranked.next[0] ?? ranked.blocked[0];
 
   return {
@@ -74,7 +76,52 @@ export function normalizeQuestState(
     blocked: ranked.blocked,
     agents,
     recentChanges,
+    decisions,
   };
+}
+
+function extractDecisions(docs: readonly ParsedDoc[]): Decision[] {
+  const results: Decision[] = [];
+  for (const doc of docs) {
+    const file = (doc.file.split(/[\\/]/).pop() ?? doc.file).toLowerCase();
+    const isStateDoc = file === "state.md";
+    const isLogDoc = /_log\.md$/i.test(file);
+    if (!isStateDoc && !isLogDoc) continue;
+    const section = findSectionByHeading(doc.sections, HEADING_PATTERNS.decisions);
+    if (!section) continue;
+    collectDecisionBullets(section, doc.file, results);
+  }
+  results.sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0));
+  return results.slice(0, 10);
+}
+
+function collectDecisionBullets(section: ParsedSection, doc: string, out: Decision[]): void {
+  for (const item of section.checklistItems) {
+    const parsed = parseDecisionLine(item.text);
+    if (!parsed) continue;
+    out.push({ at: parsed.at, text: parsed.text, doc, line: item.line });
+  }
+  for (const paragraph of section.paragraphs) {
+    for (const line of paragraph.split(/\r?\n/)) {
+      const trimmed = line.replace(/^[-*]\s+/, "").trim();
+      if (!trimmed) continue;
+      const parsed = parseDecisionLine(trimmed);
+      if (!parsed) continue;
+      out.push({ at: parsed.at, text: parsed.text, doc });
+    }
+  }
+  for (const child of section.children) {
+    collectDecisionBullets(child, doc, out);
+  }
+}
+
+function parseDecisionLine(raw: string): { at: string; text: string } | null {
+  const match = /^(\d{4}-\d{2}-\d{2})\s*[—–\-:]\s*(.+)$/.exec(raw.trim());
+  if (!match) return null;
+  const at = match[1] ?? "";
+  const text = (match[2] ?? "").trim();
+  if (!at || !text) return null;
+  return { at, text };
 }
 
 export const normalize = normalizeQuestState;

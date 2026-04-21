@@ -72,6 +72,14 @@ export interface QuestState {
   blocked: BlockedTask[];
   agents: AgentProfile[];
   recentChanges: FileChange[];
+  decisions: Decision[];        // added late in v0.1 — newest first, max 10
+}
+
+export interface Decision {
+  at: string;                   // "YYYY-MM-DD"
+  text: string;
+  doc: string;                  // source file
+  line?: number;
 }
 ```
 
@@ -128,6 +136,7 @@ export interface QuestState {
   blocked: BlockedTask[];
   agents: AgentProfile[];
   recentChanges: FileChange[];
+  decisions: Decision[];
 
   gitContext?: GitContext;
   agentActivity?: AgentActivity[];
@@ -148,6 +157,7 @@ export interface QuestState {
 | `agents[]` | One entry per `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, parsed section by section |
 | `resumeNote` | Top item in `now`, cross-referenced with most-recent-touched file from watcher |
 | `recentChanges` | File watcher events, deduped and sorted desc |
+| `decisions` | Bullets under `/recent decisions\|decisions\|decision log/i` in `STATE.md` or any `*_log.md`. Format: `YYYY-MM-DD — text`. Newest first, max 10. |
 | `gitContext` (v2) | `git rev-parse` / `git status --porcelain` / `git log -1 --pretty` — all skipped silently if not a repo |
 | `agentActivity` (v2) | For each changed file in the last N days, score it against each agent's `area` globs in AGENTS.md / CLAUDE.md / GEMINI.md; keep top-match with confidence |
 | `config` (v2) | `.repolog.json` at repo root; missing file = all defaults |

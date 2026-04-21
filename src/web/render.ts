@@ -1,4 +1,4 @@
-import type { AgentProfile, BlockedTask, FileChange, QuestState, Task } from "../engine/types.js";
+import type { AgentProfile, BlockedTask, Decision, FileChange, QuestState, Task } from "../engine/types.js";
 
 export interface SurfaceHtmlOptions {
   liveBridge?: "desktop" | "vscode";
@@ -426,6 +426,26 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     .spark-del { background: rgba(248,132,113,0.92); }
     .change-age { color: var(--dim); font-family: var(--mono); font-size: var(--tiny-size); min-width: 34px; text-align: right; }
 
+    /* ---- DECISIONS ---- */
+    .decision-row {
+      display: grid; grid-template-columns: 84px minmax(0, 1fr);
+      gap: 10px; align-items: baseline; padding: 3px 0;
+      border-left: 1px solid var(--faint); padding-left: 10px; margin-left: 4px;
+    }
+    .decision-date { font-family: var(--mono); font-size: var(--tiny-size); color: var(--dim); }
+    .decision-text {
+      font-size: 13px; color: var(--ink); line-height: 1.35;
+      overflow: hidden; text-overflow: ellipsis;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    }
+    .decision-toggle {
+      appearance: none; background: transparent; border: 0;
+      color: var(--muted); font-family: var(--mono); font-size: var(--tiny-size);
+      cursor: pointer; padding: 6px 0 2px; text-align: left;
+    }
+    .decision-toggle:hover { color: var(--accent); }
+    [data-decisions-expanded="true"] .decision-hidden { display: block !important; }
+
     /* ---- PALETTE OVERLAY (Ctrl+K) ---- */
     .palette-overlay {
       position: fixed; inset: 0;
@@ -599,6 +619,7 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       </div>
       <div class="col">
         ${renderAgentsTile(state.agents)}
+        ${renderDecisionsTile(state.decisions)}
       </div>
     </section>
   </div>
@@ -625,6 +646,7 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
   ${renderPaletteScript()}
   ${renderTaskNavScript()}
   ${renderAgentPulseScript()}
+  ${renderDecisionToggleScript()}
 </body>
 </html>`;
 }
@@ -888,6 +910,31 @@ function renderAgentsTile(agents: AgentProfile[]): string {
       `).join("")}
     </div>
   </section>`;
+}
+
+function renderDecisionsTile(decisions: Decision[] | undefined): string {
+  if (!decisions || decisions.length === 0) return "";
+  const visible = decisions.slice(0, 5);
+  const hidden = decisions.slice(5);
+  const hiddenRows = hidden.map((d) => renderDecisionRow(d, true)).join("");
+  return `<section class="tile tight" data-area="decisions" data-decisions-expanded="false">
+    <div class="tile-header">
+      <h3 class="tile-title changes"><span class="accent-bar"></span>Decisions</h3>
+      <span class="tile-meta">${decisions.length} logged</span>
+    </div>
+    <div class="tile-body">
+      ${visible.map((d) => renderDecisionRow(d, false)).join("")}
+      ${hidden.length > 0 ? `<div class="decision-hidden" data-decisions-hidden hidden>${hiddenRows}</div>
+      <button type="button" class="decision-toggle" data-decisions-toggle>show all (${hidden.length} more)</button>` : ""}
+    </div>
+  </section>`;
+}
+
+function renderDecisionRow(d: Decision, hidden: boolean): string {
+  return `<div class="decision-row"${hidden ? " data-hidden=\"true\"" : ""}>
+    <span class="decision-date">${escapeHtml(d.at)}</span>
+    <span class="decision-text">${escapeHtml(d.text)}</span>
+  </div>`;
 }
 
 function renderChangesTile(changes: FileChange[]): string {
@@ -1230,6 +1277,24 @@ function renderPaletteScript(): string {
         }
       });
       input.addEventListener("input", function () { filter(input.value); });
+    })();
+  </script>`;
+}
+
+function renderDecisionToggleScript(): string {
+  return `<script>
+    (function () {
+      document.addEventListener('click', function (event) {
+        var btn = event.target.closest && event.target.closest('[data-decisions-toggle]');
+        if (!btn) return;
+        var tile = btn.closest('[data-decisions-expanded]');
+        if (!tile) return;
+        var expanded = tile.getAttribute('data-decisions-expanded') === 'true';
+        tile.setAttribute('data-decisions-expanded', expanded ? 'false' : 'true');
+        var hidden = tile.querySelector('[data-decisions-hidden]');
+        if (hidden) hidden.hidden = expanded;
+        btn.textContent = expanded ? btn.textContent.replace(/^hide all/, 'show all') : btn.textContent.replace(/^show all \\(([^)]+)\\)/, 'hide all ($1)');
+      });
     })();
   </script>`;
 }

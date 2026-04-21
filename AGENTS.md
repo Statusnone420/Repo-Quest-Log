@@ -1,9 +1,9 @@
 # AGENTS.md
 
-Instructions for any coding agent working in this repo (Codex, generic agents, CI bots).
+Instructions for any coding agent working in this repo (Codex, generic agents, CI bots). "RepoLog"
 
 ## Role
-**Implementer.** You write TypeScript per `PLAN.md`. You do not redesign. You do not expand scope.
+**Implementer of Backend Code and Coding Expert** You write TypeScript per `PLAN.md`. You do not redesign. You do not expand scope.
 
 ## Owned Areas
 - `src/engine/**` — parser, normalizer, ranker, watcher
@@ -20,6 +20,7 @@ Instructions for any coding agent working in this repo (Codex, generic agents, C
 - Write tests against the fixture repos under `tests/fixtures/` before marking a task done
 - Update `STATE.md` when you finish a task
 - Run `npm run lint && npm test` before committing
+- Check with `CLAUDE.md` to make sure you and Claude are on the same page but don't intefere in what it's doing.
 
 ## Do Not
 - Write or modify markdown in the root (leave `PLAN.md`, `STATE.md`, etc. to the human)

@@ -10,6 +10,7 @@ describe("web renderers", () => {
     expect(html).toContain("repo quest log");
     expect(html).toContain("Resume where you left off");
     expect(html).toContain("window.repologDesktop");
+    expect(html).toContain("data-copy-context=");
   });
 
   it("renders a VS Code panel document", () => {
@@ -18,6 +19,8 @@ describe("web renderers", () => {
     expect(html).toContain("Repo Quest Log");
     expect(html).toContain("Repo Quest Log Panel");
     expect(html).toContain("repolog:replaceHtml");
+    expect(html).toContain("data-open-doc=");
+    expect(html).toContain("change-spark");
   });
 });
 
@@ -61,6 +64,6 @@ function sampleState(): QuestState {
         status: "working",
       },
     ],
-    recentChanges: [{ file: "PLAN.md", at: "1m" }],
+    recentChanges: [{ file: "PLAN.md", at: "1m", diff: "+3 -1" }],
   };
 }

@@ -4,9 +4,14 @@ const { mkdir, writeFile } = require("node:fs/promises");
 
 const { app, BrowserWindow, ipcMain } = require("electron");
 const { screen } = require("electron");
+const { resolveDesktopRepoRoot } = require(path.join(__dirname, "..", "..", "dist", "desktop", "root.js"));
 
 const repoRoot = path.resolve(__dirname, "..", "..");
-const targetRoot = normalizeCliPath(process.argv[2] || process.cwd());
+const targetRoot = resolveDesktopRepoRoot({
+  argv: process.argv.slice(2),
+  cwd: process.cwd(),
+  execPath: process.execPath,
+});
 
 let win = null;
 let initialLoadComplete = false;
@@ -14,11 +19,6 @@ let watcherHandle = null;
 let recentChanges = [];
 let modulesPromise = null;
 const liveHtmlPath = path.join(targetRoot, ".repolog", "desktop-live.html");
-
-function normalizeCliPath(value) {
-  const trimmed = String(value).trim().replace(/^"+|"+$/g, "");
-  return path.resolve(trimmed);
-}
 
 function mergeChanges(next, previous) {
   const merged = new Map();
@@ -188,8 +188,14 @@ app.on("before-quit", async () => {
   }
 });
 
-void start().catch((error) => {
-  const message = error instanceof Error ? error.stack || error.message : String(error);
-  process.stderr.write(`${message}\n`);
-  app.exit(1);
-});
+if (require.main === module) {
+  void start().catch((error) => {
+    const message = error instanceof Error ? error.stack || error.message : String(error);
+    process.stderr.write(`${message}\n`);
+    app.exit(1);
+  });
+}
+
+module.exports = {
+  resolveDesktopRepoRoot,
+};

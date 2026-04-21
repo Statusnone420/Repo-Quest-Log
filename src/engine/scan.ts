@@ -20,7 +20,7 @@ export async function scanRepo(rootDir: string, options: ScanOptions = {}): Prom
     repoName: basename(resolvedRoot),
     branch: readBranchName(resolvedRoot),
     lastScan: new Date().toISOString(),
-    recentChanges: buildRecentChanges(docs, options.recentChanges),
+    recentChanges: buildRecentChanges(docs, options.recentChanges, resolvedRoot),
     lastTouchedFile: options.lastTouchedFile,
     lastTouchedAt: options.lastTouchedAt,
   });
@@ -29,22 +29,30 @@ export async function scanRepo(rootDir: string, options: ScanOptions = {}): Prom
 function buildRecentChanges(
   docs: Awaited<ReturnType<typeof parseRepo>>,
   incoming?: readonly FileChange[],
+  rootDir?: string,
 ): FileChange[] {
-  if (incoming && incoming.length > 0) {
-    return [...incoming];
+  const changes: FileChange[] = incoming && incoming.length > 0
+    ? [...incoming]
+    : [...docs]
+        .sort((left, right) => {
+          const leftTime = left.modifiedAt ? Date.parse(left.modifiedAt) : 0;
+          const rightTime = right.modifiedAt ? Date.parse(right.modifiedAt) : 0;
+          return rightTime - leftTime;
+        })
+        .slice(0, 8)
+        .map((doc) => ({
+          file: doc.file,
+          at: relativeSince(doc.modifiedAt),
+        }));
+
+  if (!rootDir) {
+    return changes;
   }
 
-  return [...docs]
-    .sort((left, right) => {
-      const leftTime = left.modifiedAt ? Date.parse(left.modifiedAt) : 0;
-      const rightTime = right.modifiedAt ? Date.parse(right.modifiedAt) : 0;
-      return rightTime - leftTime;
-    })
-    .slice(0, 8)
-    .map((doc) => ({
-      file: doc.file,
-      at: relativeSince(doc.modifiedAt),
-    }));
+  return changes.map((change) => ({
+    ...change,
+    diff: change.diff ?? readDiffSummary(rootDir, change.file),
+  }));
 }
 
 function readBranchName(rootDir: string): string {
@@ -56,6 +64,32 @@ function readBranchName(rootDir: string): string {
     }).trim();
   } catch {
     return "no-git";
+  }
+}
+
+function readDiffSummary(rootDir: string, file: string): string | undefined {
+  try {
+    const output = execFileSync("git", ["diff", "HEAD", "--numstat", "--", file], {
+      cwd: rootDir,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+
+    if (!output) {
+      return undefined;
+    }
+
+    const [addedRaw, deletedRaw] = output.split(/\s+/, 3);
+    const added = addedRaw === "-" ? 0 : Number(addedRaw);
+    const deleted = deletedRaw === "-" ? 0 : Number(deletedRaw);
+
+    if (!Number.isFinite(added) || !Number.isFinite(deleted)) {
+      return undefined;
+    }
+
+    return `+${added} -${deleted}`;
+  } catch {
+    return undefined;
   }
 }
 

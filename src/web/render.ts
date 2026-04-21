@@ -211,9 +211,26 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       border-bottom: 1px solid var(--faint);
       line-height: 1.35;
     }
+    .task-row.clickable {
+      grid-template-columns: 16px 18px minmax(0, 1fr) auto;
+    }
     .task-index { font-family: var(--mono); font-size: 10px; color: var(--dim); text-align: right; padding-top: 2px; }
     .task-text { white-space: pre-wrap; overflow-wrap: anywhere; text-wrap: pretty; }
     .task-doc { font-family: var(--mono); font-size: 10px; color: var(--dim); text-align: right; }
+    .task-link {
+      appearance: none;
+      background: transparent;
+      border: 0;
+      color: inherit;
+      font: inherit;
+      text-align: left;
+      padding: 0;
+      cursor: pointer;
+    }
+    .task-link:hover .task-text,
+    .task-link:hover .task-doc {
+      color: #ffffff;
+    }
 
     .agent-badge {
       display: inline-flex; align-items: center; justify-content: center;
@@ -272,7 +289,17 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       gap: 10px; align-items: center; padding: 4px 0;
     }
     .change-file { white-space: pre-wrap; overflow-wrap: anywhere; }
-    .change-diff { color: var(--ok); font-family: var(--mono); font-size: 11px; }
+    .change-diff {
+      display: inline-flex; align-items: center; gap: 8px;
+      color: var(--ok); font-family: var(--mono); font-size: 11px;
+    }
+    .change-diff-value { white-space: nowrap; }
+    .change-spark { display: inline-flex; align-items: flex-end; gap: 1px; height: 10px; min-width: 12px; }
+    .spark-add, .spark-del {
+      display: inline-block; width: 3px; border-radius: 2px 2px 0 0; opacity: 0.82;
+    }
+    .spark-add { background: rgba(138,214,168,0.95); }
+    .spark-del { background: rgba(248,132,113,0.92); }
     .change-age { color: var(--dim); font-family: var(--mono); font-size: 11px; min-width: 34px; text-align: right; }
 
     @media (max-width: 1200px) {
@@ -344,7 +371,7 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
         <div class="anchor-top">
           <span class="label">Resume where you left off</span>
           <span class="idle">idle ${escapeHtml(state.resumeNote.since)}</span>
-          <button class="copy-context-btn" data-copy-context="${escapeHtml(buildContextPrompt(state))}" aria-label="Copy context for agent" title="Copy context for agent">
+          <button type="button" class="copy-context-btn" data-copy-context="${escapeHtml(buildContextPrompt(state))}" aria-label="Copy context for agent" title="Copy context for agent">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
           </button>
         </div>
@@ -453,6 +480,17 @@ export function renderVSCodeHtml(state: QuestState, options: SurfaceHtmlOptions 
       color: var(--dim); font-size: 11px; margin-left: auto; font-family: var(--mono);
       flex-shrink: 0; align-self: center;
     }
+    .change-diff {
+      display: inline-flex; align-items: center; gap: 6px;
+      color: var(--accent); font-family: var(--mono); font-size: 10px;
+    }
+    .change-diff-value { white-space: nowrap; }
+    .change-spark { display: inline-flex; align-items: flex-end; gap: 1px; height: 8px; min-width: 10px; }
+    .spark-add, .spark-del {
+      display: inline-block; width: 3px; border-radius: 2px 2px 0 0; opacity: 0.88;
+    }
+    .spark-add { background: rgba(78,201,176,0.95); }
+    .spark-del { background: rgba(244,135,113,0.92); }
     .agent {
       padding: 4px 24px; font-size: 13px; line-height: 1.4;
     }
@@ -481,7 +519,7 @@ export function renderVSCodeHtml(state: QuestState, options: SurfaceHtmlOptions 
     <div class="resume">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 4px;">
         <div class="resume-label" style="margin-bottom:0;">Resume</div>
-        <button class="copy-context-btn" data-copy-context="${escapeHtml(buildContextPrompt(state))}" aria-label="Copy context for agent" title="Copy context for agent" style="background:transparent; border:none; color:var(--muted); cursor:pointer; padding:0; display:flex; align-items:center;">
+        <button type="button" class="copy-context-btn" data-copy-context="${escapeHtml(buildContextPrompt(state))}" aria-label="Copy context for agent" title="Copy context for agent" style="background:transparent; border:none; color:var(--muted); cursor:pointer; padding:0; display:flex; align-items:center;">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
         </button>
       </div>
@@ -508,7 +546,7 @@ export function renderVSCodeHtml(state: QuestState, options: SurfaceHtmlOptions 
 </html>`;
 }
 
-function renderTaskTile(area: string, title: string, meta: string, tasks: Task[], showDoc: boolean, hot: boolean): string {
+function renderTaskTile(area: string, title: string, meta: string, tasks: Task[], showDoc: boolean, hot: boolean, clickable = false): string {
   return `<section class="tile ${area} ${hot ? "hot" : ""}">
     <div class="tile-header">
       <h3 class="tile-title">${escapeHtml(title)}</h3>
@@ -516,15 +554,25 @@ function renderTaskTile(area: string, title: string, meta: string, tasks: Task[]
     </div>
     <div class="tile-body">
       ${tasks.length === 0 ? `<div class="task-row"><span class="task-index">·</span>${renderAgentBadge(undefined)}<span class="task-text">No items yet</span><span class="task-doc"></span></div>` : tasks.map((task, index) => `
-        <div class="task-row">
+        <div class="task-row ${clickable ? "clickable" : ""}">
           <span class="task-index">${String(index + 1).padStart(2, "0")}</span>
           ${renderAgentBadge(task.agent)}
-          <span class="task-text">${escapeHtml(task.text)}</span>
+          ${clickable ? renderTaskLink(task) : `<span class="task-text">${escapeHtml(task.text)}</span>`}
           <span class="task-doc">${showDoc ? escapeHtml(task.doc) : ""}</span>
         </div>
       `).join("")}
     </div>
   </section>`;
+}
+
+function renderTaskLink(task: Task): string {
+  if (!task.doc) {
+    return `<span class="task-text">${escapeHtml(task.text)}</span>`;
+  }
+
+  return `<button type="button" class="task-link" data-open-doc="${escapeHtml(task.doc)}" data-line="${task.line ?? 1}" aria-label="Open ${escapeHtml(task.doc)} on line ${task.line ?? 1}">
+    <span class="task-text">${escapeHtml(task.text)}</span>
+  </button>`;
 }
 
 function renderBlockedTile(tasks: BlockedTask[]): string {
@@ -583,7 +631,7 @@ function renderChangesTile(changes: FileChange[]): string {
       ${changes.length === 0 ? `<div class="change-row"><span class="change-file">No recent changes yet</span><span class="change-diff"></span><span class="change-age"></span></div>` : changes.map((change) => `
         <div class="change-row">
           <span class="change-file">${escapeHtml(change.file)}</span>
-          <span class="change-diff">${escapeHtml(change.diff ?? "")}</span>
+          ${renderChangeDiff(change.diff)}
           <span class="change-age">${escapeHtml(change.at)}</span>
         </div>
       `).join("")}
@@ -606,7 +654,7 @@ function renderVSCodeSection(title: string, count: number, accent: string | unde
 
 function renderVSCodeTaskRow(task: Task, icon: string, color = "#858585"): string {
   const agent = task.agent ? `[${task.agent[0]?.toUpperCase() ?? "·"}]` : "";
-  const clickAttr = task.doc ? ` data-open-doc="${escapeHtml(task.doc)}" data-line="${task.line || 1}" class="row clickable-row"` : ` class="row"`;
+  const clickAttr = task.doc ? ` data-open-doc="${escapeHtml(task.doc)}" data-line="${task.line || 1}" class="row clickable-row" role="button" tabindex="0"` : ` class="row"`;
   return `<div${clickAttr}>
     <span class="row-icon" style="color:${color}">${escapeHtml(icon)}</span>
     <span class="row-text">${escapeHtml(task.text)}</span>
@@ -638,7 +686,7 @@ function renderVSCodeChangeRow(change: FileChange): string {
   return `<div class="row">
     <span class="row-icon" style="color:#dcdcaa">M</span>
     <span class="row-text">${escapeHtml(change.file)}</span>
-    <span class="row-sub">${escapeHtml(change.at)}</span>
+    <span class="row-sub">${renderChangeDiff(change.diff)} <span>${escapeHtml(change.at)}</span></span>
   </div>`;
 }
 
@@ -658,14 +706,30 @@ function renderLiveBridge(mode: SurfaceHtmlOptions["liveBridge"]): string {
   const vscodeHook = mode === "vscode"
     ? `
       var vscode = acquireVsCodeApi();
+      function openDoc(row) {
+        if (!row) return;
+        var doc = row.getAttribute("data-open-doc");
+        var line = parseInt(row.getAttribute("data-line") || "1", 10);
+        vscode.postMessage({ type: "openDoc", doc: doc, line: line });
+      }
       document.addEventListener("click", function(event) {
         var target = event.target;
         if (!target || !target.closest) return;
         var row = target.closest("[data-open-doc]");
         if (row) {
-          var doc = row.getAttribute("data-open-doc");
-          var line = parseInt(row.getAttribute("data-line") || "1", 10);
-          vscode.postMessage({ type: "openDoc", doc: doc, line: line });
+          openDoc(row);
+        }
+      });
+      document.addEventListener("keydown", function(event) {
+        if (event.key !== "Enter" && event.key !== " ") {
+          return;
+        }
+        var target = event.target;
+        if (!target || !target.closest) return;
+        var row = target.closest("[data-open-doc]");
+        if (row) {
+          event.preventDefault();
+          openDoc(row);
         }
       });
     `
@@ -743,6 +807,27 @@ function renderSettingsScript(): string {
         if (!target || !target.closest) {
           return;
         }
+        var copyBtn = target.closest("[data-copy-context]");
+        if (copyBtn) {
+          var text = copyBtn.getAttribute("data-copy-context");
+          if (text) {
+            var clipboard = navigator.clipboard && navigator.clipboard.writeText;
+            var done = function () {
+              var originalHtml = copyBtn.innerHTML;
+              copyBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--ok, #4ec9b0)" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+              setTimeout(function() { copyBtn.innerHTML = originalHtml; }, 2000);
+            };
+
+            if (clipboard) {
+              clipboard.call(navigator.clipboard, text).then(done).catch(function () {
+                done();
+              });
+            } else {
+              done();
+            }
+          }
+        }
+
         var button = target.closest("[data-ui-action], [data-ui-density]");
         if (!button) {
           return;
@@ -759,18 +844,6 @@ function renderSettingsScript(): string {
         }
         if (button.hasAttribute("data-ui-density")) {
           update({ density: button.getAttribute("data-ui-density") || "spacious" });
-        }
-        
-        var copyBtn = target.closest("[data-copy-context]");
-        if (copyBtn) {
-          var text = copyBtn.getAttribute("data-copy-context");
-          if (text) {
-             navigator.clipboard.writeText(text).then(function() {
-               var originalHtml = copyBtn.innerHTML;
-               copyBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--ok, #4ec9b0)" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>';
-               setTimeout(function() { copyBtn.innerHTML = originalHtml; }, 2000);
-             });
-          }
         }
       });
 
@@ -804,6 +877,33 @@ function renderAgentBadge(agent: string | undefined): string {
   return `<span class="agent-badge ${entry.className}">${entry.label}</span>`;
 }
 
+function renderChangeDiff(diff?: string): string {
+  if (!diff) {
+    return `<span class="change-diff"></span>`;
+  }
+
+  const match = /^\+(\d+)\s+-?(\d+)?$/.exec(diff.trim()) || /^(\d+)\s+(\d+)$/.exec(diff.trim());
+  if (!match) {
+    return `<span class="change-diff"><span class="change-diff-value">${escapeHtml(diff)}</span></span>`;
+  }
+
+  const added = Number(match[1]);
+  const deleted = Number(match[2] ?? "0");
+  const scale = Math.max(added, deleted, 1);
+  const addWidth = Math.max(3, Math.round((added / scale) * 18));
+  const delWidth = Math.max(3, Math.round((deleted / scale) * 18));
+  const addHeight = Math.min(10, Math.max(3, Math.round((added / scale) * 10)));
+  const delHeight = Math.min(10, Math.max(3, Math.round((deleted / scale) * 10)));
+
+  return `<span class="change-diff">
+    <span class="change-diff-value">${escapeHtml(diff)}</span>
+    <span class="change-spark" aria-hidden="true">
+      <span class="spark-add" style="height:${addHeight}px;width:${addWidth}px"></span>
+      <span class="spark-del" style="height:${delHeight}px;width:${delWidth}px"></span>
+    </span>
+  </span>`;
+}
+
 function escapeHtml(value: string): string {
   return value
     .replace(/&/g, "&amp;")
@@ -814,5 +914,5 @@ function escapeHtml(value: string): string {
 }
 
 function buildContextPrompt(state: QuestState): string {
-  return `I am resuming work. The active quest is "${state.activeQuest.title}". My current task is "${state.resumeNote.task}" in ${state.resumeNote.doc}. The last touched file was ${state.resumeNote.lastTouched}. Please read the last touched file and let's begin.`;
+  return `I am resuming work. The active quest is "${state.activeQuest.title}". My current task is "${state.resumeNote.task}" in ${state.resumeNote.doc}. The last touched file was ${state.resumeNote.lastTouched}. Please read ${state.resumeNote.lastTouched} and let's begin.`;
 }

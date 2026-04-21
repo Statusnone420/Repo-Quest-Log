@@ -3,7 +3,7 @@
 Live "where we are." Update this as work progresses. The normalizer reads this to build the Session Anchor.
 
 ## Current Focus
-Core engine is landed. Active work is hardening the live shells, making the TUI resize correctly, and keeping the desktop shell readable on large monitors without breaking the shared `QuestState` contract.
+Core engine is landed. Active work is hardening the live shells, making the TUI resize correctly, and keeping the packaged desktop shell pointed at the real repo instead of the release folder.
 
 ## Last Session
 - Landed the shared web HUD renderer in `src/web/render.ts`
@@ -15,11 +15,14 @@ Core engine is landed. Active work is hardening the live shells, making the TUI 
 - Added desktop display controls for zoom and density so the HUD is readable from farther away
 - Made the desktop window launch maximized against the current work area instead of a fixed preview size
 - Wired the density buttons to real CSS spacing/type-scale changes instead of dead controls
+- Added click-to-open and copy-context affordances in the shared renderer
+- Added git diff stats to recent changes when the repo is tracked
+- Made the packaged desktop host resolve the repo root from the launcher, cwd, or exe path instead of defaulting to the release folder
 
 ## Resume Note
-> Was about to finish packaging the desktop host or wire click-to-open links, then decide whether the VS Code panel needs the same treatment first.
+> Was about to finish packaging the desktop host and confirm the VS Code click/open path, then decide whether the next phase should focus on broader packaging or more shell polish.
 
-Last touched: `src/tui/App.tsx`
+Last touched: `src/web/render.ts`
 
 ## Recent Decisions
 - TypeScript over Rust for v0.1 (faster iteration, Ink for TUI)

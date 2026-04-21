@@ -24,7 +24,7 @@ Instructions for Claude (Claude Code) working in this repo.
 - Touch `docs/design/**` — that's the human's and describes the UI spec
 
 ## Current Objective
-Freeze `docs/SCHEMA.md` v1 so Codex can start on `normalize.ts`.
+Keep `PRD.md`, `PLAN.md`, and `STATE.md` aligned while companion shells land on top of the locked `QuestState` contract.
 
 ## Handoff Protocol
 When you finish a plan, add a task to `PLAN.md` under "Now" in the form:

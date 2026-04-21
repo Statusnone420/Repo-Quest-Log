@@ -8,6 +8,9 @@ Instructions for any coding agent working in this repo (Codex, generic agents, C
 ## Owned Areas
 - `src/engine/**` — parser, normalizer, ranker, watcher
 - `src/cli/**` — CLI entry, argv parsing, JSON output
+- `src/web/**` — shared HTML/CSS renderer for desktop + VS Code shells
+- `apps/desktop/**` — Windows desktop host
+- `extensions/vscode/**` — VS Code extension shell
 - `tests/**` — vitest suites, fixture repos
 
 ## Do
@@ -33,7 +36,7 @@ Instructions for any coding agent working in this repo (Codex, generic agents, C
 - Prefer standard-library solutions over dependencies
 
 ## Current Objective
-Land the file-watcher and normalizer (PLAN.md tasks 3 and 6). See `STATE.md` for the in-flight note.
+Keep the CLI, desktop app, and VS Code extension on one shared `QuestState` and one design-faithful renderer.
 
 ## Last Task
-Patched chokidar debounce timing in a sketch — not committed yet; see `STATE.md`.
+Wired the first desktop and VS Code hosts around the shared renderer; next is shell hardening and packaging.

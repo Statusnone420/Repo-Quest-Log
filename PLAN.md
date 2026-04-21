@@ -4,46 +4,45 @@ One sentence: **what this repo is trying to become.**
 > A local-first CLI + TUI that makes repo intent legible at a glance for developers working with coding agents.
 
 ## Active Quest
-Ship v0.1 — local CLI + TUI HUD
+Ship the first usable multi-surface Repo Quest Log shells
 
 ## Current Objective
-Land the core engine (markdown scanner → normalizer → QuestState JSON) before touching any UI.
+Keep all surfaces pinned to one shared `QuestState` pipeline and one design source of truth.
 
 ## Now
-- [ ] Wire file-watcher into normalizer (chokidar, 250ms debounce)
-- [ ] Define QuestState JSON schema v1 — freeze the shape (see `docs/SCHEMA.md`)
-- [ ] Rank extracted items into Now / Next / Blocked
+- [ ] Harden the TUI wrapping / spacing so no panel content gets visually mangled on real repos
+- [ ] Turn the Windows desktop shell into a packaged app path on top of the shared HUD renderer
+- [ ] Finish the VS Code side-panel shell so it live-refreshes from the active workspace
 
 ## Next
-- [ ] Parse markdown with remark + extract checklist items
-- [ ] Build Agents panel from `AGENTS.md` / `CLAUDE.md` / `GEMINI.md`
-- [ ] Ink-based terminal renderer, stable placement (match `docs/design/`)
-- [ ] Session Anchor: one-line resume note from most-recent-touched active task
-- [ ] Heuristic confidence score per extracted quest
+- [ ] Add a packaging path for Windows desktop builds
+- [ ] Decide whether macOS ships as SwiftUI + WKWebView host or a native Swift redraw of the same layout
+- [ ] Add click-to-open doc links in desktop and VS Code shells
+- [ ] Add fixture coverage for noisy / imperfect repo docs
+- [ ] Tighten recent-changes diff metadata when git context is available
 
 ## Blocked
-- [ ] Desktop shell decision: Tauri vs native — **waiting on scope review**
 - [ ] Publish npm package `@repo-quest/core` — **need npm org + CI secrets**
 
 ## The 7 build tasks (in order)
 
-1. **Define supported file names and heading patterns.** Write the fixed list and regex for each category. Output: `src/engine/fileset.ts`.
-2. **Parse markdown into sections and checklists.** Use `remark` + `unified`. Return a `ParsedDoc[]`. Output: `src/engine/parse.ts`.
-3. **Build a normalizer that maps `ParsedDoc[]` into one shared `QuestState` JSON.** Schema in `docs/SCHEMA.md`. Output: `src/engine/normalize.ts`.
-4. **Rank tasks into Now / Next / Blocked.** Heuristic priority stack from PRD. Output: `src/engine/rank.ts`.
-5. **Build the Agents panel from `AGENTS.md` / `CLAUDE.md` / `GEMINI.md`.** One profile per agent file. Output: `src/engine/agents.ts`.
-6. **Add file watching and auto-refresh.** `chokidar`, debounced, re-runs the pipeline. Output: `src/engine/watcher.ts`.
-7. **One-line `resume_note` generated from the top active task + last-touched file.** Output: folded into `normalize.ts`.
+1. [x] **Define supported file names and heading patterns.** `src/engine/fileset.ts`
+2. [x] **Parse markdown into sections and checklists.** `src/engine/parse.ts`
+3. [x] **Build a normalizer that maps `ParsedDoc[]` into one shared `QuestState` JSON.** `src/engine/normalize.ts`
+4. [x] **Rank tasks into Now / Next / Blocked.** `src/engine/rank.ts`
+5. [x] **Build the Agents panel from `AGENTS.md` / `CLAUDE.md` / `GEMINI.md`.** `src/engine/agents.ts`
+6. [x] **Add file watching and auto-refresh.** `src/engine/watcher.ts`
+7. [x] **One-line `resume_note` generated from the top active task + last-touched file.** folded into `src/engine/normalize.ts`
 
-That is enough for a useful prototype. Only after all 7 land do we touch the TUI renderer.
+Core engine is complete. Current work is surface hardening and host shells.
 
 ## Build order after core
 
-1. CLI: `quest-log scan .` → prints JSON
-2. TUI: `quest-log --watch` → Ink renderer, matches `docs/design/Repo Quest Log.html`
-3. Snapshot tests against fixture repos in `tests/fixtures/`
-4. Publish as `@repo-quest/core` + `repo-quest-log` binary
-5. (Out of v0.1) Desktop shell, VS Code extension, menu-bar widget
+1. CLI: `repolog scan .` → prints JSON
+2. TUI: `repolog` / `repolog watch` → live terminal HUD
+3. Desktop shell: `npm run desktop:app -- .` → Electron host over the shared HUD renderer
+4. VS Code extension: `extensions/vscode/` → live side panel over the same `QuestState`
+5. Publish as `@repo-quest/core` + `repo-quest-log` binary
 
 ## Out of scope for v0.1
 

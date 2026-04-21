@@ -48,11 +48,13 @@ export function formatStaticFrame(
     joinColumns(
       plainPanel("NOW", leftWidth, renderTasks(state.now, leftWidth)),
       plainPanel("NEXT", rightWidth, renderTasks(state.next, rightWidth, false)),
+      leftWidth,
     ),
     "",
     joinColumns(
       plainPanel("BLOCKED", leftWidth, renderBlocked(state, leftWidth)),
       plainPanel("AGENTS", rightWidth, renderAgents(state, rightWidth)),
+      leftWidth,
     ),
     "",
     plainPanel("RECENT CHANGES", topWidth, renderChanges(state, topWidth)),
@@ -304,10 +306,16 @@ function renderTasks(tasks: QuestState["now"], width: number, showDoc = true): s
     return [" no active tasks"];
   }
 
-  return tasks.map((task, index) => {
+  return tasks.flatMap((task, index) => {
     const agent = task.agent ? `[${task.agent[0]?.toUpperCase() ?? "·"}]` : "[·]";
-    const suffix = showDoc ? ` · ${task.doc}` : "";
-    return truncate(` ${String(index + 1).padStart(2, "0")} ${agent} ${task.text}${suffix}`, width - 2);
+    const prefix = ` ${String(index + 1).padStart(2, "0")} ${agent} `;
+    const lines = wrapWithPrefix(task.text, prefix, width - 2, " ".repeat(prefix.length));
+
+    if (showDoc) {
+      lines.push(...wrapWithPrefix(task.doc, "    · ", width - 2, "      "));
+    }
+
+    return lines;
   });
 }
 
@@ -317,8 +325,8 @@ function renderBlocked(state: QuestState, width: number): string[] {
   }
 
   return state.blocked.flatMap((task, index) => [
-    truncate(` ${String(index + 1).padStart(2, "0")} ✕ ${task.text}`, width - 2),
-    truncate(`    ↳ ${task.reason} · ${task.since}`, width - 2),
+    ...wrapWithPrefix(task.text, ` ${String(index + 1).padStart(2, "0")} ✕ `, width - 2, "      "),
+    ...wrapWithPrefix(`${task.reason} · ${task.since}`, "    ↳ ", width - 2, "      "),
   ]);
 }
 
@@ -328,8 +336,13 @@ function renderAgents(state: QuestState, width: number): string[] {
   }
 
   return state.agents.flatMap((agent) => [
-    truncate(` [${agent.name.padEnd(7, " ")}] ${agent.status.padEnd(8, " ")} ${agent.objective}`, width - 2),
-    truncate(`    ↳ ${agent.file} · ${agent.area}`, width - 2),
+    ...wrapWithPrefix(
+      `${agent.name} · ${agent.status} · ${agent.objective}`,
+      " ",
+      width - 2,
+      "   ",
+    ),
+    ...wrapWithPrefix(`${agent.file} · ${agent.area}`, "    ↳ ", width - 2, "      "),
   ]);
 }
 
@@ -338,9 +351,9 @@ function renderChanges(state: QuestState, width: number): string[] {
     return [" no recent changes yet"];
   }
 
-  return state.recentChanges.slice(0, 6).map((change) => {
+  return state.recentChanges.slice(0, 6).flatMap((change) => {
     const diff = change.diff ? ` ${change.diff}` : "";
-    return truncate(` ${change.file}${diff} · ${change.at}`, width - 2);
+    return wrapWithPrefix(`${change.file}${diff} · ${change.at}`, " ", width - 2, "   ");
   });
 }
 
@@ -367,7 +380,7 @@ function pad(value: string, width: number): string {
   return clipped.padEnd(width, " ");
 }
 
-function joinColumns(left: string, right: string): string {
+function joinColumns(left: string, right: string, leftWidth: number): string {
   const leftLines = left.split("\n");
   const rightLines = right.split("\n");
   const total = Math.max(leftLines.length, rightLines.length);
@@ -376,10 +389,51 @@ function joinColumns(left: string, right: string): string {
   for (let index = 0; index < total; index += 1) {
     const leftLine = leftLines[index] ?? "";
     const rightLine = rightLines[index] ?? "";
-    result.push(`${leftLine.padEnd(54, " ")}   ${rightLine}`);
+    result.push(`${leftLine.padEnd(leftWidth, " ")}   ${rightLine}`);
   }
 
   return result.join("\n");
+}
+
+function wrapWithPrefix(text: string, prefix: string, width: number, continuationPrefix = prefix): string[] {
+  const contentWidth = Math.max(8, width - prefix.length);
+  const words = text.split(/\s+/).filter(Boolean);
+  if (words.length === 0) {
+    return [prefix.trimEnd()];
+  }
+
+  const lines: string[] = [];
+  let current = "";
+
+  for (const word of words) {
+    const candidate = current ? `${current} ${word}` : word;
+    if (candidate.length <= contentWidth) {
+      current = candidate;
+      continue;
+    }
+
+    if (current) {
+      const currentPrefix = lines.length === 0 ? prefix : continuationPrefix;
+      lines.push(`${currentPrefix}${current}`);
+      current = word;
+      continue;
+    }
+
+    let remaining = word;
+    while (remaining.length > contentWidth) {
+      const currentPrefix = lines.length === 0 ? prefix : continuationPrefix;
+      lines.push(`${currentPrefix}${remaining.slice(0, contentWidth)}`);
+      remaining = remaining.slice(contentWidth);
+    }
+    current = remaining;
+  }
+
+  if (current) {
+    const currentPrefix = lines.length === 0 ? prefix : continuationPrefix;
+    lines.push(`${currentPrefix}${current}`);
+  }
+
+  return lines;
 }
 
 function mergeChanges(next: readonly FileChange[], previous: readonly FileChange[]): FileChange[] {

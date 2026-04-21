@@ -6,20 +6,21 @@ Live "where we are." Update this as work progresses. The normalizer reads this t
 v0.1 close-out: fit-to-window desktop layout, TUI visual parity with the desktop HUD, and renaming "Active Quest" → "Objective" in UI copy. v0.2 wedge (resume-prompt palette, git panel, agent activity feed, standup export, opt-in write-back) begins only after the v0.1 punch list is green.
 
 ## Last Session
-- Planner pass with Claude Design took the app from "good" to "close to great"
-- Confirmed the packaged Windows exe in `release-fresh/` is the canonical build
-- Agreed to drop the RPG metaphor from UI copy (panels become Objective / Now / Next / Blocked / Agents / Recent changes); product name stays
-- Ranked v0.2 features around the agent-integration wedge: resume-prompt palette is the killer; git panel, agent activity feed, standup export, and opt-in write-back round it out
-- Ruled out timers / pomodoros / gamification permanently
-- Opted in to scoped write-back (checkbox toggles only, gated by `.repolog.json`) starting v0.2
-- Rewrote `PRD.md`, `PLAN.md`, `docs/SCHEMA.md` (v2 draft), and this file to reflect the new plan
-- Queued the first Codex handoff: fit-to-window responsive desktop in `src/web/render.ts` + `apps/desktop/`
-- Codex landed the fit-to-window desktop shell pass with viewport-aware density, inner-panel scroll fallback, and tighter Electron window bounds
+- User reported the desktop shell still scrolled vertically at near-full screen and felt like a "Word doc" instead of a tool — wanted cockpit density, info-at-a-glance
+- Claude took the wheel on desktop UI/UX and rewrote `src/web/render.ts`:
+  - Killed outer scroll for real — new grid is `auto auto auto 1fr` with a single-row 3-column board, no `auto`-rowed bottom tile
+  - Collapsed mission + objective + resume into one compact top strip with left-edge color accents (blue / green / amber)
+  - Added cockpit stat bar: `● 3 NOW · ○ 5 NEXT · ⏸ 1 BLOCKED · N AGENTS · N FILES WATCHED · tail context`
+  - Task rows are now single-line with a colored priority bar, agent chip, and doc chip — truncated to line with hover tooltip — scans by shape not reading
+  - Board columns: (Now + Blocked stacked) | (Next + Recent changes stacked) | (Agents full-height)
+- Pulled **resume-prompt palette forward into v0.1** (was v0.2): `Ctrl+K` opens an overlay with 6 presets — Resume for Claude / Codex / Gemini, Daily standup, Blocker summary, Repo intent briefing. Each builds its message from live QuestState and copies to clipboard. Toast confirms the copy.
+- "Active Quest" → "Objective" label done in desktop copy (schema key stays `activeQuest` until v0.2 schema v2)
+- Updated tests for the new layout expectations; all 11 tests pass, `tsc` clean
 
 ## Resume Note
-> About to hand off the fit-to-window desktop layout to Codex (responsive density + inner-panel scroll fallback so the shell never shows an outer scrollbar). After that lands, TUI visual parity and the "Active Quest" → "Objective" copy rename are the next two Now items.
+> Desktop shell now fits any window without outer scroll, reads as a cockpit (not a doc), and Ctrl+K copies a ready-to-paste resume prompt for Claude/Codex/Gemini. Next: TUI visual parity with the new desktop HUD (same cockpit bar, same priority-bar task rows, same three-column cadence) so the three surfaces match.
 
-Last touched: `PLAN.md`
+Last touched: `src/web/render.ts`
 
 ## Recent Decisions
 - TypeScript over Rust for v0.1 (faster iteration, Ink for TUI)

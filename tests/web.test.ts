@@ -13,9 +13,10 @@ describe("web renderers", () => {
     expect(html).toContain("data-copy-context=");
     expect(html).toContain("--rql-density");
     expect(html).toContain("@media (max-width: 1099px)");
-    expect(html).toContain("@media (min-width: 1100px) and (max-width: 1599px)");
-    expect(html).toContain("@media (min-width: 1600px)");
     expect(html).toContain("@media (max-height: 600px)");
+    expect(html).toContain("data-palette");
+    expect(html).toContain("Objective");
+    expect(html).toContain("Resume for Claude Code");
   });
 
   it("renders a VS Code panel document", () => {

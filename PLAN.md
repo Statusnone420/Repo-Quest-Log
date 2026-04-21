@@ -11,13 +11,16 @@ All surfaces stay pinned to one shared `QuestState` pipeline and one renderer. v
 
 ## Now — v0.1 close-out
 - [x] Fit-to-window desktop: responsive density + inner-panel scroll fallback so the shell never shows an outer scrollbar on 1080p+ (agent: codex, touches: src/web/render.ts, apps/desktop/)
-- [ ] TUI visual parity with the desktop HUD — same regions, same order, mirrored palette, matching density modes (agent: codex, touches: src/tui/)
-- [ ] Rename "Active Quest" → "Objective" in all UI copy across desktop, TUI, VS Code (schema key stays `activeQuest` until v0.2 schema v2) (agent: codex, touches: src/web/render.ts, src/tui/, extensions/vscode/)
+- [x] Desktop cockpit rewrite: compact top strip, stat bar, single-row 3-col board, priority-bar task rows (claude, touches: src/web/render.ts)
+- [x] Resume-prompt palette (Ctrl+K) pulled forward from v0.2 — 6 presets, in-memory templates, clipboard + toast (claude, touches: src/web/render.ts)
+- [x] Rename "Active Quest" → "Objective" in desktop UI copy (schema key stays `activeQuest` until v0.2 schema v2)
+- [ ] **TUI visual parity** — mirror the new desktop HUD: cockpit stat bar, 3-column layout where terminal width allows, single-line priority-bar task rows, matching palette, same section order. Add Ctrl+K palette parity via an input overlay. (agent: codex, touches: src/tui/App.tsx)
+- [ ] Rename "Active Quest" → "Objective" in TUI and VS Code surfaces (agent: codex, touches: src/tui/App.tsx, extensions/vscode/)
 - [ ] Fixture coverage for noisy / imperfect repo docs under tests/fixtures/ (agent: codex, touches: tests/)
-- [ ] Click-to-open doc links verified in every surface (desktop, TUI where feasible, VS Code) (agent: codex, touches: src/web/render.ts, extensions/vscode/)
+- [ ] Click-to-open doc links verified in every remaining surface (agent: codex, touches: extensions/vscode/)
+- [ ] Externalize prompt-palette templates to `~/.repolog/prompts/*.md` so users can edit them (agent: codex, touches: src/engine/, src/web/render.ts)
 
 ## Next — v0.2 (agent-integration wedge)
-- [ ] Resume-prompt palette (⌘K / Ctrl+K) with presets: resume-for-claude, resume-for-codex, resume-for-gemini, standup, blocker-summary, repo-intent-briefing; templates live in `~/.repolog/prompts/`
 - [ ] Live git panel — branch, ahead/behind, dirty count, last commit subject + relative time
 - [ ] Agent activity feed — infer agent × file from mtimes × owned-areas in AGENTS.md / CLAUDE.md / GEMINI.md
 - [ ] Standup export — one-keypress markdown of today's done + currently-active to clipboard

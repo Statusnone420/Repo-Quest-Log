@@ -1,0 +1,182 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Repo Quest Log — HUD explorations</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    html, body { margin: 0; padding: 0; background: #f0eee9; overflow: hidden; }
+    * { box-sizing: border-box; }
+
+    /* Tweaks panel */
+    #tweaks-panel {
+      position: fixed; bottom: 20px; right: 20px; z-index: 1000;
+      background: rgba(18,22,28,0.95); color: #e6ecf2;
+      border: 1px solid rgba(100,120,150,0.25);
+      border-radius: 10px;
+      padding: 16px 18px;
+      font-family: 'Inter', sans-serif; font-size: 13px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+      min-width: 220px;
+      display: none;
+    }
+    #tweaks-panel.visible { display: block; }
+    #tweaks-panel h4 {
+      margin: 0 0 12px; font-family: 'JetBrains Mono', monospace;
+      font-size: 10px; letter-spacing: 1.4px; text-transform: uppercase;
+      color: rgba(220,230,245,0.55); font-weight: 500;
+    }
+    #tweaks-panel .row {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px; padding: 6px 0;
+    }
+    #tweaks-panel label { cursor: pointer; user-select: none; }
+    #tweaks-panel .seg {
+      display: inline-flex; background: rgba(255,255,255,0.04);
+      border-radius: 5px; padding: 2px;
+    }
+    #tweaks-panel .seg button {
+      appearance: none; background: transparent; border: 0; color: rgba(220,230,245,0.55);
+      font: inherit; font-size: 12px; padding: 3px 10px; border-radius: 4px; cursor: pointer;
+    }
+    #tweaks-panel .seg button.active {
+      background: rgba(138,180,255,0.2); color: #8ab4ff;
+    }
+    #tweaks-panel input[type="checkbox"] {
+      accent-color: #8ab4ff;
+    }
+  </style>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+  <div id="root"></div>
+
+  <div id="tweaks-panel">
+    <h4>Tweaks</h4>
+    <div class="row">
+      <label>Density</label>
+      <div class="seg" id="seg-density">
+        <button data-v="spacious" class="active">spacious</button>
+        <button data-v="compact">compact</button>
+      </div>
+    </div>
+    <div class="row"><label><input type="checkbox" id="tw-agents" checked /> Agents panel</label></div>
+    <div class="row"><label><input type="checkbox" id="tw-blocked" checked /> Blocked panel</label></div>
+    <div class="row"><label><input type="checkbox" id="tw-changes" checked /> Recent changes</label></div>
+  </div>
+
+  <script type="text/babel" src="data.jsx"></script>
+  <script type="text/babel" src="design-canvas.jsx"></script>
+  <script type="text/babel" src="hud.jsx"></script>
+  <script type="text/babel" src="tui.jsx"></script>
+  <script type="text/babel" src="surfaces.jsx"></script>
+
+  <script type="text/babel">
+    const TWEAKS_DEFAULTS = /*EDITMODE-BEGIN*/{
+      "density": "spacious",
+      "showAgents": true,
+      "showBlocked": true,
+      "showChanges": true
+    }/*EDITMODE-END*/;
+
+    function App() {
+      const [tweaks, setTweaks] = React.useState(() => {
+        try { return { ...TWEAKS_DEFAULTS, ...(JSON.parse(localStorage.getItem('rql-tweaks') || '{}')) }; }
+        catch { return TWEAKS_DEFAULTS; }
+      });
+      const [editMode, setEditMode] = React.useState(false);
+
+      React.useEffect(() => {
+        localStorage.setItem('rql-tweaks', JSON.stringify(tweaks));
+      }, [tweaks]);
+
+      // Edit-mode protocol
+      React.useEffect(() => {
+        const onMsg = (e) => {
+          const d = e.data || {};
+          if (d.type === '__activate_edit_mode') setEditMode(true);
+          if (d.type === '__deactivate_edit_mode') setEditMode(false);
+        };
+        window.addEventListener('message', onMsg);
+        window.parent.postMessage({ type: '__edit_mode_available' }, '*');
+        return () => window.removeEventListener('message', onMsg);
+      }, []);
+
+      // Sync tweaks panel UI ↔ state
+      React.useEffect(() => {
+        const panel = document.getElementById('tweaks-panel');
+        panel.classList.toggle('visible', editMode);
+        if (!editMode) return;
+
+        const setAndPersist = (patch) => {
+          setTweaks((prev) => {
+            const next = { ...prev, ...patch };
+            window.parent.postMessage({ type: '__edit_mode_set_keys', edits: next }, '*');
+            return next;
+          });
+        };
+
+        const seg = document.querySelectorAll('#seg-density button');
+        seg.forEach((b) => {
+          b.classList.toggle('active', b.dataset.v === tweaks.density);
+          b.onclick = () => setAndPersist({ density: b.dataset.v });
+        });
+        const bind = (id, key) => {
+          const el = document.getElementById(id);
+          el.checked = tweaks[key];
+          el.onchange = () => setAndPersist({ [key]: el.checked });
+        };
+        bind('tw-agents', 'showAgents');
+        bind('tw-blocked', 'showBlocked');
+        bind('tw-changes', 'showChanges');
+      }, [editMode, tweaks]);
+
+      const state = window.repoState;
+
+      return (
+        <DesignCanvas>
+          <DCSection
+            id="hero"
+            title="Repo Quest Log"
+            subtitle="Local-first companion that makes repo intent legible at a glance. Spacesuit-inspired dark canvas, keyboard-first."
+          >
+            <DCArtboard id="desktop" label="Desktop HUD · the hero view" width={1600} height={1000}>
+              <DesktopHUD state={state} tweaks={tweaks} />
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection
+            id="surfaces"
+            title="Other surfaces"
+            subtitle="Same data model, different shells — TUI first (per the feedback), desktop HUD second, VS Code panel + menu-bar widget as companions."
+          >
+            <DCArtboard id="tui" label="TUI · quest-log --watch" width={820} height={720}>
+              <TUIFrame state={state} />
+            </DCArtboard>
+            <DCArtboard id="vscode" label="VS Code side panel" width={400} height={720}>
+              <VSCodePanel state={state} />
+            </DCArtboard>
+            <DCArtboard id="menubar" label="Menu-bar widget · macOS" width={340} height={460}>
+              <MenuBarWidget state={state} />
+            </DCArtboard>
+          </DCSection>
+
+          <DCPostIt top={40} right={40} rotate={3} width={240}>
+            Tweaks toggle is in the toolbar.
+            Try density: compact, or hide the Agents panel to see the HUD adapt.
+          </DCPostIt>
+        </DesignCanvas>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>

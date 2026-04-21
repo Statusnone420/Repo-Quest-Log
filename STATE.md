@@ -18,7 +18,7 @@ v0.1 close-out: fit-to-window desktop layout, TUI visual parity with the desktop
 - Updated tests for the new layout expectations; all 11 tests pass, `tsc` clean
 
 ## Resume Note
-> In-flight: HUD v2 polish batch (6 items). Item #1 landed — resume-note strip collapses to a 28px "fresh" strip when idle <2min, preserving tile height so other tiles don't reflow.
+> In-flight: HUD v2 polish batch. #2 landed — task rows now take focus-visible + hover accent (2px inset accent bar, right-edge → glyph), and `j/k` navigates within a tile, `1/2/3` jumps Now/Next/Blocked, Enter fires an open stub.
 
 Last touched: `src/web/render.ts`
 

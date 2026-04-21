@@ -297,8 +297,23 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       min-width: 0;
       cursor: default;
     }
+    .item { position: relative; outline: none; }
     .item.clickable { cursor: pointer; }
-    .item.clickable:hover { background: rgba(255,255,255,0.03); }
+    .item.clickable:hover,
+    .item.clickable:focus-visible {
+      background: rgba(255,255,255,0.03);
+    }
+    .item.clickable:focus-visible {
+      box-shadow: inset 2px 0 0 var(--accent);
+      outline-offset: -1px;
+    }
+    .item.clickable:hover::after,
+    .item.clickable:focus-visible::after {
+      content: "→";
+      position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+      color: var(--dim); font-family: var(--mono); font-size: var(--tiny-size);
+      pointer-events: none;
+    }
     .item .bar { width: 3px; align-self: stretch; border-radius: 2px; }
     .item.p-now .bar { background: var(--accent); }
     .item.p-next .bar { background: var(--muted); opacity: 0.5; }
@@ -582,6 +597,7 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
   ${renderLiveBridge(options.liveBridge)}
   ${renderSettingsScript()}
   ${renderPaletteScript()}
+  ${renderTaskNavScript()}
 </body>
 </html>`;
 }
@@ -1171,6 +1187,75 @@ function renderPaletteScript(): string {
         }
       });
       input.addEventListener("input", function () { filter(input.value); });
+    })();
+  </script>`;
+}
+
+function renderTaskNavScript(): string {
+  return `<script>
+    (function () {
+      var AREAS = ["now", "next", "blocked"];
+      function tilesByArea() {
+        var map = {};
+        AREAS.forEach(function (a) {
+          map[a] = document.querySelector('[data-area="' + a + '"]');
+        });
+        return map;
+      }
+      function focusablesIn(tile) {
+        if (!tile) return [];
+        return [].slice.call(tile.querySelectorAll('.item.clickable'));
+      }
+      function activeTile() {
+        var el = document.activeElement;
+        if (!el || !el.closest) return null;
+        return el.closest('[data-area]');
+      }
+      function jumpTo(area) {
+        var tile = document.querySelector('[data-area="' + area + '"]');
+        if (!tile) return;
+        var items = focusablesIn(tile);
+        if (items.length > 0) items[0].focus();
+      }
+      function move(delta) {
+        var tile = activeTile();
+        if (!tile) return;
+        var items = focusablesIn(tile);
+        var idx = items.indexOf(document.activeElement);
+        if (idx === -1) return;
+        var next = items[Math.max(0, Math.min(items.length - 1, idx + delta))];
+        if (next) next.focus();
+      }
+      function fireOpen(el) {
+        if (!el) return;
+        var doc = el.getAttribute('data-open-doc');
+        if (!doc) return;
+        var line = parseInt(el.getAttribute('data-line') || '1', 10);
+        if (window.repologDesktop && typeof window.repologDesktop.openDoc === 'function') {
+          window.repologDesktop.openDoc(doc, line);
+        } else {
+          el.dispatchEvent(new CustomEvent('rql:open', { bubbles: true, detail: { doc: doc, line: line } }));
+        }
+      }
+      document.addEventListener('keydown', function (event) {
+        var palette = document.querySelector('[data-palette]');
+        if (palette && palette.getAttribute('data-open') === 'true') return;
+        var target = event.target;
+        if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
+        if (event.metaKey || event.ctrlKey || event.altKey) return;
+        if (event.key === 'j') { event.preventDefault(); move(1); return; }
+        if (event.key === 'k') { event.preventDefault(); move(-1); return; }
+        if (event.key === '1') { event.preventDefault(); jumpTo('now'); return; }
+        if (event.key === '2') { event.preventDefault(); jumpTo('next'); return; }
+        if (event.key === '3') { event.preventDefault(); jumpTo('blocked'); return; }
+        if (event.key === 'Enter') {
+          var t = activeTile();
+          if (t && document.activeElement && document.activeElement.classList.contains('item')) {
+            event.preventDefault();
+            fireOpen(document.activeElement);
+          }
+        }
+      });
     })();
   </script>`;
 }

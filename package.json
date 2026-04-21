@@ -15,7 +15,8 @@
     "test:watch": "vitest",
     "lint": "tsc --noEmit",
     "desktop:preview": "node dist/cli/index.js desktop",
-    "desktop:app": "npm run build && electron apps/desktop/main.cjs"
+    "desktop:app": "npm run build && electron apps/desktop/main.cjs",
+    "desktop:build": "npm run build && electron-builder --win --x64"
   },
   "dependencies": {
     "chokidar": "^3.6.0",
@@ -30,6 +31,7 @@
     "@types/node": "^20.11.0",
     "@types/react": "^18.3.3",
     "electron": "^37.2.3",
+    "electron-builder": "^26.8.1",
     "eslint": "^9.0.0",
     "typescript": "^5.4.0",
     "vitest": "^4.1.5"
@@ -46,5 +48,25 @@
     "claude-code",
     "codex"
   ],
-  "license": "MIT"
+  "license": "MIT",
+  "build": {
+    "appId": "com.repoquestlog.app",
+    "productName": "Repo Quest Log",
+    "directories": {
+      "output": "release"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "extensions/vscode/media/icon.svg"
+    },
+    "files": [
+      "dist/**/*",
+      "apps/desktop/**/*",
+      "docs/SCHEMA.md",
+      "package.json"
+    ],
+    "extraMetadata": {
+      "main": "apps/desktop/main.cjs"
+    }
+  }
 }

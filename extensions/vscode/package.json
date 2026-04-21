@@ -39,5 +39,15 @@
         "title": "Repo Quest Log: Refresh"
       }
     ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run build --prefix ../.. && node -e \"require('fs').cpSync('../../dist', './dist', {recursive: true})\""
+  },
+  "dependencies": {
+    "chokidar": "^3.6.0",
+    "gray-matter": "^4.0.3",
+    "remark": "^15.0.1",
+    "remark-parse": "^11.0.0",
+    "unified": "^11.0.4"
   }
 }

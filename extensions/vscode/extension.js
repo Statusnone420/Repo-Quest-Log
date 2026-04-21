@@ -3,7 +3,12 @@ const { pathToFileURL } = require("node:url");
 
 const vscode = require("vscode");
 
-const repoRoot = path.resolve(__dirname, "..", "..");
+const fs = require("node:fs");
+
+let repoRoot = __dirname;
+if (!fs.existsSync(path.join(repoRoot, "dist"))) {
+  repoRoot = path.resolve(__dirname, "..", "..");
+}
 
 function mergeChanges(next, previous) {
   const merged = new Map();
@@ -41,6 +46,28 @@ class RepoQuestViewProvider {
       view.webview.html = renderWorkspaceRequiredHtml();
       return;
     }
+
+    view.webview.onDidReceiveMessage(
+      async (message) => {
+        if (message.type === "openDoc") {
+          const docPath = path.join(this.rootDir, message.doc);
+          try {
+            const document = await vscode.workspace.openTextDocument(docPath);
+            const editor = await vscode.window.showTextDocument(document);
+            if (message.line) {
+              const line = Math.max(0, message.line - 1);
+              const position = new vscode.Position(line, 0);
+              editor.selection = new vscode.Selection(position, position);
+              editor.revealRange(new vscode.Range(position, position), vscode.TextEditorRevealType.InCenter);
+            }
+          } catch (e) {
+            vscode.window.showErrorMessage(`Could not open ${message.doc}: ${e.message}`);
+          }
+        }
+      },
+      undefined,
+      this.context.subscriptions
+    );
 
     await this.refresh();
     await this.ensureWatcher();

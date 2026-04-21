@@ -167,6 +167,12 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       text-transform: uppercase; color: var(--warn);
     }
     .anchor-top .idle { margin-left: auto; font-family: var(--mono); font-size: 10px; color: var(--dim); }
+    .copy-context-btn {
+      appearance: none; background: transparent; border: 1px solid rgba(233,185,115,0.28);
+      color: var(--warn); border-radius: 4px; padding: 4px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .copy-context-btn:hover { background: rgba(233,185,115,0.1); color: #fff; }
     .anchor-task { font-size: var(--anchor-size); line-height: 1.3; font-weight: 500; text-wrap: pretty; }
     .anchor-thought {
       font-family: var(--mono); font-size: var(--body-size); color: var(--muted);
@@ -338,6 +344,9 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
         <div class="anchor-top">
           <span class="label">Resume where you left off</span>
           <span class="idle">idle ${escapeHtml(state.resumeNote.since)}</span>
+          <button class="copy-context-btn" data-copy-context="${escapeHtml(buildContextPrompt(state))}" aria-label="Copy context for agent" title="Copy context for agent">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
+          </button>
         </div>
         <div class="anchor-task">${escapeHtml(state.resumeNote.task)}</div>
         <div class="anchor-thought">&ldquo;${escapeHtml(state.resumeNote.thought ?? "")}&rdquo;</div>
@@ -436,6 +445,8 @@ export function renderVSCodeHtml(state: QuestState, options: SurfaceHtmlOptions 
       padding: 2px 24px; display: flex; align-items: flex-start; gap: 6px;
       font-size: 13px; color: var(--ink); line-height: 1.5;
     }
+    .clickable-row { cursor: pointer; }
+    .clickable-row:hover { background: rgba(255,255,255,0.04); }
     .row-icon { width: 12px; color: var(--muted); font-size: 11px; flex-shrink: 0; padding-top: 3px; }
     .row-text { min-width: 0; flex: 1; white-space: pre-wrap; overflow-wrap: anywhere; text-wrap: pretty; }
     .row-sub {
@@ -468,7 +479,12 @@ export function renderVSCodeHtml(state: QuestState, options: SurfaceHtmlOptions 
     </div>
 
     <div class="resume">
-      <div class="resume-label">Resume</div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 4px;">
+        <div class="resume-label" style="margin-bottom:0;">Resume</div>
+        <button class="copy-context-btn" data-copy-context="${escapeHtml(buildContextPrompt(state))}" aria-label="Copy context for agent" title="Copy context for agent" style="background:transparent; border:none; color:var(--muted); cursor:pointer; padding:0; display:flex; align-items:center;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
+        </button>
+      </div>
       <div class="resume-task">${escapeHtml(state.resumeNote.task)}</div>
       <div class="resume-thought">&ldquo;${escapeHtml(state.resumeNote.thought ?? "")}&rdquo;</div>
     </div>
@@ -590,7 +606,8 @@ function renderVSCodeSection(title: string, count: number, accent: string | unde
 
 function renderVSCodeTaskRow(task: Task, icon: string, color = "#858585"): string {
   const agent = task.agent ? `[${task.agent[0]?.toUpperCase() ?? "·"}]` : "";
-  return `<div class="row">
+  const clickAttr = task.doc ? ` data-open-doc="${escapeHtml(task.doc)}" data-line="${task.line || 1}" class="row clickable-row"` : ` class="row"`;
+  return `<div${clickAttr}>
     <span class="row-icon" style="color:${color}">${escapeHtml(icon)}</span>
     <span class="row-text">${escapeHtml(task.text)}</span>
     <span class="row-sub">${escapeHtml(agent)}</span>
@@ -638,6 +655,22 @@ function renderLiveBridge(mode: SurfaceHtmlOptions["liveBridge"]): string {
     `
     : "";
 
+  const vscodeHook = mode === "vscode"
+    ? `
+      var vscode = acquireVsCodeApi();
+      document.addEventListener("click", function(event) {
+        var target = event.target;
+        if (!target || !target.closest) return;
+        var row = target.closest("[data-open-doc]");
+        if (row) {
+          var doc = row.getAttribute("data-open-doc");
+          var line = parseInt(row.getAttribute("data-line") || "1", 10);
+          vscode.postMessage({ type: "openDoc", doc: doc, line: line });
+        }
+      });
+    `
+    : "";
+
   return `<script>
     (function () {
       function replaceHtml(html) {
@@ -650,6 +683,7 @@ function renderLiveBridge(mode: SurfaceHtmlOptions["liveBridge"]): string {
       }
 
       ${desktopHook}
+      ${vscodeHook}
 
       window.addEventListener("message", function (event) {
         var data = event && event.data;
@@ -726,6 +760,18 @@ function renderSettingsScript(): string {
         if (button.hasAttribute("data-ui-density")) {
           update({ density: button.getAttribute("data-ui-density") || "spacious" });
         }
+        
+        var copyBtn = target.closest("[data-copy-context]");
+        if (copyBtn) {
+          var text = copyBtn.getAttribute("data-copy-context");
+          if (text) {
+             navigator.clipboard.writeText(text).then(function() {
+               var originalHtml = copyBtn.innerHTML;
+               copyBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--ok, #4ec9b0)" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+               setTimeout(function() { copyBtn.innerHTML = originalHtml; }, 2000);
+             });
+          }
+        }
       });
 
       document.addEventListener("keydown", function (event) {
@@ -765,4 +811,8 @@ function escapeHtml(value: string): string {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
+}
+
+function buildContextPrompt(state: QuestState): string {
+  return `I am resuming work. The active quest is "${state.activeQuest.title}". My current task is "${state.resumeNote.task}" in ${state.resumeNote.doc}. The last touched file was ${state.resumeNote.lastTouched}. Please read the last touched file and let's begin.`;
 }

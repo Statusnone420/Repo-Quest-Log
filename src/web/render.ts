@@ -206,26 +206,20 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     .icon-btn:hover { color: var(--accent); border-color: rgba(138,180,255,0.42); }
     .icon-btn.warn:hover { color: var(--warn); border-color: rgba(233,185,115,0.4); }
 
-    /* Resume tile collapses to a single 28px strip when activity is fresh (<2min idle).
-       Grid area keeps min-height so neighbors don't reflow. */
     .strip-cell.resume { min-height: 116px; }
     .strip-cell.resume.fresh {
-      min-height: 28px;
-      padding: 0 12px;
-      flex-direction: row; align-items: center; gap: 10px;
+      min-height: 116px;
+      padding-top: calc(var(--tile-pad) + 8px);
       background: rgba(233,185,115,0.03);
       border-color: rgba(233,185,115,0.18);
     }
-    .strip-cell.resume.fresh .strip-headline,
-    .strip-cell.resume.fresh .strip-subline,
-    .strip-cell.resume.fresh .strip-actions { display: none; }
-    .strip-cell.resume.fresh .kicker {
-      color: var(--muted); opacity: 0.72;
-      font-size: var(--tiny-size); letter-spacing: 1px;
-      display: inline-flex; gap: 6px; align-items: center;
+    .resume-freshline {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-family: var(--mono); font-size: var(--tiny-size);
+      color: var(--muted); letter-spacing: 0.8px; text-transform: uppercase;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
-    .strip-cell.resume.fresh .kicker .pulse {
+    .resume-freshline .pulse {
       width: 6px; height: 6px; border-radius: 999px; background: var(--ok);
       display: inline-block;
     }
@@ -299,7 +293,7 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     .tile-title.changes .accent-bar { background: var(--dim); }
     .tile-meta { font-family: var(--mono); font-size: var(--tiny-size); color: var(--dim); }
     .tile-body {
-      display: flex; flex-direction: column; gap: var(--row-gap);
+      display: flex; flex-direction: column; gap: calc(var(--row-gap) + 2px);
       min-height: 0; min-width: 0;
       overflow-y: auto; overflow-x: hidden;
       scrollbar-gutter: stable;
@@ -312,8 +306,8 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     .item {
       display: grid;
       grid-template-columns: 3px 14px 20px minmax(0, 1fr) auto;
-      gap: 8px; align-items: center;
-      padding: 4px 0 4px 6px;
+      gap: 8px; align-items: start;
+      padding: 6px 0 6px 6px;
       border-radius: 4px;
       min-width: 0;
       cursor: default;
@@ -353,13 +347,15 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     .sigil .off { color: var(--dim); opacity: 0.4; }
     .item-text {
       min-width: 0;
-      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-      font-size: var(--body-size);
+      overflow: hidden; text-overflow: ellipsis;
+      font-size: var(--body-size); line-height: 1.35;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
     }
     .item-text.wrap { white-space: normal; overflow: visible; text-overflow: clip; }
     .item-aside {
-      display: inline-flex; align-items: center; gap: 6px;
+      display: inline-flex; align-items: flex-start; gap: 6px;
       font-family: var(--mono); font-size: var(--tiny-size); color: var(--dim);
+      padding-top: 1px;
     }
     .chip {
       display: inline-flex; align-items: center; justify-content: center;
@@ -375,14 +371,15 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     .blocked-reason {
       padding-left: 32px; font-family: var(--mono); font-size: var(--tiny-size); color: var(--muted);
       margin-top: -2px; margin-bottom: 4px;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      overflow: hidden; text-overflow: ellipsis;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
     }
 
     /* ---- AGENT CARDS ---- */
     .agent-card {
-      padding: 8px; background: rgba(255,255,255,0.02);
+      padding: 10px; background: rgba(255,255,255,0.02);
       border: 1px solid var(--faint); border-radius: 6px;
-      display: flex; flex-direction: column; gap: 4px;
+      display: flex; flex-direction: column; gap: 6px;
       min-width: 0;
     }
     .agent-head { display: flex; align-items: center; gap: 8px; min-width: 0; }
@@ -420,7 +417,7 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     .agent-objective {
       font-size: var(--small-size); line-height: 1.35; color: var(--muted);
       overflow: hidden; text-overflow: ellipsis;
-      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+      display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
     }
     .agent-meta {
       font-family: var(--mono); font-size: var(--tiny-size); color: var(--dim);
@@ -435,7 +432,8 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     }
     .change-file {
       font-family: var(--mono);
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      overflow: hidden; text-overflow: ellipsis; line-height: 1.3;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
     }
     .change-diff {
       display: inline-flex; align-items: center; gap: 6px;
@@ -650,7 +648,7 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
         <div class="strip-subline">${escapeHtml(state.activeQuest.doc)}${state.activeQuest.line ? `:${state.activeQuest.line}` : ""}</div>
       </div>
       <div class="strip-cell resume${isResumeFresh(state.resumeNote.since) ? " fresh" : ""}">
-        ${isResumeFresh(state.resumeNote.since) ? `<div class="kicker"><span class="pulse"></span>fresh · last touch ${escapeHtml(state.resumeNote.lastTouched)} · ${escapeHtml(state.resumeNote.since)}</div>` : ""}
+        ${isResumeFresh(state.resumeNote.since) ? `<div class="resume-freshline"><span class="pulse"></span>fresh · last touch ${escapeHtml(state.resumeNote.lastTouched)} · ${escapeHtml(state.resumeNote.since)}</div>` : ""}
         <div class="strip-actions">
           <button type="button" class="icon-btn warn" data-copy-context="${escapeHtml(buildContextPrompt(state))}" title="Copy resume context to clipboard">
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>

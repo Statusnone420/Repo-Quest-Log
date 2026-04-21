@@ -18,7 +18,7 @@ v0.1 close-out: fit-to-window desktop layout, TUI visual parity with the desktop
 - Updated tests for the new layout expectations; all 11 tests pass, `tsc` clean
 
 ## Resume Note
-> Desktop shell now fits any window without outer scroll, reads as a cockpit (not a doc), and Ctrl+K copies a ready-to-paste resume prompt for Claude/Codex/Gemini. Next: TUI visual parity with the new desktop HUD (same cockpit bar, same priority-bar task rows, same three-column cadence) so the three surfaces match.
+> In-flight: HUD v2 polish batch (6 items). Item #1 landed — resume-note strip collapses to a 28px "fresh" strip when idle <2min, preserving tile height so other tiles don't reflow.
 
 Last touched: `src/web/render.ts`
 

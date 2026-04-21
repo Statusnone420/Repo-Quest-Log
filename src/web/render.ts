@@ -185,6 +185,30 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     .icon-btn:hover { color: var(--accent); border-color: rgba(138,180,255,0.42); }
     .icon-btn.warn:hover { color: var(--warn); border-color: rgba(233,185,115,0.4); }
 
+    /* Resume tile collapses to a single 28px strip when activity is fresh (<2min idle).
+       Grid area keeps min-height so neighbors don't reflow. */
+    .strip-cell.resume { min-height: 92px; }
+    .strip-cell.resume.fresh {
+      min-height: 28px;
+      padding: 0 12px;
+      flex-direction: row; align-items: center; gap: 10px;
+      background: rgba(233,185,115,0.03);
+      border-color: rgba(233,185,115,0.18);
+    }
+    .strip-cell.resume.fresh .strip-headline,
+    .strip-cell.resume.fresh .strip-subline,
+    .strip-cell.resume.fresh .strip-actions { display: none; }
+    .strip-cell.resume.fresh .kicker {
+      color: var(--muted); opacity: 0.72;
+      font-size: var(--tiny-size); letter-spacing: 1px;
+      display: inline-flex; gap: 6px; align-items: center;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .strip-cell.resume.fresh .kicker .pulse {
+      width: 6px; height: 6px; border-radius: 999px; background: var(--ok);
+      display: inline-block;
+    }
+
     /* ---- COCKPIT STAT BAR ---- */
     .cockpit {
       display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
@@ -496,7 +520,8 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
         <div class="strip-headline">${escapeHtml(state.activeQuest.title)}</div>
         <div class="strip-subline">${escapeHtml(state.activeQuest.doc)}${state.activeQuest.line ? `:${state.activeQuest.line}` : ""}</div>
       </div>
-      <div class="strip-cell resume">
+      <div class="strip-cell resume${isResumeFresh(state.resumeNote.since) ? " fresh" : ""}">
+        ${isResumeFresh(state.resumeNote.since) ? `<div class="kicker"><span class="pulse"></span>fresh · last touch ${escapeHtml(state.resumeNote.lastTouched)} · ${escapeHtml(state.resumeNote.since)}</div>` : ""}
         <div class="strip-actions">
           <button type="button" class="icon-btn warn" data-copy-context="${escapeHtml(buildContextPrompt(state))}" title="Copy resume context to clipboard">
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
@@ -1182,6 +1207,19 @@ function escapeHtml(value: string): string {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
+}
+
+function isResumeFresh(since: string): boolean {
+  if (!since) return false;
+  const s = since.trim().toLowerCase();
+  if (s === "just now" || s === "now") return true;
+  const m = /^(\d+)\s*(s|sec|second|seconds|m|min|minute|minutes|h|hr|hour|hours|d|day|days)/i.exec(s);
+  if (!m) return false;
+  const n = Number(m[1] ?? "0");
+  const unit = (m[2] ?? "").toLowerCase();
+  if (unit.startsWith("s")) return true;
+  if (unit.startsWith("m") && !unit.startsWith("h")) return n < 2;
+  return false;
 }
 
 function escapeForScriptJson(value: string): string {

@@ -1,8 +1,11 @@
-# QuestState Schema v1
+# QuestState Schema
 
-The single JSON shape that every surface (CLI, TUI, desktop, VS Code panel) consumes. If your PR changes this shape, bump the version and update `docs/design/data.jsx` to match.
+The single JSON shape every surface (CLI, TUI, desktop, VS Code panel) consumes. If your PR changes this shape, bump the version and update `docs/design/data.jsx` to match.
 
-## TypeScript (canonical)
+- **v1** — shipped in v0.1. Current on-disk contract.
+- **v2** — drafted for v0.2. Renames `activeQuest` → `objective`, adds `gitContext`, `agentActivity`, and `config`. Ships with a compat shim that still emits v1 fields for one version.
+
+## v1 — canonical (current)
 
 ```ts
 export type AgentId = string; // "claude" | "codex" | "gemini" | custom
@@ -10,22 +13,22 @@ export type AgentId = string; // "claude" | "codex" | "gemini" | custom
 export interface Task {
   id: string;             // stable within a scan, e.g. "plan.md#now-1"
   text: string;
-  agent?: AgentId;        // inferred from context, or explicit in frontmatter
+  agent?: AgentId;
   doc: string;            // source file, e.g. "PLAN.md"
   line?: number;          // source line number for click-to-open
   est?: "S" | "M" | "L" | "XL";
-  confidence: number;     // 0..1 — how sure the extractor is
+  confidence: number;     // 0..1
 }
 
 export interface BlockedTask extends Task {
   reason: string;
-  since: string;          // human-readable: "2d", "17m", "just now"
+  since: string;
 }
 
 export interface AgentProfile {
   id: AgentId;
   name: string;
-  file: string;           // "CLAUDE.md" | "AGENTS.md" | "GEMINI.md" | custom
+  file: string;
   role: string;
   area: string;
   objective: string;
@@ -35,27 +38,27 @@ export interface AgentProfile {
 }
 
 export interface ResumeNote {
-  task: string;           // the one task
-  doc: string;             // source doc
-  since: string;           // idle time
-  lastTouched: string;     // file path the watcher last saw change
-  thought?: string;        // extracted from nearest prose paragraph
+  task: string;
+  doc: string;
+  since: string;
+  lastTouched: string;
+  thought?: string;
 }
 
 export interface FileChange {
   file: string;
-  at: string;              // relative: "2m", "1h"
+  at: string;
   diff?: string;           // "+3 -1" if git available
 }
 
 export interface QuestState {
   schemaVersion: 1;
-  name: string;            // repo name
-  branch: string;          // current git branch
-  lastScan: string;        // ISO or "just now"
+  name: string;
+  branch: string;
+  lastScan: string;
   scannedFiles: string[];
 
-  mission: string;         // one sentence
+  mission: string;
   activeQuest: {
     title: string;
     doc: string;
@@ -64,11 +67,71 @@ export interface QuestState {
   };
 
   resumeNote: ResumeNote;
-  now: Task[];             // max 3 after ranking
-  next: Task[];            // max 5 after ranking
+  now: Task[];
+  next: Task[];
   blocked: BlockedTask[];
   agents: AgentProfile[];
   recentChanges: FileChange[];
+}
+```
+
+## v2 — draft (v0.2)
+
+Additive + one rename. Emit both `activeQuest` and `objective` for one release so consumers can migrate; drop `activeQuest` in v0.3.
+
+```ts
+export interface GitContext {
+  branch: string;
+  ahead: number;
+  behind: number;
+  dirtyFiles: number;
+  lastCommit?: {
+    subject: string;
+    sha: string;           // short
+    at: string;            // relative
+  };
+}
+
+export interface AgentActivity {
+  agent: AgentId;
+  file: string;
+  at: string;              // relative, e.g. "12m"
+  confidence: number;      // mtime × owned-areas match strength, 0..1
+}
+
+export interface RepoConfig {
+  writeback: boolean;      // default false; loaded from .repolog.json
+  prompts?: {
+    dir: string;           // default "~/.repolog/prompts"
+  };
+}
+
+export interface QuestState {
+  schemaVersion: 2;
+  name: string;
+  branch: string;          // kept for back-compat; mirrors gitContext.branch
+  lastScan: string;
+  scannedFiles: string[];
+
+  mission: string;
+  objective: {             // renamed from activeQuest
+    title: string;
+    doc: string;
+    line?: number;
+    progress: { done: number; total: number };
+  };
+  activeQuest?: QuestState["objective"]; // compat shim, v2-only, dropped in v3
+
+  resumeNote: ResumeNote;
+  now: Task[];
+  next: Task[];
+  blocked: BlockedTask[];
+  agents: AgentProfile[];
+  recentChanges: FileChange[];
+
+  gitContext?: GitContext;
+  agentActivity?: AgentActivity[];
+  config: RepoConfig;
 }
 ```
 
@@ -76,19 +139,41 @@ export interface QuestState {
 
 | Field | Source |
 |---|---|
-| `mission` | First sentence under `## Mission` or the first non-heading sentence in `PLAN.md` / `README.md` |
-| `activeQuest.title` | First non-empty line under `## Active Quest` in `PLAN.md` |
-| `activeQuest.progress` | Count `- [x]` vs `- [ ]` under the Active Quest section |
+| `mission` | First sentence under `## Mission` or first non-heading sentence in `PLAN.md` / `README.md` |
+| `objective.title` (v2) / `activeQuest.title` (v1) | First non-empty line under `## Objective` or `## Active Quest` in `PLAN.md` |
+| `objective.progress` | Count `- [x]` vs `- [ ]` under the Objective section |
 | `now` | Unchecked items under headings matching `/current\|now\|in progress\|active/i` |
 | `next` | Unchecked items under headings matching `/next\|upcoming\|queue/i` |
-| `blocked` | Unchecked items under `/blocked\|waiting/i` headings, reason = nearest italics or paragraph |
+| `blocked` | Unchecked items under `/blocked\|waiting/i`, reason = nearest italics or paragraph |
 | `agents[]` | One entry per `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, parsed section by section |
 | `resumeNote` | Top item in `now`, cross-referenced with most-recent-touched file from watcher |
 | `recentChanges` | File watcher events, deduped and sorted desc |
+| `gitContext` (v2) | `git rev-parse` / `git status --porcelain` / `git log -1 --pretty` — all skipped silently if not a repo |
+| `agentActivity` (v2) | For each changed file in the last N days, score it against each agent's `area` globs in AGENTS.md / CLAUDE.md / GEMINI.md; keep top-match with confidence |
+| `config` (v2) | `.repolog.json` at repo root; missing file = all defaults |
 
-## Structured mode (opt-in)
+## `.repolog.json` (v2)
 
-Repos that want precise control can use frontmatter on agent files:
+```json
+{
+  "writeback": false,
+  "prompts": { "dir": "~/.repolog/prompts" }
+}
+```
+
+- Missing file → all defaults.
+- `writeback: true` enables **checkbox toggles only** (see below). Nothing else is ever written.
+- Invalid JSON → log a warning and fall back to defaults; never crash the scan.
+
+## Write-back rules (v2, opt-in)
+
+- Off by default. Only active when `.repolog.json` has `"writeback": true`.
+- Scope: toggling a rendered checkbox for a `Task` in Now / Next / Blocked rewrites `- [ ]` → `- [x]` (or reverse) at exactly `task.doc` + `task.line`.
+- The matched source line must still start with `- [ ]` / `- [x]` and the task text must still match after trimming; otherwise the write is skipped and the UI shows a warning.
+- Never edits any other content. No adds, deletes, reorders, heading edits, or free-text changes.
+- When on, every surface shows a persistent "write-back ON" banner.
+
+## Structured mode (opt-in, unchanged)
 
 ```markdown
 ---
@@ -110,6 +195,7 @@ When frontmatter is present, it wins over heuristics.
 
 ## Versioning
 
-- Breaking changes → bump `schemaVersion`
-- Additive fields → keep the version, document in this file
-- Design mockup in `docs/design/data.jsx` must stay in sync with the latest schema — CI should fail if it drifts
+- Breaking changes → bump `schemaVersion`.
+- Additive fields → keep the version, document here.
+- `docs/design/data.jsx` must stay in sync with the latest schema — CI should fail if it drifts.
+- v2 ships with both `objective` and `activeQuest` populated for one release; v3 drops `activeQuest`.

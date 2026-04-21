@@ -60,10 +60,11 @@ async function importModule(relativePath) {
 function createWindow() {
   const workArea = screen.getPrimaryDisplay().workAreaSize;
   win = new BrowserWindow({
-    width: Math.max(1280, Math.min(workArea.width, Math.round(workArea.width * 0.96))),
-    height: Math.max(820, Math.min(workArea.height, Math.round(workArea.height * 0.94))),
-    minWidth: 1200,
-    minHeight: 800,
+    width: workArea.width,
+    height: workArea.height,
+    minWidth: 700,
+    minHeight: 560,
+    useContentSize: true,
     backgroundColor: "#0b0d10",
     title: "Repo Quest Log",
     autoHideMenuBar: true,

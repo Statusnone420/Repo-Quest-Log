@@ -335,7 +335,7 @@
       <div class="watch-meta">
         <span class="dot"></span>
         <span>watching 7 files</span>
-        <span style="color: var(--dim)">· scanned 2026-04-21T19:02:52.643Z</span>
+        <span style="color: var(--dim)">· scanned 2026-04-21T19:43:28.689Z</span>
       </div>
       <div class="surface-controls" aria-label="Display controls">
         <span class="label">Scale</span>
@@ -351,25 +351,25 @@
       <section class="mission-banner">
         <div>
           <div class="kicker">Mission</div>
-          <div class="mission-text">A local-first CLI + TUI that makes repo intent legible at a glance for developers working with coding agents.</div>
+          <div class="mission-text">A local-first CLI + TUI + desktop + VS Code shell that makes repo intent legible at a glance and hands that intent to whichever coding agent you open next.</div>
         </div>
         <div class="quest-meta">
           <div class="kicker">Active Quest</div>
-          <div class="title">Ship the first usable multi-surface Repo Quest Log shells</div>
-          <div class="detail">0/0 complete · PLAN.md:6</div>
+          <div class="title">All surfaces stay pinned to one shared QuestState pipeline and one renderer. v0.1 polish first; v0.2 features only after the v0.1 punch list is green.</div>
+          <div class="detail">0/0 complete · PLAN.md:9</div>
         </div>
       </section>
 
       <section class="anchor">
         <div class="anchor-top">
           <span class="label">Resume where you left off</span>
-          <span class="idle">idle 9m</span>
-          <button type="button" class="copy-context-btn" data-copy-context="I am resuming work. The active quest is &quot;Ship the first usable multi-surface Repo Quest Log shells&quot;. My current task is &quot;Harden the TUI wrapping / spacing so no panel content gets visually mangled on real repos&quot; in PLAN.md. The last touched file was STATE.md. Please read STATE.md and let&#39;s begin." aria-label="Copy context for agent" title="Copy context for agent">
+          <span class="idle">idle 2m</span>
+          <button type="button" class="copy-context-btn" data-copy-context="I am resuming work. The active quest is &quot;All surfaces stay pinned to one shared QuestState pipeline and one renderer. v0.1 polish first; v0.2 features only after the v0.1 punch list is green.&quot;. My current task is &quot;TUI visual parity with the desktop HUD — same regions, same order, mirrored palette, matching density modes (agent: codex, touches: src/tui/)&quot; in PLAN.md. The last touched file was STATE.md. Please read STATE.md and let&#39;s begin." aria-label="Copy context for agent" title="Copy context for agent">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
           </button>
         </div>
-        <div class="anchor-task">Harden the TUI wrapping / spacing so no panel content gets visually mangled on real repos</div>
-        <div class="anchor-thought">&ldquo;Harden the TUI wrapping / spacing so no panel content gets visually mangled on real repos&rdquo;</div>
+        <div class="anchor-task">TUI visual parity with the desktop HUD — same regions, same order, mirrored palette, matching density modes (agent: codex, touches: src/tui/)</div>
+        <div class="anchor-thought">&ldquo;Fit-to-window desktop: responsive density + inner-panel scroll fallback so the shell never shows an outer scrollbar on 1080p+ (agent: codex, touches: src/web/render.ts, apps/desktop/)&rdquo;</div>
         <div class="anchor-meta">
           <span>↳ STATE.md</span>
           <span>· PLAN.md</span>
@@ -386,21 +386,21 @@
         <div class="task-row ">
           <span class="task-index">01</span>
           <span class="agent-badge badge-codex">X</span>
-          <span class="task-text">Harden the TUI wrapping / spacing so no panel content gets visually mangled on real repos</span>
+          <span class="task-text">TUI visual parity with the desktop HUD — same regions, same order, mirrored palette, matching density modes (agent: codex, touches: src/tui/)</span>
           <span class="task-doc">PLAN.md</span>
         </div>
       
         <div class="task-row ">
           <span class="task-index">02</span>
           <span class="agent-badge badge-codex">X</span>
-          <span class="task-text">Turn the Windows desktop shell into a packaged app path on top of the shared HUD renderer</span>
+          <span class="task-text">Rename &quot;Active Quest&quot; → &quot;Objective&quot; in all UI copy across desktop, TUI, VS Code (schema key stays activeQuest until v0.2 schema v2) (agent: codex, touches: src/web/render.ts, src/tui/, extensions/vscode/)</span>
           <span class="task-doc">PLAN.md</span>
         </div>
       
         <div class="task-row ">
           <span class="task-index">03</span>
           <span class="agent-badge badge-codex">X</span>
-          <span class="task-text">Finish the VS Code side-panel shell so it live-refreshes from the active workspace</span>
+          <span class="task-text">Fixture coverage for noisy / imperfect repo docs under tests/fixtures/ (agent: codex, touches: tests/)</span>
           <span class="task-doc">PLAN.md</span>
         </div>
       
@@ -416,35 +416,35 @@
         <div class="task-row ">
           <span class="task-index">01</span>
           <span class="agent-badge badge-codex">X</span>
-          <span class="task-text">Add a packaging path for Windows desktop builds</span>
+          <span class="task-text">Resume-prompt palette (⌘K / Ctrl+K) with presets: resume-for-claude, resume-for-codex, resume-for-gemini, standup, blocker-summary, repo-intent-briefing; templates live in ~/.repolog/prompts/</span>
           <span class="task-doc"></span>
         </div>
       
         <div class="task-row ">
           <span class="task-index">02</span>
           <span class="agent-badge badge-codex">X</span>
-          <span class="task-text">Decide whether macOS ships as SwiftUI + WKWebView host or a native Swift redraw of the same layout</span>
+          <span class="task-text">Live git panel — branch, ahead/behind, dirty count, last commit subject + relative time</span>
           <span class="task-doc"></span>
         </div>
       
         <div class="task-row ">
           <span class="task-index">03</span>
           <span class="agent-badge badge-codex">X</span>
-          <span class="task-text">Add click-to-open doc links in desktop and VS Code shells</span>
+          <span class="task-text">Agent activity feed — infer agent × file from mtimes × owned-areas in AGENTS.md / CLAUDE.md / GEMINI.md</span>
           <span class="task-doc"></span>
         </div>
       
         <div class="task-row ">
           <span class="task-index">04</span>
           <span class="agent-badge badge-codex">X</span>
-          <span class="task-text">Add fixture coverage for noisy / imperfect repo docs</span>
+          <span class="task-text">Standup export — one-keypress markdown of today&#39;s done + currently-active to clipboard</span>
           <span class="task-doc"></span>
         </div>
       
         <div class="task-row ">
           <span class="task-index">05</span>
           <span class="agent-badge badge-codex">X</span>
-          <span class="task-text">Tighten recent-changes diff metadata when git context is available</span>
+          <span class="task-text">Opt-in write-back for checkbox toggles only, gated by .repolog.json → &quot;writeback&quot;: true, with persistent on-screen banner</span>
           <span class="task-doc"></span>
         </div>
       
@@ -462,7 +462,7 @@
             <span class="index">01</span>
             <span class="text">Publish npm package @repo-quest/core</span>
           </div>
-          <div class="blocked-reason">↳ need npm org + CI secrets · 1h</div>
+          <div class="blocked-reason">↳ need npm org + CI secrets · 2m</div>
         </div>
       
     </div>
@@ -477,49 +477,67 @@
         <div class="change-row">
           <span class="change-file">STATE.md</span>
           <span class="change-diff">
-    <span class="change-diff-value">+6 -3</span>
+    <span class="change-diff-value">+19 -18</span>
     <span class="change-spark" aria-hidden="true">
       <span class="spark-add" style="height:10px;width:18px"></span>
-      <span class="spark-del" style="height:5px;width:9px"></span>
+      <span class="spark-del" style="height:9px;width:17px"></span>
     </span>
   </span>
-          <span class="change-age">9m</span>
+          <span class="change-age">2m</span>
+        </div>
+      
+        <div class="change-row">
+          <span class="change-file">PLAN.md</span>
+          <span class="change-diff">
+    <span class="change-diff-value">+44 -42</span>
+    <span class="change-spark" aria-hidden="true">
+      <span class="spark-add" style="height:10px;width:18px"></span>
+      <span class="spark-del" style="height:10px;width:17px"></span>
+    </span>
+  </span>
+          <span class="change-age">2m</span>
+        </div>
+      
+        <div class="change-row">
+          <span class="change-file">CLAUDE.md</span>
+          <span class="change-diff">
+    <span class="change-diff-value">+7 -1</span>
+    <span class="change-spark" aria-hidden="true">
+      <span class="spark-add" style="height:10px;width:18px"></span>
+      <span class="spark-del" style="height:3px;width:3px"></span>
+    </span>
+  </span>
+          <span class="change-age">11m</span>
         </div>
       
         <div class="change-row">
           <span class="change-file">implementation_plan.md</span>
-          <span class="change-diff"></span>
-          <span class="change-age">23m</span>
+          <span class="change-diff">
+    <span class="change-diff-value">+7 -7</span>
+    <span class="change-spark" aria-hidden="true">
+      <span class="spark-add" style="height:10px;width:18px"></span>
+      <span class="spark-del" style="height:10px;width:18px"></span>
+    </span>
+  </span>
+          <span class="change-age">33m</span>
         </div>
       
         <div class="change-row">
           <span class="change-file">README.md</span>
           <span class="change-diff"></span>
-          <span class="change-age">1h</span>
+          <span class="change-age">2h</span>
         </div>
       
         <div class="change-row">
           <span class="change-file">AGENTS.md</span>
           <span class="change-diff"></span>
-          <span class="change-age">1h</span>
-        </div>
-      
-        <div class="change-row">
-          <span class="change-file">CLAUDE.md</span>
-          <span class="change-diff"></span>
-          <span class="change-age">1h</span>
-        </div>
-      
-        <div class="change-row">
-          <span class="change-file">PLAN.md</span>
-          <span class="change-diff"></span>
-          <span class="change-age">1h</span>
+          <span class="change-age">2h</span>
         </div>
       
         <div class="change-row">
           <span class="change-file">GEMINI.md</span>
           <span class="change-diff"></span>
-          <span class="change-age">3h</span>
+          <span class="change-age">4h</span>
         </div>
       
     </div>
@@ -552,7 +570,7 @@
             <span class="agent-role">· Planner / doc-first. You draft specs, PRDs, schemas, and plans. You do not write implementation code without an approved plan.</span>
             <span class="agent-status active"><span class="dot"></span>active</span>
           </div>
-          <div class="agent-objective">Keep PRD.md, PLAN.md, and STATE.md aligned while companion shells land on top of the locked QuestState contract.</div>
+          <div class="agent-objective">Close v0.1 (fit-to-window desktop, TUI visual parity, &quot;Active Quest&quot; → &quot;Objective&quot; rename, noisy-repo fixtures, click-to-open parity) and then scope v0.2 around the agent-integration wedge: resume-prompt palette, live git panel, agent activity feed, standup export, opt-in write-back.</div>
           <div class="agent-meta">
             <span>↳ CLAUDE.md</span>
             <span>· area: PRD.md, PLAN.md, STATE.md · docs/** (except docs/design/** — that&#39;s human-owned) · Schema design in docs/SCHEMA.md · PR descriptions and review comments</span>

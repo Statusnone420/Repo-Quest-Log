@@ -24,7 +24,10 @@ Instructions for Claude (Claude Code) working in this repo.
 - Touch `docs/design/**` — that's the human's and describes the UI spec
 
 ## Current Objective
-Keep `PRD.md`, `PLAN.md`, and `STATE.md` aligned while companion shells land on top of the locked `QuestState` contract.
+Close v0.1 (fit-to-window desktop, TUI visual parity, "Active Quest" → "Objective" rename, noisy-repo fixtures, click-to-open parity) and then scope v0.2 around the agent-integration wedge: resume-prompt palette, live git panel, agent activity feed, standup export, opt-in write-back.
+
+## UI copy rule
+The product is "Repo Quest Log". Panel labels are literal — Objective, Now, Next, Blocked, Agents, Recent changes. Do not introduce quest / mission / XP / progression language in UI copy. The RPG metaphor is a brand hook only.
 
 ## Handoff Protocol
 When you finish a plan, add a task to `PLAN.md` under "Now" in the form:
@@ -32,3 +35,6 @@ When you finish a plan, add a task to `PLAN.md` under "Now" in the form:
 - [ ] <concise task> (agent: codex, touches: src/engine/<file>.ts)
 ```
 Then stop. The human will prompt Codex to pick it up.
+
+## Current Handoff
+First v0.1 close-out task for Codex: **fit-to-window desktop layout** — responsive density in `src/web/render.ts` that auto-tightens type / padding to fit the viewport, breaks to 2-col ≥1100px and 3-col ≥1600px, and falls back to inner-panel scrolling (never outer) below ~600px tall. The shell must never show an outer scrollbar on 1080p+. After that lands: TUI visual parity with the desktop HUD, then the "Active Quest" → "Objective" copy rename (schema key stays `activeQuest` until v0.2 schema v2).

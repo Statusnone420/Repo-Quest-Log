@@ -1,32 +1,33 @@
 # STATE.md
 
-Live "where we are." Update this as work progresses. The normalizer reads this to build the Session Anchor.
+Live "where we are." Update this as work progresses. The normalizer reads this to build the Resume Note.
 
 ## Current Focus
-Core engine is landed. Active work is hardening the live shells, making the TUI resize correctly, and keeping the packaged desktop shell pointed at the real repo instead of the release folder.
+v0.1 close-out: fit-to-window desktop layout, TUI visual parity with the desktop HUD, and renaming "Active Quest" → "Objective" in UI copy. v0.2 wedge (resume-prompt palette, git panel, agent activity feed, standup export, opt-in write-back) begins only after the v0.1 punch list is green.
 
 ## Last Session
-- Landed the shared web HUD renderer in `src/web/render.ts`
-- Added a real Windows desktop host at `apps/desktop/` using Electron + the shared renderer
-- Added a real VS Code side-panel shell at `extensions/vscode/`
-- Fixed TUI continuation wrapping so long task lines stop duplicating their numeric prefixes
-- Kept desktop snapshot generation (`repolog desktop`) on the same renderer the desktop app and VS Code panel consume
-- Made the TUI width/height-aware instead of hard-coding a 110-char frame
-- Added desktop display controls for zoom and density so the HUD is readable from farther away
-- Made the desktop window launch maximized against the current work area instead of a fixed preview size
-- Wired the density buttons to real CSS spacing/type-scale changes instead of dead controls
-- Added click-to-open and copy-context affordances in the shared renderer
-- Added git diff stats to recent changes when the repo is tracked
-- Made the packaged desktop host resolve the repo root from the launcher, cwd, or exe path instead of defaulting to the release folder
+- Planner pass with Claude Design took the app from "good" to "close to great"
+- Confirmed the packaged Windows exe in `release-fresh/` is the canonical build
+- Agreed to drop the RPG metaphor from UI copy (panels become Objective / Now / Next / Blocked / Agents / Recent changes); product name stays
+- Ranked v0.2 features around the agent-integration wedge: resume-prompt palette is the killer; git panel, agent activity feed, standup export, and opt-in write-back round it out
+- Ruled out timers / pomodoros / gamification permanently
+- Opted in to scoped write-back (checkbox toggles only, gated by `.repolog.json`) starting v0.2
+- Rewrote `PRD.md`, `PLAN.md`, `docs/SCHEMA.md` (v2 draft), and this file to reflect the new plan
+- Queued the first Codex handoff: fit-to-window responsive desktop in `src/web/render.ts` + `apps/desktop/`
+- Codex landed the fit-to-window desktop shell pass with viewport-aware density, inner-panel scroll fallback, and tighter Electron window bounds
 
 ## Resume Note
-> Was about to finish packaging the desktop host and confirm the VS Code click/open path, then decide whether the next phase should focus on broader packaging or more shell polish.
+> About to hand off the fit-to-window desktop layout to Codex (responsive density + inner-panel scroll fallback so the shell never shows an outer scrollbar). After that lands, TUI visual parity and the "Active Quest" → "Objective" copy rename are the next two Now items.
 
-Last touched: `src/web/render.ts`
+Last touched: `PLAN.md`
 
 ## Recent Decisions
 - TypeScript over Rust for v0.1 (faster iteration, Ink for TUI)
 - chokidar over fs.watch (cross-platform reliability)
-- Heuristic extraction only in v0.1; structured frontmatter mode is an opt-in convention, not a requirement
+- Heuristic extraction only in v0.1; structured frontmatter mode is opt-in
 - Desktop and VS Code shells consume one shared HTML renderer so layout decisions stay synchronized
-- Windows desktop host is Electron for speed now; macOS can later reuse the same renderer inside a Swift host
+- Windows desktop host is Electron for now; macOS deferred to v0.3+
+- Drop the RPG metaphor from UI copy; keep the brand
+- Resume-prompt palette is the v0.2 wedge — everything else in v0.2 serves it or is cut
+- Opt-in write-back allowed from v0.2, scoped strictly to checkbox toggles, off by default, with a persistent on-screen banner when on
+- Timers, pomodoros, streaks, and any gamification are permanently out of scope

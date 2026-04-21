@@ -15,17 +15,20 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     :root {
       --bg: #0b0d10;
       --bg-grid: rgba(120,140,180,0.035);
-      --ui-scale: 1.12;
-      --surface-pad: 24px;
-      --topbar-pad-y: 14px;
-      --topbar-pad-x: 24px;
-      --main-pad: 22px;
-      --tile-pad: 22px;
-      --tile-gap: 18px;
-      --tile-inner-gap: 12px;
-      --mission-size: 17px;
-      --anchor-size: 18px;
-      --body-size: 12.5px;
+      --rql-density: 0.92;
+      --surface-pad: calc(16px * var(--rql-density));
+      --topbar-pad-y: calc(10px * var(--rql-density));
+      --topbar-pad-x: calc(16px * var(--rql-density));
+      --main-pad: calc(14px * var(--rql-density));
+      --tile-pad: calc(14px * var(--rql-density));
+      --tile-gap: calc(12px * var(--rql-density));
+      --tile-inner-gap: calc(8px * var(--rql-density));
+      --mission-size: calc(15px * var(--rql-density));
+      --anchor-size: calc(15px * var(--rql-density));
+      --body-size: calc(11px * var(--rql-density));
+      --small-size: calc(10px * var(--rql-density));
+      --tiny-size: calc(9px * var(--rql-density));
+      --title-size: calc(14px * var(--rql-density));
       --tile: rgba(18,22,28,0.78);
       --tile-border: rgba(100,120,150,0.12);
       --tile-border-hot: rgba(140,170,220,0.28);
@@ -42,36 +45,12 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       --sans: Inter, "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
     }
 
-    html[data-density="compact"] {
-      --surface-pad: 16px;
-      --topbar-pad-y: 10px;
-      --topbar-pad-x: 18px;
-      --main-pad: 16px;
-      --tile-pad: 16px;
-      --tile-gap: 12px;
-      --tile-inner-gap: 8px;
-      --mission-size: 15px;
-      --anchor-size: 16px;
-      --body-size: 12px;
-    }
-
-    html[data-density="spacious"] {
-      --surface-pad: 24px;
-      --topbar-pad-y: 14px;
-      --topbar-pad-x: 24px;
-      --main-pad: 22px;
-      --tile-pad: 22px;
-      --tile-gap: 18px;
-      --tile-inner-gap: 12px;
-      --mission-size: 17px;
-      --anchor-size: 18px;
-      --body-size: 12.5px;
-    }
-
     * { box-sizing: border-box; }
-    html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--ink); }
+    html, body { margin: 0; width: 100%; height: 100%; background: var(--bg); color: var(--ink); overflow: hidden; }
     body {
       font-family: var(--sans);
+      font-size: var(--body-size);
+      line-height: calc(1.36 - (var(--rql-density) - 0.92) * 0.08);
       background:
         radial-gradient(circle at 20% 10%, rgba(138,180,255,0.06), transparent 40%),
         radial-gradient(circle at 80% 90%, rgba(217,119,87,0.04), transparent 40%),
@@ -79,11 +58,9 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
         linear-gradient(90deg, var(--bg-grid) 1px, transparent 1px),
         var(--bg);
       background-size: auto, auto, 32px 32px, 32px 32px, auto;
-      overflow-x: hidden;
-      overflow-y: auto;
     }
 
-    .shell { min-height: 100vh; display: flex; flex-direction: column; }
+    .shell { width: 100vw; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
     .topbar {
       display: flex; align-items: center; gap: 18px; padding: var(--topbar-pad-y) var(--topbar-pad-x);
       border-bottom: 1px solid var(--tile-border);
@@ -94,22 +71,22 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     .brand, .mono { font-family: var(--mono); }
     .brand {
       display: flex; align-items: center; gap: 10px;
-      color: var(--muted); font-size: 12px; letter-spacing: 0.4px;
+      color: var(--muted); font-size: var(--small-size); letter-spacing: 0.4px;
       text-transform: lowercase;
     }
     .divider { width: 1px; height: 16px; background: var(--tile-border); }
-    .repo-meta { display: flex; align-items: baseline; gap: 10px; font-family: var(--mono); font-size: 13px; }
+    .repo-meta { display: flex; align-items: baseline; gap: 10px; font-family: var(--mono); font-size: calc(13px * var(--rql-density)); }
     .repo-meta .branch { color: var(--accent); }
     .watch-meta {
       margin-left: auto; display: flex; align-items: center; gap: 6px;
-      font-family: var(--mono); font-size: 11px; color: var(--muted);
+      font-family: var(--mono); font-size: var(--small-size); color: var(--muted);
       min-width: 0;
     }
     .surface-controls {
       display: inline-flex; align-items: center; gap: 6px;
       margin-left: 10px; padding-left: 10px;
       border-left: 1px solid var(--tile-border);
-      font-family: var(--mono); font-size: 10px;
+      font-family: var(--mono); font-size: var(--tiny-size);
     }
     .surface-controls button {
       appearance: none; border: 1px solid rgba(138,180,255,0.22);
@@ -118,25 +95,29 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       font: inherit;
     }
     .surface-controls button:hover { border-color: rgba(138,180,255,0.42); }
+    .surface-controls button[aria-pressed="true"] {
+      background: rgba(138,180,255,0.16);
+      border-color: rgba(138,180,255,0.42);
+      color: var(--accent);
+    }
     .surface-controls .label { color: var(--muted); letter-spacing: 0.8px; text-transform: uppercase; }
     .dot { width: 6px; height: 6px; border-radius: 999px; background: var(--ok); display: inline-block; }
 
     main {
-      flex: 1; min-height: 0; padding: var(--main-pad);
-      display: grid; gap: var(--tile-gap);
-      grid-template-areas:
-        "mission mission mission"
-        "resume resume agents"
-        "now next agents"
-        "blocked changes agents";
-      grid-template-columns: 1.15fr 1.15fr 1fr;
-      grid-template-rows: auto auto 1fr auto;
+      flex: 1;
+      min-height: 0;
+      padding: var(--main-pad);
+      display: grid;
+      gap: var(--tile-gap);
+      grid-template-rows: auto auto minmax(0, 1fr);
+      align-content: stretch;
+      overflow: hidden;
     }
 
     .mission-banner {
       grid-area: mission;
       display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 24px;
-      padding: calc(var(--tile-pad) + 2px) calc(var(--tile-pad) + 4px);
+      padding: calc(var(--tile-pad) + 1px) calc(var(--tile-pad) + 2px);
       background: linear-gradient(90deg, var(--accent-soft), transparent 70%);
       border: 1px solid var(--tile-border);
       border-radius: 10px;
@@ -144,13 +125,13 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     }
 
     .kicker {
-      font-family: var(--mono); font-size: 10px; letter-spacing: 1.4px; text-transform: uppercase;
+      font-family: var(--mono); font-size: var(--tiny-size); letter-spacing: 1.4px; text-transform: uppercase;
       color: var(--muted); margin-bottom: 6px;
     }
     .mission-text { font-size: var(--mission-size); line-height: 1.35; font-weight: 500; text-wrap: pretty; }
     .quest-meta { text-align: right; }
-    .quest-meta .title { font-size: 14px; font-weight: 500; }
-    .quest-meta .detail { margin-top: 4px; font-family: var(--mono); font-size: 11px; color: var(--muted); }
+    .quest-meta .title { font-size: var(--title-size); font-weight: 500; }
+    .quest-meta .detail { margin-top: 4px; font-family: var(--mono); font-size: var(--small-size); color: var(--muted); }
 
     .anchor {
       grid-area: resume;
@@ -163,13 +144,13 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     }
     .anchor-top { display: flex; align-items: center; gap: 8px; }
     .anchor-top .label {
-      font-family: var(--mono); font-size: 10px; letter-spacing: 1.4px;
+      font-family: var(--mono); font-size: var(--tiny-size); letter-spacing: 1.4px;
       text-transform: uppercase; color: var(--warn);
     }
-    .anchor-top .idle { margin-left: auto; font-family: var(--mono); font-size: 10px; color: var(--dim); }
+    .anchor-top .idle { margin-left: auto; font-family: var(--mono); font-size: var(--tiny-size); color: var(--dim); }
     .copy-context-btn {
       appearance: none; background: transparent; border: 1px solid rgba(233,185,115,0.28);
-      color: var(--warn); border-radius: 4px; padding: 4px; cursor: pointer;
+      color: var(--warn); border-radius: 4px; padding: 3px; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
     }
     .copy-context-btn:hover { background: rgba(233,185,115,0.1); color: #fff; }
@@ -178,7 +159,15 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       font-family: var(--mono); font-size: var(--body-size); color: var(--muted);
       font-style: italic; line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere;
     }
-    .anchor-meta { display: flex; gap: 16px; flex-wrap: wrap; font-family: var(--mono); font-size: 11px; color: var(--dim); }
+    .anchor-meta { display: flex; gap: 16px; flex-wrap: wrap; font-family: var(--mono); font-size: var(--small-size); color: var(--dim); }
+
+    .board {
+      min-height: 0;
+      display: grid;
+      gap: var(--tile-gap);
+      overflow: hidden;
+      align-items: stretch;
+    }
 
     .tile {
       background: var(--tile);
@@ -188,17 +177,27 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       display: flex; flex-direction: column; gap: var(--tile-inner-gap);
       min-height: 0;
       min-width: 0;
+      height: 100%;
       backdrop-filter: blur(8px);
       box-shadow: 0 1px 0 rgba(255,255,255,0.03) inset, 0 20px 40px -20px rgba(0,0,0,0.6);
     }
     .tile.hot { border-color: var(--tile-border-hot); }
     .tile-header { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
     .tile-title {
-      margin: 0; font-family: var(--mono); font-size: 11px; font-weight: 500;
+      margin: 0; font-family: var(--mono); font-size: var(--tiny-size); font-weight: 500;
       color: var(--muted); letter-spacing: 1.4px; text-transform: uppercase;
     }
-    .tile-meta { font-family: var(--mono); font-size: 10px; color: var(--faint); }
-    .tile-body { display: flex; flex-direction: column; gap: 10px; min-height: 0; min-width: 0; }
+    .tile-meta { font-family: var(--mono); font-size: calc(9px * var(--rql-density)); color: var(--faint); }
+    .tile-body {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-height: 0;
+      min-width: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
+      scrollbar-gutter: stable;
+    }
     .now { grid-area: now; }
     .next { grid-area: next; }
     .blocked { grid-area: blocked; }
@@ -207,16 +206,16 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
 
     .task-row {
       display: grid; grid-template-columns: 16px 18px minmax(0, 1fr) auto;
-      gap: 10px; align-items: start; padding: 6px 0;
+      gap: 8px; align-items: start; padding: 4px 0;
       border-bottom: 1px solid var(--faint);
       line-height: 1.35;
     }
     .task-row.clickable {
       grid-template-columns: 16px 18px minmax(0, 1fr) auto;
     }
-    .task-index { font-family: var(--mono); font-size: 10px; color: var(--dim); text-align: right; padding-top: 2px; }
+    .task-index { font-family: var(--mono); font-size: var(--tiny-size); color: var(--dim); text-align: right; padding-top: 2px; }
     .task-text { white-space: pre-wrap; overflow-wrap: anywhere; text-wrap: pretty; }
-    .task-doc { font-family: var(--mono); font-size: 10px; color: var(--dim); text-align: right; }
+    .task-doc { font-family: var(--mono); font-size: var(--tiny-size); color: var(--dim); text-align: right; }
     .task-link {
       appearance: none;
       background: transparent;
@@ -235,7 +234,7 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     .agent-badge {
       display: inline-flex; align-items: center; justify-content: center;
       width: 18px; height: 18px; border-radius: 4px;
-      font-family: var(--mono); font-size: 10px; font-weight: 600;
+      font-family: var(--mono); font-size: var(--tiny-size); font-weight: 600;
       margin-top: 1px;
     }
     .badge-codex { background: rgba(118,186,143,0.18); color: #8fd0a9; }
@@ -244,16 +243,16 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     .badge-default { background: rgba(180,190,210,0.10); color: var(--dim); }
 
     .blocked-item {
-      padding: 8px 0;
+      padding: 6px 0;
       border-bottom: 1px solid var(--faint);
       display: flex; flex-direction: column; gap: 4px;
       min-width: 0;
     }
     .blocked-title { display: flex; gap: 8px; align-items: baseline; }
-    .blocked-title .index { font-family: var(--mono); font-size: 10px; color: var(--dim); }
+    .blocked-title .index { font-family: var(--mono); font-size: var(--tiny-size); color: var(--dim); }
     .blocked-title .text { font-weight: 500; line-height: 1.3; text-wrap: pretty; }
     .blocked-reason {
-      padding-left: 18px; font-family: var(--mono); font-size: 11px; color: var(--muted);
+      padding-left: 18px; font-family: var(--mono); font-size: var(--small-size); color: var(--muted);
       white-space: pre-wrap; overflow-wrap: anywhere;
     }
 
@@ -263,14 +262,14 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       min-width: 0;
     }
     .agent-head { display: flex; align-items: center; gap: 8px; min-width: 0; }
-    .agent-name { font-size: 14px; font-weight: 600; }
+    .agent-name { font-size: calc(12px * var(--rql-density)); font-weight: 600; }
     .agent-role {
-      font-family: var(--mono); font-size: 10px; color: var(--dim);
+      font-family: var(--mono); font-size: var(--tiny-size); color: var(--dim);
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
     .agent-status {
       margin-left: auto; display: flex; align-items: center; gap: 6px;
-      font-family: var(--mono); font-size: 10px; letter-spacing: 0.4px; text-transform: lowercase;
+      font-family: var(--mono); font-size: var(--tiny-size); letter-spacing: 0.4px; text-transform: lowercase;
     }
     .agent-status.active { color: var(--accent); }
     .agent-status.working { color: var(--ok); }
@@ -281,17 +280,17 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     }
     .agent-meta {
       display: flex; gap: 10px; flex-wrap: wrap; font-family: var(--mono);
-      font-size: 10.5px; color: var(--muted);
+      font-size: calc(9.5px * var(--rql-density)); color: var(--muted);
     }
 
     .change-row {
       display: grid; grid-template-columns: minmax(0, 1fr) auto auto;
-      gap: 10px; align-items: center; padding: 4px 0;
+      gap: 8px; align-items: center; padding: 3px 0;
     }
     .change-file { white-space: pre-wrap; overflow-wrap: anywhere; }
     .change-diff {
       display: inline-flex; align-items: center; gap: 8px;
-      color: var(--ok); font-family: var(--mono); font-size: 11px;
+      color: var(--ok); font-family: var(--mono); font-size: var(--tiny-size);
     }
     .change-diff-value { white-space: nowrap; }
     .change-spark { display: inline-flex; align-items: flex-end; gap: 1px; height: 10px; min-width: 12px; }
@@ -300,26 +299,57 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     }
     .spark-add { background: rgba(138,214,168,0.95); }
     .spark-del { background: rgba(248,132,113,0.92); }
-    .change-age { color: var(--dim); font-family: var(--mono); font-size: 11px; min-width: 34px; text-align: right; }
+    .change-age { color: var(--dim); font-family: var(--mono); font-size: var(--tiny-size); min-width: 34px; text-align: right; }
 
-    @media (max-width: 1200px) {
-      body { overflow: auto; }
-      main {
-        grid-template-areas:
-          "mission"
-          "resume"
-          "now"
-          "next"
-          "blocked"
-          "changes"
-          "agents";
-        grid-template-columns: 1fr;
-        grid-template-rows: auto;
-      }
+    @media (max-width: 1099px) {
       .mission-banner { grid-template-columns: 1fr; }
       .quest-meta { text-align: left; }
       .watch-meta { margin-left: 0; width: 100%; }
       .surface-controls { margin-left: 0; padding-left: 0; border-left: 0; }
+      .board {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-areas:
+          "now"
+          "next"
+          "blocked"
+          "agents"
+          "changes";
+        grid-template-rows: repeat(5, minmax(0, 1fr));
+      }
+    }
+
+    @media (min-width: 1100px) and (max-width: 1599px) {
+      .board {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(280px, 0.9fr);
+        grid-template-areas:
+          "now next agents"
+          "blocked blocked agents"
+          "changes changes agents";
+        grid-template-rows: minmax(0, 1fr) minmax(0, 1fr) auto;
+      }
+      .agents { align-self: stretch; }
+    }
+
+    @media (min-width: 1600px) {
+      .board {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(300px, 0.85fr);
+        grid-template-areas:
+          "now next blocked agents"
+          "changes changes changes agents";
+        grid-template-rows: minmax(0, 1fr) auto;
+      }
+      .agents { align-self: stretch; }
+    }
+
+    @media (max-height: 600px) {
+      main { padding: calc(var(--main-pad) * 0.75); gap: calc(var(--tile-gap) * 0.75); }
+      .mission-banner, .anchor { padding: calc(var(--tile-pad) * 0.8); }
+      .tile { padding: calc(var(--tile-pad) * 0.8); }
+      .tile-body {
+        padding-bottom: 8px;
+        mask-image: linear-gradient(180deg, #000 0%, #000 calc(100% - 18px), transparent 100%);
+        -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 calc(100% - 18px), transparent 100%);
+      }
     }
   </style>
 </head>
@@ -344,13 +374,13 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
         <span>watching ${state.scannedFiles.length} files</span>
         <span style="color: var(--dim)">· scanned ${escapeHtml(state.lastScan)}</span>
       </div>
-      <div class="surface-controls" aria-label="Display controls">
+    <div class="surface-controls" aria-label="Display controls">
         <span class="label">Scale</span>
         <button type="button" data-ui-action="smaller" aria-label="Smaller">A-</button>
-        <span data-ui-scale-label>112%</span>
+        <span data-ui-scale-label>100%</span>
         <button type="button" data-ui-action="larger" aria-label="Larger">A+</button>
         <span class="label">Density</span>
-        <button type="button" data-ui-density="spacious">Wide</button>
+        <button type="button" data-ui-density="wide">Wide</button>
         <button type="button" data-ui-density="compact">Compact</button>
       </div>
     </header>
@@ -383,11 +413,13 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
         </div>
       </section>
 
-      ${renderTaskTile("now", "Now", `max 3 · ${state.now.length} active`, state.now, true, true)}
-      ${renderTaskTile("next", "Next", `queue · ${state.next.length}`, state.next, false, false)}
-      ${renderBlockedTile(state.blocked)}
-      ${renderChangesTile(state.recentChanges)}
-      ${renderAgentsTile(state.agents)}
+      <div class="board">
+        ${renderTaskTile("now", "Now", `max 3 · ${state.now.length} active`, state.now, true, true)}
+        ${renderTaskTile("next", "Next", `queue · ${state.next.length}`, state.next, false, false)}
+        ${renderBlockedTile(state.blocked)}
+        ${renderChangesTile(state.recentChanges)}
+        ${renderAgentsTile(state.agents)}
+      </div>
     </main>
   </div>
   ${renderLiveBridge(options.liveBridge)}
@@ -421,11 +453,11 @@ export function renderVSCodeHtml(state: QuestState, options: SurfaceHtmlOptions 
     }
 
     * { box-sizing: border-box; }
-    html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--ink); }
+    html, body { margin: 0; width: 100%; height: 100%; background: var(--bg); color: var(--ink); overflow: hidden; }
     body { font-family: var(--sans); overflow: hidden; }
 
     .panel {
-      width: 100vw; min-height: 100vh; background: var(--bg);
+      width: 100vw; height: 100vh; background: var(--bg);
       display: flex; flex-direction: column;
     }
     .header {
@@ -507,6 +539,20 @@ export function renderVSCodeHtml(state: QuestState, options: SurfaceHtmlOptions 
       font-family: var(--mono);
     }
     .status-bar .tail { margin-left: auto; opacity: 0.85; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    @media (max-width: 480px) {
+      .header { padding: 0 8px; gap: 6px; }
+      .header .branch { max-width: 44%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .resume { padding: 8px 10px; }
+      .resume-task { font-size: 12px; }
+      .resume-thought { font-size: 10px; }
+      .section-head { padding: 4px 6px; }
+      .row, .agent { padding-left: 16px; padding-right: 16px; }
+      .row { font-size: 12px; }
+      .agent-objective { font-size: 11px; }
+      .status-bar { padding: 0 6px; gap: 8px; font-size: 11px; }
+      .status-bar .tail { max-width: 42%; }
+    }
   </style>
 </head>
 <body>
@@ -764,14 +810,48 @@ function renderSettingsScript(): string {
   return `<script>
     (function () {
       var KEY = "repolog-surface-settings";
-      var defaults = { scale: 1.12, density: "spacious" };
+      var defaults = { scale: 1, density: "compact" };
+
+      function clamp(value, min, max) {
+        return Math.min(max, Math.max(min, value));
+      }
+
+      function normalizeDensity(value) {
+        if (value === "wide" || value === "spacious") {
+          return "wide";
+        }
+        if (value === "cozy") {
+          return "cozy";
+        }
+        return "compact";
+      }
+
+      function densityMultiplier(value) {
+        if (value === "wide") {
+          return 1.08;
+        }
+        if (value === "cozy") {
+          return 1;
+        }
+        return 0.92;
+      }
+
+      function viewportMultiplier() {
+        var width = window.innerWidth || 0;
+        var height = window.innerHeight || 0;
+        var widthFit = width >= 1600 ? 1 : width >= 1100 ? 0.96 : 0.88;
+        var heightFit = height >= 900 ? 1 : height >= 700 ? 0.96 : height >= 600 ? 0.88 : 0.8;
+        return Math.min(widthFit, heightFit);
+      }
 
       function read() {
         try {
           var parsed = JSON.parse(localStorage.getItem(KEY) || "{}");
+          var scale = typeof parsed.scale === "number" ? parsed.scale : defaults.scale;
+          var density = normalizeDensity(parsed.density);
           return {
-            scale: typeof parsed.scale === "number" ? parsed.scale : defaults.scale,
-            density: parsed.density === "compact" ? "compact" : "spacious",
+            scale: clamp(scale, 0.84, 1.16),
+            density: density,
           };
         } catch (_) {
           return defaults;
@@ -784,19 +864,25 @@ function renderSettingsScript(): string {
 
       function apply() {
         var prefs = read();
+        var density = clamp(densityMultiplier(prefs.density) * prefs.scale * viewportMultiplier(), 0.76, 1.2);
         document.documentElement.dataset.density = prefs.density;
-        document.body.style.zoom = String(prefs.scale);
+        document.documentElement.style.setProperty("--rql-density", density.toFixed(3));
         var scaleLabel = document.querySelector("[data-ui-scale-label]");
         if (scaleLabel) {
           scaleLabel.textContent = Math.round(prefs.scale * 100) + "%";
+        }
+        var densityButtons = document.querySelectorAll("[data-ui-density]");
+        for (var i = 0; i < densityButtons.length; i += 1) {
+          var button = densityButtons[i];
+          button.setAttribute("aria-pressed", button.getAttribute("data-ui-density") === prefs.density ? "true" : "false");
         }
       }
 
       function update(patch) {
         var current = read();
         var next = {
-          scale: typeof patch.scale === "number" ? Math.min(1.4, Math.max(0.85, patch.scale)) : current.scale,
-          density: patch.density || current.density,
+          scale: typeof patch.scale === "number" ? clamp(patch.scale, 0.84, 1.16) : current.scale,
+          density: patch.density ? normalizeDensity(patch.density) : current.density,
         };
         save(next);
         apply();
@@ -843,7 +929,7 @@ function renderSettingsScript(): string {
           }
         }
         if (button.hasAttribute("data-ui-density")) {
-          update({ density: button.getAttribute("data-ui-density") || "spacious" });
+          update({ density: button.getAttribute("data-ui-density") || "wide" });
         }
       });
 
@@ -860,6 +946,9 @@ function renderSettingsScript(): string {
       });
 
       apply();
+      window.addEventListener("resize", function () {
+        apply();
+      });
     })();
   </script>`;
 }

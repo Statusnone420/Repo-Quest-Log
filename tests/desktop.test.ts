@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
@@ -18,6 +18,18 @@ describe("renderDesktopHtml", () => {
     expect(html).toContain("desktop-preview.html");
     expect(html).toContain("data-copy-context=");
     expect(html).toContain("change-spark");
+  });
+});
+
+describe("desktop shell sizing", () => {
+  it("opens with a window size that can fit the target 560px fallback height", async () => {
+    const source = await readFile(join(process.cwd(), "apps/desktop/main.cjs"), "utf8");
+
+    expect(source).toContain("width: workArea.width");
+    expect(source).toContain("height: workArea.height");
+    expect(source).toContain("minWidth: 700");
+    expect(source).toContain("minHeight: 560");
+    expect(source).toContain("useContentSize: true");
   });
 });
 

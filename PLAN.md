@@ -1,49 +1,51 @@
 # PLAN.md
 
 One sentence: **what this repo is trying to become.**
-> A local-first CLI + TUI that makes repo intent legible at a glance for developers working with coding agents.
+> A local-first CLI + TUI + desktop + VS Code shell that makes repo intent legible at a glance and hands that intent to whichever coding agent you open next.
 
-## Active Quest
-Ship the first usable multi-surface Repo Quest Log shells
+## Objective
+Close v0.1 with a fit-to-window desktop, a TUI that visually matches it, and clean panel labels — then ship the v0.2 agent-integration wedge (resume-prompt palette, git panel, agent activity feed, standup export, opt-in write-back).
 
-## Current Objective
-Keep all surfaces pinned to one shared `QuestState` pipeline and one design source of truth.
+## Current Focus
+All surfaces stay pinned to one shared `QuestState` pipeline and one renderer. v0.1 polish first; v0.2 features only after the v0.1 punch list is green.
 
-## Now
-- [ ] Harden the TUI wrapping / spacing so no panel content gets visually mangled on real repos
-- [ ] Turn the Windows desktop shell into a packaged app path on top of the shared HUD renderer
-- [ ] Finish the VS Code side-panel shell so it live-refreshes from the active workspace
+## Now — v0.1 close-out
+- [x] Fit-to-window desktop: responsive density + inner-panel scroll fallback so the shell never shows an outer scrollbar on 1080p+ (agent: codex, touches: src/web/render.ts, apps/desktop/)
+- [ ] TUI visual parity with the desktop HUD — same regions, same order, mirrored palette, matching density modes (agent: codex, touches: src/tui/)
+- [ ] Rename "Active Quest" → "Objective" in all UI copy across desktop, TUI, VS Code (schema key stays `activeQuest` until v0.2 schema v2) (agent: codex, touches: src/web/render.ts, src/tui/, extensions/vscode/)
+- [ ] Fixture coverage for noisy / imperfect repo docs under tests/fixtures/ (agent: codex, touches: tests/)
+- [ ] Click-to-open doc links verified in every surface (desktop, TUI where feasible, VS Code) (agent: codex, touches: src/web/render.ts, extensions/vscode/)
 
-## Next
-- [ ] Add a packaging path for Windows desktop builds
-- [ ] Decide whether macOS ships as SwiftUI + WKWebView host or a native Swift redraw of the same layout
-- [ ] Add click-to-open doc links in desktop and VS Code shells
-- [ ] Add fixture coverage for noisy / imperfect repo docs
-- [ ] Tighten recent-changes diff metadata when git context is available
+## Next — v0.2 (agent-integration wedge)
+- [ ] Resume-prompt palette (⌘K / Ctrl+K) with presets: resume-for-claude, resume-for-codex, resume-for-gemini, standup, blocker-summary, repo-intent-briefing; templates live in `~/.repolog/prompts/`
+- [ ] Live git panel — branch, ahead/behind, dirty count, last commit subject + relative time
+- [ ] Agent activity feed — infer agent × file from mtimes × owned-areas in AGENTS.md / CLAUDE.md / GEMINI.md
+- [ ] Standup export — one-keypress markdown of today's done + currently-active to clipboard
+- [ ] Opt-in write-back for checkbox toggles only, gated by `.repolog.json` → `"writeback": true`, with persistent on-screen banner
+- [ ] Schema v2 — rename `activeQuest` → `objective`, add `gitContext`, `agentActivity`, `config.writeback`; ship compat shim for v1
+
+## Later — v0.3+
+- [ ] `gh` integration: open PRs on current branch + assigned issues, only if gh is installed and authed
+- [ ] macOS host decision: SwiftUI + WKWebView vs native redraw
+- [ ] Publish `@repo-quest/core` and `repo-quest-log` binary to npm (needs npm org + CI secrets)
+- [ ] Optional LLM "summarize this week" pass, user-supplied key, off by default
 
 ## Blocked
 - [ ] Publish npm package `@repo-quest/core` — **need npm org + CI secrets**
 
-## The 7 build tasks (in order)
+## v0.1 core — build tasks (reference, all complete)
 
-1. [x] **Define supported file names and heading patterns.** `src/engine/fileset.ts`
-2. [x] **Parse markdown into sections and checklists.** `src/engine/parse.ts`
-3. [x] **Build a normalizer that maps `ParsedDoc[]` into one shared `QuestState` JSON.** `src/engine/normalize.ts`
-4. [x] **Rank tasks into Now / Next / Blocked.** `src/engine/rank.ts`
-5. [x] **Build the Agents panel from `AGENTS.md` / `CLAUDE.md` / `GEMINI.md`.** `src/engine/agents.ts`
-6. [x] **Add file watching and auto-refresh.** `src/engine/watcher.ts`
-7. [x] **One-line `resume_note` generated from the top active task + last-touched file.** folded into `src/engine/normalize.ts`
+1. [x] Define supported file names and heading patterns — `src/engine/fileset.ts`
+2. [x] Parse markdown into sections and checklists — `src/engine/parse.ts`
+3. [x] Normalize `ParsedDoc[]` into shared `QuestState` — `src/engine/normalize.ts`
+4. [x] Rank tasks into Now / Next / Blocked — `src/engine/rank.ts`
+5. [x] Build Agents panel from `AGENTS.md` / `CLAUDE.md` / `GEMINI.md` — `src/engine/agents.ts`
+6. [x] File watching and auto-refresh — `src/engine/watcher.ts`
+7. [x] One-line `resume_note` from top active task + last-touched file — `src/engine/normalize.ts`
+8. [x] CLI `repolog scan .` → JSON
+9. [x] TUI `repolog watch` → live terminal HUD
+10. [x] Desktop shell over shared HUD renderer (Electron, Windows packaged to `release-fresh/`)
+11. [x] VS Code side-panel extension over the same `QuestState`
 
-Core engine is complete. Current work is surface hardening and host shells.
-
-## Build order after core
-
-1. CLI: `repolog scan .` → prints JSON
-2. TUI: `repolog` / `repolog watch` → live terminal HUD
-3. Desktop shell: `npm run desktop:app -- .` → Electron host over the shared HUD renderer
-4. VS Code extension: `extensions/vscode/` → live side panel over the same `QuestState`
-5. Publish as `@repo-quest/core` + `repo-quest-log` binary
-
-## Out of scope for v0.1
-
-Source-code parsing · automatic markdown write-back · LLM summarization · multi-repo dashboards · team sync · cloud anything · plugin marketplace · settings UI · theming.
+## Out of scope (v0.1 and v0.2)
+Source-code parsing · LLM calls · multi-repo dashboards · team sync · cloud anything · plugin marketplace · settings UI beyond `.repolog.json` · theming · timers · pomodoros · streaks · gamification · free-text markdown write-back.

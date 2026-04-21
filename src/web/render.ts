@@ -290,7 +290,7 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     /* ---- TASK ROWS (cockpit-style, not Word-doc) ---- */
     .item {
       display: grid;
-      grid-template-columns: 3px 20px minmax(0, 1fr) auto;
+      grid-template-columns: 3px 14px 20px minmax(0, 1fr) auto;
       gap: 8px; align-items: center;
       padding: 4px 0 4px 6px;
       border-radius: 4px;
@@ -323,6 +323,13 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       font-family: var(--mono); font-size: var(--tiny-size); color: var(--dim);
       text-align: right;
     }
+    .sigil {
+      font-family: var(--mono); font-size: var(--tiny-size);
+      letter-spacing: 1px; width: 12px; display: inline-block;
+      color: var(--dim); cursor: help;
+    }
+    .sigil .on { color: var(--muted); }
+    .sigil .off { color: var(--dim); opacity: 0.4; }
     .item-text {
       min-width: 0;
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -775,10 +782,24 @@ function renderTaskTile(area: string, title: string, count: number, tasks: Task[
     </div>
     <div class="tile-body">
       ${tasks.length === 0
-        ? `<div class="item"><span class="bar"></span><span class="item-num">·</span><span class="item-text">No items yet</span><span class="item-aside"></span></div>`
+        ? `<div class="item"><span class="bar"></span><span class="sigil"></span><span class="item-num">·</span><span class="item-text">No items yet</span><span class="item-aside"></span></div>`
         : tasks.map((task, index) => renderItemRow(task, index, priorityClass, area === "now")).join("")}
     </div>
   </section>`;
+}
+
+function renderConfidenceSigil(confidence: number | undefined): string {
+  if (typeof confidence !== "number" || Number.isNaN(confidence)) {
+    return `<span class="sigil" aria-hidden="true"></span>`;
+  }
+  const c = Math.max(0, Math.min(1, confidence));
+  const lit = c >= 0.84 ? 3 : c >= 0.5 ? 2 : c >= 0.17 ? 1 : 0;
+  const dots: string[] = [];
+  for (let i = 0; i < 3; i += 1) {
+    const on = i >= 3 - lit;
+    dots.push(`<span class="${on ? "on" : "off"}">●</span>`);
+  }
+  return `<span class="sigil" title="heuristic confidence: ${c.toFixed(2)}">${dots.join("")}</span>`;
 }
 
 function renderItemRow(task: Task, index: number, priorityClass: string, showAgent: boolean): string {
@@ -788,6 +809,7 @@ function renderItemRow(task: Task, index: number, priorityClass: string, showAge
   const docChip = task.doc ? `<span class="chip doc">${escapeHtml(task.doc)}</span>` : "";
   return `<div class="item ${priorityClass} ${clickable}"${openAttrs} title="${escapeHtml(task.text)}">
     <span class="bar"></span>
+    ${renderConfidenceSigil(task.confidence)}
     <span class="item-num">${String(index + 1).padStart(2, "0")}</span>
     <span class="item-text">${escapeHtml(task.text)}</span>
     <span class="item-aside">${agentChip}${docChip}</span>
@@ -810,10 +832,11 @@ function renderBlockedTile(tasks: BlockedTask[]): string {
     </div>
     <div class="tile-body">
       ${tasks.length === 0
-        ? `<div class="item"><span class="bar"></span><span class="item-num">·</span><span class="item-text">No blockers right now</span><span class="item-aside"></span></div>`
+        ? `<div class="item"><span class="bar"></span><span class="sigil"></span><span class="item-num">·</span><span class="item-text">No blockers right now</span><span class="item-aside"></span></div>`
         : tasks.map((task, index) => `
           <div class="item p-blocked" title="${escapeHtml(task.text)}">
             <span class="bar"></span>
+            ${renderConfidenceSigil(task.confidence)}
             <span class="item-num">${String(index + 1).padStart(2, "0")}</span>
             <span class="item-text">${escapeHtml(task.text)}</span>
             <span class="item-aside"><span class="chip doc">${escapeHtml(task.since)}</span></span>

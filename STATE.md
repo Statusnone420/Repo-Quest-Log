@@ -18,7 +18,7 @@ v0.1 close-out: fit-to-window desktop layout, TUI visual parity with the desktop
 - Updated tests for the new layout expectations; all 11 tests pass, `tsc` clean
 
 ## Resume Note
-> In-flight: HUD v2 polish batch. #2 landed — task rows now take focus-visible + hover accent (2px inset accent bar, right-edge → glyph), and `j/k` navigates within a tile, `1/2/3` jumps Now/Next/Blocked, Enter fires an open stub.
+> In-flight: HUD v2 polish batch. #3 landed — 3-dot confidence sigil renders left of each task index (dim + muted tokens only, no accent), omitted when `task.confidence` is undefined, tooltip shows the raw value.
 
 Last touched: `src/web/render.ts`
 

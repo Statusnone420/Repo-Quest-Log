@@ -11,6 +11,7 @@ describe("web renderers", () => {
     expect(html).toContain("Resume where you left off");
     expect(html).toContain("window.repologDesktop");
     expect(html).toContain("data-copy-context=");
+    expect(html).toContain('data-ui-action="refresh"');
     expect(html).toContain("--rql-density");
     expect(html).toContain("@media (max-width: 1099px)");
     expect(html).toContain("@media (max-height: 600px)");

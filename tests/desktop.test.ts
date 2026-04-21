@@ -17,6 +17,7 @@ describe("renderDesktopHtml", () => {
     expect(html).toContain("Resume where you left off");
     expect(html).toContain("desktop-preview.html");
     expect(html).toContain("data-copy-context=");
+    expect(html).toContain('data-ui-action="refresh"');
     expect(html).toContain("change-spark");
   });
 });

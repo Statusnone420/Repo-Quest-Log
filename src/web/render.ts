@@ -123,6 +123,14 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       font: inherit;
     }
     .surface-controls button:hover { border-color: rgba(138,180,255,0.42); }
+    .surface-controls button[data-ui-action="refresh"] {
+      color: var(--warn);
+      border-color: rgba(233,185,115,0.2);
+    }
+    .surface-controls button[data-ui-action="refresh"]:hover {
+      color: var(--ink);
+      border-color: rgba(233,185,115,0.55);
+    }
     .surface-controls button[aria-pressed="true"] {
       background: rgba(138,180,255,0.16);
       border-color: rgba(138,180,255,0.42);
@@ -601,6 +609,7 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
         <span style="color: var(--dim)">· ${escapeHtml(state.lastScan)}</span>
       </div>
       <div class="surface-controls" aria-label="Display controls">
+        <button type="button" data-ui-action="refresh" aria-label="Refresh desktop" title="Refresh desktop">↻</button>
         <span class="label">Scale</span>
         <button type="button" data-ui-action="smaller" aria-label="Smaller">A-</button>
         <span data-ui-scale-label>100%</span>
@@ -829,9 +838,11 @@ export function renderVSCodeHtml(state: QuestState, options: SurfaceHtmlOptions 
     <div class="resume">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 4px;">
         <div class="resume-label" style="margin-bottom:0;">Resume</div>
-        <button type="button" class="copy-context-btn" data-copy-context="${escapeHtml(buildContextPrompt(state))}" aria-label="Copy context for agent" title="Copy context for agent" style="background:transparent; border:none; color:var(--muted); cursor:pointer; padding:0; display:flex; align-items:center;">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
-        </button>
+        <div style="display:flex; align-items:center; gap: 8px;">
+          <button type="button" class="copy-context-btn" data-copy-context="${escapeHtml(buildContextPrompt(state))}" aria-label="Copy context for agent" title="Copy context for agent" style="background:transparent; border:none; color:var(--muted); cursor:pointer; padding:0; display:flex; align-items:center;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
+          </button>
+        </div>
       </div>
       <div class="resume-task">${escapeHtml(state.resumeNote.task)}</div>
       <div class="resume-thought">&ldquo;${escapeHtml(state.resumeNote.thought ?? "")}&rdquo;</div>
@@ -1194,6 +1205,12 @@ function renderSettingsScript(): string {
         if (button.hasAttribute("data-ui-action")) {
           var action = button.getAttribute("data-ui-action");
           var prefs = read();
+          if (action === "refresh") {
+            if (window.repologDesktop && typeof window.repologDesktop.requestRefresh === "function") {
+              window.repologDesktop.requestRefresh();
+            }
+            return;
+          }
           if (action === "smaller") update({ scale: prefs.scale - 0.08 });
           if (action === "larger") update({ scale: prefs.scale + 0.08 });
         }

@@ -6,6 +6,8 @@ Live "where we are." Update this as work progresses. The normalizer reads this t
 v0.1 close-out: fit-to-window desktop layout, TUI visual parity with the desktop HUD, and renaming "Active Quest" → "Objective" in UI copy. v0.2 wedge (resume-prompt palette, git panel, agent activity feed, standup export, opt-in write-back) begins only after the v0.1 punch list is green.
 
 ## Last Session
+- Packaged rebuild is blocked because `release-fresh\win-unpacked` is currently open and locks the packaged `app.asar`. The refresh button now exists in source in the top-right control strip of `src/web/render.ts`, but the exe will not show it until the desktop app is closed and rebuilt.
+- User asked about the generated desktop preview files. `repolog desktop` writes `.repolog/desktop-preview.html` as a snapshot, while the Electron shell writes `.repolog/desktop-live.html` at runtime; neither is a source file. Added a visible desktop refresh button in the renderer so the desktop shell can rescan like TUI `r`, now placed in the top-right control strip.
 - User reported the desktop shell still scrolled vertically at near-full screen and felt like a "Word doc" instead of a tool — wanted cockpit density, info-at-a-glance
 - Claude took the wheel on desktop UI/UX and rewrote `src/web/render.ts`:
   - Killed outer scroll for real — new grid is `auto auto auto 1fr` with a single-row 3-column board, no `auto`-rowed bottom tile

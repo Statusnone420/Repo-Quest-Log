@@ -1,4 +1,4 @@
-# PRD — Repo Quest Log
+# PRD — RepoLog "QuestLog" - Coding Agent Repo Organizer
 
 ## The problem
 

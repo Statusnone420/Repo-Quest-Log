@@ -18,6 +18,7 @@ let initialLoadComplete = false;
 let watcherHandle = null;
 let recentChanges = [];
 let modulesPromise = null;
+let revealTimer = null;
 const liveHtmlPath = path.join(targetRoot, ".repolog", "desktop-live.html");
 
 function mergeChanges(next, previous) {
@@ -78,20 +79,39 @@ function createWindow() {
   });
 
   win.on("closed", () => {
+    if (revealTimer) {
+      clearTimeout(revealTimer);
+      revealTimer = null;
+    }
     win = null;
   });
 
   win.webContents.on("did-finish-load", () => {
     initialLoadComplete = true;
+    revealWindow();
   });
 
   win.once("ready-to-show", () => {
-    if (!win || win.isDestroyed()) {
-      return;
-    }
-    win.maximize();
-    win.show();
+    revealWindow();
   });
+
+  revealTimer = setTimeout(() => {
+    revealWindow();
+  }, 1500);
+}
+
+function revealWindow() {
+  if (!win || win.isDestroyed() || win.isVisible()) {
+    return;
+  }
+
+  if (revealTimer) {
+    clearTimeout(revealTimer);
+    revealTimer = null;
+  }
+
+  win.maximize();
+  win.show();
 }
 
 async function refresh(changes = []) {

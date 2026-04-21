@@ -56,8 +56,7 @@
       "output": "release"
     },
     "win": {
-      "target": "nsis",
-      "icon": "extensions/vscode/media/icon.svg"
+      "target": "nsis"
     },
     "files": [
       "dist/**/*",

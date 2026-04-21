@@ -27,3 +27,23 @@ export const AGENT_FILES = [
   { id: "codex",  file: "AGENTS.md" },
   { id: "gemini", file: "GEMINI.md" },
 ] as const;
+
+const IGNORE_DIRS = new Set([".git", "node_modules", "dist"]);
+
+export function shouldIgnoreDir(name: string): boolean {
+  return IGNORE_DIRS.has(name);
+}
+
+export function matchesScannedFile(file: string): boolean {
+  const normalized = file.replace(/\\/g, "/").split("/").pop() ?? file;
+
+  return SCANNED_GLOBS.some((pattern) => matchPattern(normalized, pattern));
+}
+
+function matchPattern(value: string, pattern: string): boolean {
+  const escaped = pattern
+    .replace(/[.+?^${}()|[\]\\]/g, "\\$&")
+    .replace(/\*/g, ".*");
+
+  return new RegExp(`^${escaped}$`, "i").test(value);
+}

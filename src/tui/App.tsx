@@ -1,4 +1,6 @@
-import React, { useEffect, useRef, useState } from "react";
+import { spawn } from "node:child_process";
+
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Box, Text, useApp, useInput, useStdin } from "ink";
 
 import { scanRepo } from "../engine/scan.js";
@@ -6,20 +8,29 @@ import { startWatcher } from "../engine/watcher.js";
 import type { FileChange, QuestState } from "../engine/types.js";
 
 const palette = {
-  bg: "#0a0b0d",
-  ink: "#d0d6de",
-  dim: "#5f6670",
-  accent: "#7fd3c4",
-  blue: "#7a9ed8",
-  yellow: "#d7c07a",
-  red: "#d87878",
-  green: "#8fbf87",
-  violet: "#c397d8",
-  amber: "#e9b973",
+  bg: "#0b0d10",
+  ink: "#e6ecf2",
+  dim: "#7b8997",
+  muted: "#9eacbc",
+  accent: "#8ab4ff",
+  warn: "#e9b973",
+  danger: "#f48471",
+  ok: "#8ad6a8",
 };
+
+const THREE_COLUMN_BREAKPOINT = 140;
 
 export interface WatchAppProps {
   rootDir: string;
+}
+
+interface PromptPreset {
+  id: string;
+  glyph: string;
+  label: string;
+  sub: string;
+  keywords: string;
+  body: string;
 }
 
 export function formatStaticFrame(
@@ -29,27 +40,55 @@ export function formatStaticFrame(
   const width = Math.max(80, options.columns ?? process.stdout.columns ?? 110);
   const rows = Math.max(24, options.rows ?? process.stdout.rows ?? 40);
   const topWidth = width - 4;
-  const leftWidth = Math.max(34, Math.floor((topWidth - 3) / 2));
-  const rightWidth = topWidth - leftWidth - 3;
+  const threeColumn = width >= THREE_COLUMN_BREAKPOINT;
   const changeLimit = Math.max(4, Math.min(8, rows > 0 ? Math.floor((rows - 24) / 3) : 4));
 
-  const footer = `watching ${state.scannedFiles.length} files · ${options.scanning ? "scanning..." : `last scan ${state.lastScan}`} · ${options.interactive ? "[q] quit [r] rescan" : "read-only output"}${options.error ? ` · error: ${options.error}` : ""}`;
+  const header = plainPanel("repo quest log", topWidth, [
+    row("Mission", state.mission, topWidth - 2),
+    row("Quest", `${state.activeQuest.title} [${state.activeQuest.progress.done}/${state.activeQuest.progress.total}]`, topWidth - 2),
+    row("Resume", `${state.resumeNote.task} · ${state.resumeNote.lastTouched}`, topWidth - 2),
+  ], state.branch);
 
+  const cockpit = plainPanel("COCKPIT", topWidth, [renderCockpitLine(state, topWidth - 2)]);
+
+  const footer = `watching ${state.scannedFiles.length} files · ${options.scanning ? "scanning..." : `last scan ${state.lastScan}`} · ${options.interactive ? "[q] quit [r] rescan [ctrl+k] palette" : "read-only output"}${options.error ? ` · error: ${options.error}` : ""}`;
+
+  if (threeColumn) {
+    const board = computeThreeColumnWidths(topWidth);
+    const col1 = stackPanels([
+      plainPanel("NOW", board.first, renderTasks(state.now, board.first, "now")),
+      plainPanel("BLOCKED", board.first, renderBlocked(state, board.first)),
+    ]);
+    const col2 = stackPanels([
+      plainPanel("NEXT", board.second, renderTasks(state.next, board.second, "next")),
+      plainPanel("RECENT CHANGES", board.second, renderChanges(state, board.second, changeLimit)),
+    ]);
+    const col3 = stackPanels([
+      plainPanel("AGENTS", board.third, renderAgents(state, board.third)),
+    ]);
+
+    return [
+      header,
+      "",
+      cockpit,
+      "",
+      joinThreeColumns(col1, col2, col3, board.first, board.second),
+      "",
+      truncate(footer, width - 1),
+    ].join("\n");
+  }
+
+  const columnGap = 3;
+  const leftWidth = Math.max(34, Math.floor((topWidth - columnGap) / 2));
+  const rightWidth = topWidth - leftWidth - columnGap;
   return [
-    plainPanel("repo quest log", topWidth, [
-      row("Mission", state.mission, topWidth - 2),
-      row("Quest", `${state.activeQuest.title} [${state.activeQuest.progress.done}/${state.activeQuest.progress.total}]`, topWidth - 2),
-    ], state.branch),
+    header,
     "",
-    plainPanel("resume", topWidth, [
-      truncate(state.resumeNote.task, topWidth - 2),
-      truncate(`"${state.resumeNote.thought ?? ""}"`, topWidth - 2),
-      truncate(`↳ ${state.resumeNote.lastTouched} · idle ${state.resumeNote.since}`, topWidth - 2),
-    ]),
+    cockpit,
     "",
     joinColumns(
-      plainPanel("NOW", leftWidth, renderTasks(state.now, leftWidth)),
-      plainPanel("NEXT", rightWidth, renderTasks(state.next, rightWidth, false)),
+      plainPanel("NOW", leftWidth, renderTasks(state.now, leftWidth, "now")),
+      plainPanel("NEXT", rightWidth, renderTasks(state.next, rightWidth, "next")),
       leftWidth,
     ),
     "",
@@ -71,6 +110,10 @@ export function WatchApp({ rootDir }: WatchAppProps) {
   const [state, setState] = useState<QuestState | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [scanning, setScanning] = useState(true);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [paletteQuery, setPaletteQuery] = useState("");
+  const [paletteIndex, setPaletteIndex] = useState(0);
+  const [statusLine, setStatusLine] = useState<string | null>(null);
   const recentChangesRef = useRef<FileChange[]>([]);
   const refreshRef = useRef<() => Promise<void>>(async () => {});
 
@@ -104,7 +147,7 @@ export function WatchApp({ rootDir }: WatchAppProps) {
 
     refreshRef.current = async () => refresh();
 
-    let handlePromise = startWatcher({
+    const handlePromise = startWatcher({
       cwd: rootDir,
       onRefresh: (changes) => refresh(changes),
       onError: (watchError) => {
@@ -123,10 +166,102 @@ export function WatchApp({ rootDir }: WatchAppProps) {
     };
   }, [rootDir]);
 
+  const presets = useMemo(() => {
+    if (!state) {
+      return [];
+    }
+    return buildPromptPresets(state);
+  }, [state]);
+
+  const filteredPresets = useMemo(
+    () => filterPromptPresets(presets, paletteQuery),
+    [presets, paletteQuery],
+  );
+
+  useEffect(() => {
+    if (paletteIndex < filteredPresets.length) {
+      return;
+    }
+    setPaletteIndex(0);
+  }, [filteredPresets, paletteIndex]);
+
+  useInput((input, key) => {
+    if (!isRawModeSupported) {
+      return;
+    }
+
+    if ((key.ctrl || key.meta) && input.toLowerCase() === "k") {
+      setPaletteOpen((open) => {
+        const next = !open;
+        if (next) {
+          setPaletteQuery("");
+          setPaletteIndex(0);
+        }
+        return next;
+      });
+      return;
+    }
+
+    if (paletteOpen) {
+      if (key.escape) {
+        setPaletteOpen(false);
+        return;
+      }
+      if (key.upArrow) {
+        setPaletteIndex((index) => {
+          if (filteredPresets.length === 0) {
+            return 0;
+          }
+          return (index - 1 + filteredPresets.length) % filteredPresets.length;
+        });
+        return;
+      }
+      if (key.downArrow) {
+        setPaletteIndex((index) => {
+          if (filteredPresets.length === 0) {
+            return 0;
+          }
+          return (index + 1) % filteredPresets.length;
+        });
+        return;
+      }
+      if (key.return) {
+        const preset = filteredPresets[paletteIndex];
+        if (!preset) {
+          return;
+        }
+        setPaletteOpen(false);
+        setPaletteQuery("");
+        void copyToClipboard(preset.body).then((copied) => {
+          setStatusLine(copied ? `${preset.label} copied` : "Clipboard unavailable");
+        });
+        return;
+      }
+      if (key.backspace || key.delete) {
+        setPaletteQuery((value) => value.slice(0, -1));
+        return;
+      }
+      if (!key.ctrl && !key.meta && !key.tab && isPrintable(input)) {
+        setPaletteQuery((value) => `${value}${input}`);
+      }
+      return;
+    }
+
+    if (input === "q") {
+      exit();
+      return;
+    }
+
+    if (input === "r") {
+      setStatusLine("Rescanning...");
+      void refreshRef.current();
+    }
+  });
+
   if (error && !state) {
     return (
       <Box flexDirection="column" padding={1}>
-        <Text color={palette.red}>repolog failed</Text>
+        <Text color={palette.danger}>repolog failed</Text>
         <Text>{error}</Text>
       </Box>
     );
@@ -142,39 +277,46 @@ export function WatchApp({ rootDir }: WatchAppProps) {
 
   return (
     <Box flexDirection="column" paddingX={1} paddingY={0}>
-      {isRawModeSupported ? <InputController onQuit={exit} onRefresh={() => refreshRef.current()} /> : null}
-      {renderFrame(state, scanning, error, isRawModeSupported)}
+      {renderFrame(state, {
+        scanning,
+        error,
+        isRawModeSupported,
+        paletteOpen,
+      })}
+      {paletteOpen ? (
+        <>
+          <Spacer />
+          <PaletteOverlay
+            width={Math.max(80, (process.stdout.columns || 110) - 4)}
+            query={paletteQuery}
+            presets={filteredPresets}
+            selectedIndex={paletteIndex}
+          />
+        </>
+      ) : null}
+      {statusLine ? (
+        <>
+          <Spacer />
+          <Text color={palette.muted}>{truncate(statusLine, Math.max(40, (process.stdout.columns || 110) - 6))}</Text>
+        </>
+      ) : null}
     </Box>
   );
 }
 
-function InputController(props: { onQuit: () => void; onRefresh: () => Promise<void> }) {
-  useInput((input) => {
-    if (input === "q") {
-      props.onQuit();
-      return;
-    }
-
-    if (input === "r") {
-      void props.onRefresh();
-    }
-  });
-
-  return null;
-}
-
 function renderFrame(
   state: QuestState,
-  scanning: boolean,
-  error: string | null,
-  isRawModeSupported: boolean,
+  options: {
+    scanning: boolean;
+    error: string | null;
+    isRawModeSupported: boolean;
+    paletteOpen: boolean;
+  },
 ) {
   const width = Math.max(80, process.stdout.columns || 110);
   const rows = Math.max(24, process.stdout.rows || 40);
   const topWidth = width - 4;
-  const columnGap = 3;
-  const leftWidth = Math.max(34, Math.floor((topWidth - columnGap) / 2));
-  const rightWidth = topWidth - leftWidth - columnGap;
+  const threeColumn = width >= THREE_COLUMN_BREAKPOINT;
   const changeLimit = Math.max(4, Math.min(8, Math.floor((rows - 24) / 3)));
 
   const header = boxPanel({
@@ -184,63 +326,120 @@ function renderFrame(
     lines: [
       row("Mission", state.mission, topWidth - 2),
       row("Quest", `${state.activeQuest.title} [${state.activeQuest.progress.done}/${state.activeQuest.progress.total}]`, topWidth - 2),
+      row("Resume", `${state.resumeNote.task} · ${state.resumeNote.lastTouched}`, topWidth - 2),
     ],
     rightMeta: state.branch,
   });
 
-  const resume = boxPanel({
-    title: "resume",
-    color: palette.yellow,
+  const cockpit = boxPanel({
+    title: "COCKPIT",
+    color: palette.accent,
     width: topWidth,
-    lines: [
-      truncate(state.resumeNote.task, topWidth - 2),
-      truncate(`"${state.resumeNote.thought ?? ""}"`, topWidth - 2),
-      truncate(`↳ ${state.resumeNote.lastTouched} · idle ${state.resumeNote.since}`, topWidth - 2),
-    ],
+    lines: [renderCockpitLine(state, topWidth - 2)],
   });
+
+  const footer = `watching ${state.scannedFiles.length} files · ${options.scanning ? "scanning..." : `last scan ${state.lastScan}`} · ${options.isRawModeSupported ? "[q] quit [r] rescan [ctrl+k] palette" : "read-only output"}${options.paletteOpen ? " · palette open" : ""}${options.error ? ` · error: ${options.error}` : ""}`;
+
+  if (threeColumn) {
+    const board = computeThreeColumnWidths(topWidth);
+    const now = boxPanel({
+      title: "NOW",
+      color: palette.accent,
+      width: board.first,
+      lines: renderTasks(state.now, board.first, "now"),
+    });
+    const blocked = boxPanel({
+      title: "BLOCKED",
+      color: palette.warn,
+      width: board.first,
+      lines: renderBlocked(state, board.first),
+    });
+    const next = boxPanel({
+      title: "NEXT",
+      color: palette.muted,
+      width: board.second,
+      lines: renderTasks(state.next, board.second, "next"),
+    });
+    const changes = boxPanel({
+      title: "RECENT CHANGES",
+      color: palette.ok,
+      width: board.second,
+      lines: renderChanges(state, board.second, changeLimit),
+    });
+    const agents = boxPanel({
+      title: "AGENTS",
+      color: palette.ok,
+      width: board.third,
+      lines: renderAgents(state, board.third),
+    });
+
+    return (
+      <>
+        {header}
+        <Spacer />
+        {cockpit}
+        <Spacer />
+        <Box>
+          <Box flexDirection="column" marginRight={1}>
+            {now}
+            <Spacer />
+            {blocked}
+          </Box>
+          <Box flexDirection="column" marginX={1}>
+            {next}
+            <Spacer />
+            {changes}
+          </Box>
+          <Box flexDirection="column" marginLeft={1}>
+            {agents}
+          </Box>
+        </Box>
+        <Spacer />
+        <Text color={palette.dim}>{truncate(footer, width - 1)}</Text>
+      </>
+    );
+  }
+
+  const columnGap = 3;
+  const leftWidth = Math.max(34, Math.floor((topWidth - columnGap) / 2));
+  const rightWidth = topWidth - leftWidth - columnGap;
 
   const now = boxPanel({
     title: "NOW",
     color: palette.accent,
     width: leftWidth,
-    lines: renderTasks(state.now, leftWidth),
+    lines: renderTasks(state.now, leftWidth, "now"),
   });
-
   const next = boxPanel({
     title: "NEXT",
-    color: palette.blue,
+    color: palette.muted,
     width: rightWidth,
-    lines: renderTasks(state.next, rightWidth, false),
+    lines: renderTasks(state.next, rightWidth, "next"),
   });
-
   const blocked = boxPanel({
     title: "BLOCKED",
-    color: palette.red,
+    color: palette.warn,
     width: leftWidth,
     lines: renderBlocked(state, leftWidth),
   });
-
   const agents = boxPanel({
     title: "AGENTS",
-    color: palette.violet,
+    color: palette.ok,
     width: rightWidth,
     lines: renderAgents(state, rightWidth),
   });
-
   const changes = boxPanel({
     title: "RECENT CHANGES",
-    color: palette.green,
+    color: palette.ok,
     width: topWidth,
     lines: renderChanges(state, topWidth, changeLimit),
   });
-
-  const footer = `watching ${state.scannedFiles.length} files · ${scanning ? "scanning..." : `last scan ${state.lastScan}`} · ${isRawModeSupported ? "[q] quit [r] rescan" : "read-only output"}${error ? ` · error: ${error}` : ""}`;
 
   return (
     <>
       {header}
       <Spacer />
-      {resume}
+      {cockpit}
       <Spacer />
       <Box>
         <Box flexDirection="column" marginRight={1}>
@@ -262,6 +461,25 @@ function renderFrame(
   );
 }
 
+function PaletteOverlay(params: {
+  width: number;
+  query: string;
+  presets: PromptPreset[];
+  selectedIndex: number;
+}) {
+  const lines = [
+    ` search ${params.query || "…"}`,
+    ...renderPaletteLines(params.presets, params.selectedIndex, params.width - 2),
+    " enter to copy · esc to close · ↑↓ to move",
+  ];
+  return boxPanel({
+    title: "PALETTE",
+    width: params.width,
+    color: palette.warn,
+    lines,
+  });
+}
+
 function boxPanel(params: {
   title: string;
   width: number;
@@ -270,15 +488,15 @@ function boxPanel(params: {
   rightMeta?: string;
 }) {
   const innerWidth = Math.max(10, params.width - 2);
-  const top = panelTop(params.title, params.color, innerWidth, params.rightMeta);
+  const top = panelTop(params.title, innerWidth, params.rightMeta);
   const bottom = `└${"─".repeat(innerWidth)}┘`;
 
   return (
     <Box flexDirection="column">
       <Text color={params.color}>{top}</Text>
-      {params.lines.length > 0 ? params.lines.map((line, index) => (
+      {(params.lines.length > 0 ? params.lines : [""]).map((line, index) => (
         <Text key={`${params.title}-${index}`}>{`│${pad(line, innerWidth)}│`}</Text>
-      )) : <Text>{`│${pad("", innerWidth)}│`}</Text>}
+      ))}
       <Text color={params.color}>{bottom}</Text>
     </Box>
   );
@@ -286,7 +504,7 @@ function boxPanel(params: {
 
 function plainPanel(title: string, width: number, lines: string[], rightMeta?: string): string {
   const innerWidth = Math.max(10, width - 2);
-  const output = [panelTop(title, palette.dim, innerWidth, rightMeta)];
+  const output = [panelTop(title, innerWidth, rightMeta)];
   for (const line of lines.length > 0 ? lines : [""]) {
     output.push(`│${pad(line, innerWidth)}│`);
   }
@@ -294,7 +512,7 @@ function plainPanel(title: string, width: number, lines: string[], rightMeta?: s
   return output.join("\n");
 }
 
-function panelTop(title: string, color: string, innerWidth: number, rightMeta?: string): string {
+function panelTop(title: string, innerWidth: number, rightMeta?: string): string {
   const left = `─ ${title} `;
   if (!rightMeta) {
     return `┌${left}${"─".repeat(Math.max(0, innerWidth - left.length))}┐`;
@@ -305,68 +523,83 @@ function panelTop(title: string, color: string, innerWidth: number, rightMeta?: 
   return `┌${left}${"─".repeat(filler)}${meta}┐`;
 }
 
-function renderTasks(tasks: QuestState["now"], width: number, showDoc = true): string[] {
+function renderTasks(tasks: QuestState["now"], width: number, lane: "now" | "next"): string[] {
   if (tasks.length === 0) {
-    return [" no active tasks"];
+    return [" · no active tasks"];
   }
 
-  return tasks.flatMap((task, index) => {
-    const agent = task.agent ? `[${task.agent[0]?.toUpperCase() ?? "·"}]` : "[·]";
-    const prefix = ` ${String(index + 1).padStart(2, "0")} ${agent} `;
-    const lines = wrapWithPrefix(task.text, prefix, width - 2, " ".repeat(prefix.length));
-
-    if (showDoc) {
-      lines.push(...wrapWithPrefix(task.doc, "    · ", width - 2, "      "));
-    }
-
-    return lines;
+  const bar = lane === "now" ? "▌" : "▍";
+  return tasks.map((task, index) => {
+    const agent = task.agent ? task.agent[0]?.toUpperCase() ?? "·" : "·";
+    const doc = task.doc ? ` ${task.doc}${task.line ? `:${task.line}` : ""}` : "";
+    return truncate(
+      `${bar} ${String(index + 1).padStart(2, "0")} [${agent}] ${task.text} ·${doc}`,
+      width - 2,
+    );
   });
 }
 
 function renderBlocked(state: QuestState, width: number): string[] {
   if (state.blocked.length === 0) {
-    return [" no blocked items"];
+    return [" · no blocked items"];
   }
 
-  return state.blocked.flatMap((task, index) => [
-    ...wrapWithPrefix(task.text, ` ${String(index + 1).padStart(2, "0")} ✕ `, width - 2, "      "),
-    ...wrapWithPrefix(`${task.reason} · ${task.since}`, "    ↳ ", width - 2, "      "),
-  ]);
+  return state.blocked.map((task, index) => truncate(
+    `▌ ${String(index + 1).padStart(2, "0")} [×] ${task.text} · ${task.reason} · ${task.since}`,
+    width - 2,
+  ));
 }
 
 function renderAgents(state: QuestState, width: number): string[] {
   if (state.agents.length === 0) {
-    return [" no agent profiles"];
+    return [" · no agent profiles"];
   }
 
-  return state.agents.flatMap((agent) => [
-    ...wrapWithPrefix(
-      `${agent.name} · ${agent.status} · ${agent.objective}`,
-      " ",
-      width - 2,
-      "   ",
-    ),
-    ...wrapWithPrefix(`${agent.file} · ${agent.area}`, "    ↳ ", width - 2, "      "),
-  ]);
+  return state.agents.map((agent) => truncate(
+    `▍ ${agent.name} · ${agent.status.toUpperCase()} · ${agent.objective} · ${agent.area}`,
+    width - 2,
+  ));
 }
 
 function renderChanges(state: QuestState, width: number, limit = 6): string[] {
   if (state.recentChanges.length === 0) {
-    return [" no recent changes yet"];
+    return [" · no recent changes yet"];
   }
 
   const visible = state.recentChanges.slice(0, limit);
-  const lines = visible.flatMap((change) => {
+  const lines = visible.map((change, index) => {
     const diff = change.diff ? ` ${change.diff}` : "";
-    return wrapWithPrefix(`${change.file}${diff} · ${change.at}`, " ", width - 2, "   ");
+    return truncate(`▍ ${String(index + 1).padStart(2, "0")} ${change.file}${diff} · ${change.at}`, width - 2);
   });
 
   const hiddenCount = state.recentChanges.length - visible.length;
   if (hiddenCount > 0) {
-    lines.push(` ${hiddenCount} more changes`);
+    lines.push(truncate(` · ${hiddenCount} more changes`, width - 2));
   }
 
   return lines;
+}
+
+function renderPaletteLines(presets: PromptPreset[], selectedIndex: number, width: number): string[] {
+  if (presets.length === 0) {
+    return [" · no matches"];
+  }
+  return presets.slice(0, 6).map((preset, index) => {
+    const cursor = index === selectedIndex ? ">" : " ";
+    return truncate(`${cursor} ${preset.glyph} ${preset.label} · ${preset.sub}`, width);
+  });
+}
+
+function renderCockpitLine(state: QuestState, width: number): string {
+  const value = [
+    `● ${state.now.length} NOW`,
+    `○ ${state.next.length} NEXT`,
+    `⏸ ${state.blocked.length} BLOCKED`,
+    `◉ ${state.agents.length} AGENTS`,
+    `◌ ${state.scannedFiles.length} FILES`,
+    `tail ${state.resumeNote.lastTouched}`,
+  ].join(" · ");
+  return truncate(value, width);
 }
 
 function row(label: string, value: string, width: number): string {
@@ -392,6 +625,10 @@ function pad(value: string, width: number): string {
   return clipped.padEnd(width, " ");
 }
 
+function stackPanels(panels: string[]): string {
+  return panels.join("\n\n");
+}
+
 function joinColumns(left: string, right: string, leftWidth: number): string {
   const leftLines = left.split("\n");
   const rightLines = right.split("\n");
@@ -407,45 +644,27 @@ function joinColumns(left: string, right: string, leftWidth: number): string {
   return result.join("\n");
 }
 
-function wrapWithPrefix(text: string, prefix: string, width: number, continuationPrefix = prefix): string[] {
-  const contentWidth = Math.max(8, width - prefix.length);
-  const words = text.split(/\s+/).filter(Boolean);
-  if (words.length === 0) {
-    return [prefix.trimEnd()];
+function joinThreeColumns(
+  first: string,
+  second: string,
+  third: string,
+  firstWidth: number,
+  secondWidth: number,
+): string {
+  const firstLines = first.split("\n");
+  const secondLines = second.split("\n");
+  const thirdLines = third.split("\n");
+  const total = Math.max(firstLines.length, secondLines.length, thirdLines.length);
+  const out: string[] = [];
+
+  for (let index = 0; index < total; index += 1) {
+    const a = firstLines[index] ?? "";
+    const b = secondLines[index] ?? "";
+    const c = thirdLines[index] ?? "";
+    out.push(`${a.padEnd(firstWidth, " ")}  ${b.padEnd(secondWidth, " ")}  ${c}`);
   }
 
-  const lines: string[] = [];
-  let current = "";
-
-  for (const word of words) {
-    const candidate = current ? `${current} ${word}` : word;
-    if (candidate.length <= contentWidth) {
-      current = candidate;
-      continue;
-    }
-
-    if (current) {
-      const currentPrefix = lines.length === 0 ? prefix : continuationPrefix;
-      lines.push(`${currentPrefix}${current}`);
-      current = word;
-      continue;
-    }
-
-    let remaining = word;
-    while (remaining.length > contentWidth) {
-      const currentPrefix = lines.length === 0 ? prefix : continuationPrefix;
-      lines.push(`${currentPrefix}${remaining.slice(0, contentWidth)}`);
-      remaining = remaining.slice(contentWidth);
-    }
-    current = remaining;
-  }
-
-  if (current) {
-    const currentPrefix = lines.length === 0 ? prefix : continuationPrefix;
-    lines.push(`${currentPrefix}${current}`);
-  }
-
-  return lines;
+  return out.join("\n");
 }
 
 function mergeChanges(next: readonly FileChange[], previous: readonly FileChange[]): FileChange[] {
@@ -462,6 +681,162 @@ function mergeChanges(next: readonly FileChange[], previous: readonly FileChange
   }
 
   return [...merged.values()].slice(0, 10);
+}
+
+function computeThreeColumnWidths(totalWidth: number): { first: number; second: number; third: number } {
+  const available = totalWidth - 4;
+  const first = Math.max(24, Math.floor(available / 3));
+  const second = Math.max(24, Math.floor(available / 3));
+  const third = Math.max(24, available - first - second);
+  return { first, second, third };
+}
+
+function filterPromptPresets(presets: PromptPreset[], query: string): PromptPreset[] {
+  const needle = query.trim().toLowerCase();
+  if (!needle) {
+    return presets;
+  }
+  return presets.filter((preset) => `${preset.label} ${preset.sub} ${preset.keywords}`.toLowerCase().includes(needle));
+}
+
+function buildPromptPresets(state: QuestState): PromptPreset[] {
+  const nowList = state.now.slice(0, 5).map((task, index) => `${index + 1}. ${task.text}${task.doc ? ` (${task.doc})` : ""}`).join("\n");
+  const nextList = state.next.slice(0, 5).map((task, index) => `${index + 1}. ${task.text}`).join("\n");
+  const blockedList = state.blocked.map((task, index) => `${index + 1}. ${task.text} — waiting on ${task.reason} (${task.since})`).join("\n");
+  const agentList = state.agents.map((agent) => `- ${agent.name} (${agent.role}): ${agent.objective}`).join("\n");
+
+  const resumeCore = `Repo: ${state.name} (branch: ${state.branch})
+Mission: ${state.mission}
+Objective: ${state.activeQuest.title} (${state.activeQuest.progress.done}/${state.activeQuest.progress.total})
+Current task: ${state.resumeNote.task}
+Last touched: ${state.resumeNote.lastTouched} · idle ${state.resumeNote.since}`;
+
+  return [
+    {
+      id: "resume-claude",
+      glyph: "C",
+      label: "Resume for Claude Code",
+      sub: "Paste into Claude with full context",
+      keywords: "claude resume planner",
+      body: `I'm resuming our Claude Code session.
+${resumeCore}
+
+Now:
+${nowList || "(none)"}
+
+Please read PLAN.md and STATE.md, then continue from "${state.resumeNote.task}".`,
+    },
+    {
+      id: "resume-codex",
+      glyph: "X",
+      label: "Resume for Codex",
+      sub: "Paste into Codex - implementer mode",
+      keywords: "codex resume implementer",
+      body: `Resuming Codex implementer session.
+${resumeCore}
+
+Read AGENTS.md for your instructions, then pick up the Now task:
+${nowList || "(none)"}
+
+Run npm run lint && npm test before committing.`,
+    },
+    {
+      id: "resume-gemini",
+      glyph: "G",
+      label: "Resume for Gemini",
+      sub: "Paste into Gemini - reviewer mode",
+      keywords: "gemini resume reviewer",
+      body: `Resuming Gemini reviewer session.
+${resumeCore}
+
+Read GEMINI.md for your scope. Recent work touches: ${state.resumeNote.lastTouched}.
+Please review the latest diff against AGENTS.md constraints.`,
+    },
+    {
+      id: "standup",
+      glyph: "*",
+      label: "Daily standup",
+      sub: "What's in flight + what's next",
+      keywords: "standup daily update",
+      body: `Standup - ${state.name} (${state.branch})
+
+Objective: ${state.activeQuest.title} (${state.activeQuest.progress.done}/${state.activeQuest.progress.total})
+
+In flight:
+${nowList || "(none)"}
+
+Up next:
+${nextList || "(none)"}
+
+Blocked:
+${blockedList || "(none)"}`,
+    },
+    {
+      id: "blocker-summary",
+      glyph: "!",
+      label: "Blocker summary",
+      sub: "For a human or agent to unblock",
+      keywords: "blocker blocked waiting",
+      body: `Blocker summary - ${state.name}
+
+${blockedList || "No active blockers."}
+
+Context: objective is "${state.activeQuest.title}". Resolving these unblocks: ${state.resumeNote.task}.`,
+    },
+    {
+      id: "briefing",
+      glyph: "B",
+      label: "Repo intent briefing",
+      sub: "Onboard a fresh agent session",
+      keywords: "briefing intent onboard fresh",
+      body: `Briefing: ${state.name}
+
+Mission: ${state.mission}
+Current objective: ${state.activeQuest.title}
+Branch: ${state.branch}
+
+Now (${state.now.length}):
+${nowList || "(none)"}
+
+Next (${state.next.length}):
+${nextList || "(none)"}
+
+Agents in this repo:
+${agentList || "(none configured)"}
+
+Start by reading PRD.md, PLAN.md, STATE.md. Then ask me what the current priority is before writing code.`,
+    },
+  ];
+}
+
+function isPrintable(input: string): boolean {
+  return /^[\x20-\x7e]$/.test(input);
+}
+
+async function copyToClipboard(text: string): Promise<boolean> {
+  if (process.platform === "win32") {
+    return writeToClipboardCommand("clip", [], text);
+  }
+
+  if (process.platform === "darwin") {
+    return writeToClipboardCommand("pbcopy", [], text);
+  }
+
+  if (await writeToClipboardCommand("xclip", ["-selection", "clipboard"], text)) {
+    return true;
+  }
+  return writeToClipboardCommand("xsel", ["--clipboard", "--input"], text);
+}
+
+function writeToClipboardCommand(command: string, args: string[], text: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    const child = spawn(command, args, { stdio: ["pipe", "ignore", "ignore"] });
+    child.on("error", () => resolve(false));
+    child.on("close", (code) => resolve(code === 0));
+    child.stdin.write(text, "utf8", () => {
+      child.stdin.end();
+    });
+  });
 }
 
 function Spacer() {

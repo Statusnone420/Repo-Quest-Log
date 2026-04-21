@@ -8,12 +8,14 @@ import type { Blockquote, Content, Heading, List, ListItem, Paragraph, Root } fr
 import { toString } from "mdast-util-to-string";
 
 import { matchesScannedFile, shouldIgnoreDir } from "./fileset.js";
+import { isExcludedPath, readRepoConfig } from "./config.js";
 import type { ParsedChecklistItem, ParsedDoc, ParsedSection } from "./types.js";
 
 const parser = unified().use(remarkParse);
 
 export async function parseRepo(rootDir: string): Promise<ParsedDoc[]> {
-  const files = await findScannedFiles(rootDir);
+  const config = await readRepoConfig(rootDir);
+  const files = await findScannedFiles(rootDir, config.excludes);
   const docs = await Promise.all(files.map((file) => parseMarkdownFile(rootDir, file)));
   return docs.sort((left, right) => left.file.localeCompare(right.file));
 }
@@ -32,9 +34,9 @@ export async function parseMarkdownFile(rootDir: string, absoluteFile: string): 
   };
 }
 
-export async function findScannedFiles(rootDir: string): Promise<string[]> {
+export async function findScannedFiles(rootDir: string, excludes: readonly string[] = []): Promise<string[]> {
   const found: string[] = [];
-  await walk(rootDir, found);
+  await walk(rootDir, found, rootDir, excludes);
   return found.sort((left, right) => left.localeCompare(right));
 }
 
@@ -151,11 +153,17 @@ function parseChecklistText(text: string): { text: string; checked: boolean } {
   };
 }
 
-async function walk(dir: string, found: string[]): Promise<void> {
+async function walk(dir: string, found: string[], rootDir: string, excludes: readonly string[]): Promise<void> {
   const entries = await readdir(dir, { withFileTypes: true });
 
   for (const entry of entries) {
     const absolute = resolve(dir, entry.name);
+    const relativePath = relative(rootDir, absolute).replace(/\\/g, "/");
+
+    if (isExcludedPath(relativePath, { excludes: [...excludes] })) {
+      continue;
+    }
+
     if (entry.isDirectory()) {
       if (dir.replace(/\\/g, "/").endsWith("/tests") && entry.name === "fixtures") {
         continue;
@@ -163,7 +171,7 @@ async function walk(dir: string, found: string[]): Promise<void> {
       if (shouldIgnoreDir(entry.name)) {
         continue;
       }
-      await walk(absolute, found);
+      await walk(absolute, found, rootDir, excludes);
       continue;
     }
 

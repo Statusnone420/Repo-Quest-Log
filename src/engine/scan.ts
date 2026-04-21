@@ -1,6 +1,7 @@
 import { basename, resolve } from "node:path";
 import { execFileSync } from "node:child_process";
 
+import { isExcludedPath, readRepoConfig } from "./config.js";
 import { normalizeQuestState } from "./normalize.js";
 import { parseRepo } from "./parse.js";
 import type { FileChange, QuestState } from "./types.js";
@@ -13,6 +14,7 @@ export interface ScanOptions {
 
 export async function scanRepo(rootDir: string, options: ScanOptions = {}): Promise<QuestState> {
   const resolvedRoot = resolve(rootDir);
+  const config = await readRepoConfig(resolvedRoot);
   const docs = await parseRepo(resolvedRoot);
 
   return normalizeQuestState(docs, {
@@ -20,7 +22,7 @@ export async function scanRepo(rootDir: string, options: ScanOptions = {}): Prom
     repoName: basename(resolvedRoot),
     branch: readBranchName(resolvedRoot),
     lastScan: new Date().toISOString(),
-    recentChanges: buildRecentChanges(docs, options.recentChanges, resolvedRoot),
+    recentChanges: buildRecentChanges(docs, options.recentChanges, resolvedRoot, config.excludes),
     lastTouchedFile: options.lastTouchedFile,
     lastTouchedAt: options.lastTouchedAt,
   });
@@ -30,6 +32,7 @@ function buildRecentChanges(
   docs: Awaited<ReturnType<typeof parseRepo>>,
   incoming?: readonly FileChange[],
   rootDir?: string,
+  excludes: readonly string[] = [],
 ): FileChange[] {
   const changes: FileChange[] = incoming && incoming.length > 0
     ? [...incoming]
@@ -44,12 +47,13 @@ function buildRecentChanges(
           file: doc.file,
           at: relativeSince(doc.modifiedAt),
         }));
+  const filtered = changes.filter((change) => !isExcludedPath(change.file, { excludes: [...excludes] }));
 
   if (!rootDir) {
-    return changes;
+    return filtered;
   }
 
-  return changes.map((change) => ({
+  return filtered.map((change) => ({
     ...change,
     diff: change.diff ?? readDiffSummary(rootDir, change.file),
   }));

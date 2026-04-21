@@ -1,6 +1,9 @@
+import { isAbsolute, relative } from "node:path";
+
 import chokidar from "chokidar";
 
 import { SCANNED_GLOBS } from "./fileset.js";
+import { isExcludedPath, readRepoConfig } from "./config.js";
 import type { FileChange } from "./types.js";
 
 export interface WatcherOptions {
@@ -18,10 +21,21 @@ export interface WatcherHandle {
 }
 
 export async function startWatcher(options: WatcherOptions): Promise<WatcherHandle> {
-  const watcher = chokidar.watch(options.globs ?? SCANNED_GLOBS, {
+  const config = await readRepoConfig(options.cwd);
+  const watcher = chokidar.watch(options.globs ?? [...SCANNED_GLOBS, ".repolog.json"], {
     cwd: options.cwd,
     ignoreInitial: true,
     persistent: true,
+    ignored: (watchedPath) => {
+      const relativePath = isAbsolute(watchedPath)
+        ? relative(options.cwd, watchedPath)
+        : watchedPath;
+      const normalized = normalizePath(relativePath);
+      if (!normalized || normalized === ".") {
+        return false;
+      }
+      return isExcludedPath(normalized, config);
+    },
   });
 
   const debounceMs = options.debounceMs ?? 250;

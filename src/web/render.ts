@@ -165,6 +165,7 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       background: var(--tile);
       border: 1px solid var(--tile-border);
       border-radius: 10px;
+      min-height: 116px;
       min-width: 0;
       display: flex; flex-direction: column; gap: 4px;
       overflow: hidden;
@@ -186,7 +187,7 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     .strip-headline {
       font-size: var(--headline-size); font-weight: 500; line-height: 1.3;
       overflow: hidden; text-overflow: ellipsis;
-      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+      display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
     }
     .strip-subline {
       font-family: var(--mono); font-size: var(--small-size); color: var(--muted);
@@ -207,7 +208,7 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
 
     /* Resume tile collapses to a single 28px strip when activity is fresh (<2min idle).
        Grid area keeps min-height so neighbors don't reflow. */
-    .strip-cell.resume { min-height: 92px; }
+    .strip-cell.resume { min-height: 116px; }
     .strip-cell.resume.fresh {
       min-height: 28px;
       padding: 0 12px;

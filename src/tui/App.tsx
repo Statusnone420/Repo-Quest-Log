@@ -19,6 +19,12 @@ const palette = {
 };
 
 const THREE_COLUMN_BREAKPOINT = 140;
+const TOP_STRIP_BREAKPOINT = 110;
+const AGENT_GLYPHS: Record<string, string> = {
+  codex: "CX",
+  claude: "CL",
+  gemini: "GM",
+};
 
 export interface WatchAppProps {
   rootDir: string;
@@ -42,12 +48,8 @@ export function formatStaticFrame(
   const topWidth = width - 4;
   const threeColumn = width >= THREE_COLUMN_BREAKPOINT;
   const changeLimit = Math.max(4, Math.min(8, rows > 0 ? Math.floor((rows - 24) / 3) : 4));
-
-  const header = plainPanel("repo quest log", topWidth, [
-    row("Mission", state.mission, topWidth - 2),
-    row("Quest", `${state.activeQuest.title} [${state.activeQuest.progress.done}/${state.activeQuest.progress.total}]`, topWidth - 2),
-    row("Resume", `${state.resumeNote.task} · ${state.resumeNote.lastTouched}`, topWidth - 2),
-  ], state.branch);
+  const brand = renderTopbarLine(state, topWidth);
+  const header = renderTopStripStatic(state, topWidth);
 
   const cockpit = plainPanel("COCKPIT", topWidth, [renderCockpitLine(state, topWidth - 2)]);
 
@@ -68,6 +70,8 @@ export function formatStaticFrame(
     ]);
 
     return [
+      brand,
+      "",
       header,
       "",
       cockpit,
@@ -82,6 +86,8 @@ export function formatStaticFrame(
   const leftWidth = Math.max(34, Math.floor((topWidth - columnGap) / 2));
   const rightWidth = topWidth - leftWidth - columnGap;
   return [
+    brand,
+    "",
     header,
     "",
     cockpit,
@@ -318,18 +324,8 @@ function renderFrame(
   const topWidth = width - 4;
   const threeColumn = width >= THREE_COLUMN_BREAKPOINT;
   const changeLimit = Math.max(4, Math.min(8, Math.floor((rows - 24) / 3)));
-
-  const header = boxPanel({
-    title: "repo quest log",
-    color: palette.dim,
-    width: topWidth,
-    lines: [
-      row("Mission", state.mission, topWidth - 2),
-      row("Quest", `${state.activeQuest.title} [${state.activeQuest.progress.done}/${state.activeQuest.progress.total}]`, topWidth - 2),
-      row("Resume", `${state.resumeNote.task} · ${state.resumeNote.lastTouched}`, topWidth - 2),
-    ],
-    rightMeta: state.branch,
-  });
+  const brand = renderTopbar(state, topWidth);
+  const header = renderTopStrip(state, topWidth);
 
   const cockpit = boxPanel({
     title: "COCKPIT",
@@ -375,6 +371,8 @@ function renderFrame(
 
     return (
       <>
+        {brand}
+        <Spacer />
         {header}
         <Spacer />
         {cockpit}
@@ -437,6 +435,8 @@ function renderFrame(
 
   return (
     <>
+      {brand}
+      <Spacer />
       {header}
       <Spacer />
       {cockpit}
@@ -470,14 +470,113 @@ function PaletteOverlay(params: {
   const lines = [
     ` search ${params.query || "…"}`,
     ...renderPaletteLines(params.presets, params.selectedIndex, params.width - 2),
-    " enter to copy · esc to close · ↑↓ to move",
+    " enter copies prompt · esc closes · ↑↓ moves",
   ];
   return boxPanel({
-    title: "PALETTE",
+    title: "RESUME PROMPTS",
     width: params.width,
     color: palette.warn,
     lines,
   });
+}
+
+function renderTopbarLine(state: QuestState, width: number): string {
+  const left = "repo quest log";
+  const middle = `${state.name} / ${state.branch}`;
+  return truncate(`${left} · ${middle}`, width);
+}
+
+function renderTopbar(state: QuestState, width: number) {
+  return (
+    <Text color={palette.dim}>
+      {truncate(renderTopbarLine(state, width), width)}
+    </Text>
+  );
+}
+
+function renderTopStripStatic(state: QuestState, width: number): string {
+  const mission = plainPanel("MISSION", topStripWidth(width).first, [
+    truncate(state.mission, topStripWidth(width).first - 2),
+  ]);
+  const objective = plainPanel("OBJECTIVE", topStripWidth(width).second, [
+    truncate(formatObjectiveLine(state), topStripWidth(width).second - 2),
+    truncate(`${state.activeQuest.doc}${state.activeQuest.line ? `:${state.activeQuest.line}` : ""}`, topStripWidth(width).second - 2),
+  ]);
+  const resume = plainPanel("RESUME", topStripWidth(width).third, [
+    truncate(state.resumeNote.task, topStripWidth(width).third - 2),
+    truncate(`${state.resumeNote.lastTouched} · idle ${state.resumeNote.since}`, topStripWidth(width).third - 2),
+  ]);
+
+  if (width >= TOP_STRIP_BREAKPOINT) {
+    const dims = topStripWidth(width);
+    return joinThreeColumns(mission, objective, resume, dims.first, dims.second);
+  }
+
+  return [mission, "", objective, "", resume].join("\n");
+}
+
+function renderTopStrip(state: QuestState, width: number) {
+  const dims = topStripWidth(width);
+  const mission = boxPanel({
+    title: "MISSION",
+    color: palette.accent,
+    width: dims.first,
+    lines: [truncate(state.mission, dims.first - 2)],
+  });
+  const objective = boxPanel({
+    title: "OBJECTIVE",
+    color: palette.ok,
+    width: dims.second,
+    lines: [
+      truncate(formatObjectiveLine(state), dims.second - 2),
+      truncate(`${state.activeQuest.doc}${state.activeQuest.line ? `:${state.activeQuest.line}` : ""}`, dims.second - 2),
+    ],
+  });
+  const resume = boxPanel({
+    title: "RESUME",
+    color: palette.warn,
+    width: dims.third,
+    lines: [
+      truncate(state.resumeNote.task, dims.third - 2),
+      truncate(`${state.resumeNote.lastTouched} · idle ${state.resumeNote.since}`, dims.third - 2),
+    ],
+  });
+
+  if (width >= TOP_STRIP_BREAKPOINT) {
+    return (
+      <Box>
+        <Box marginRight={1}>{mission}</Box>
+        <Box marginX={1}>{objective}</Box>
+        <Box marginLeft={1}>{resume}</Box>
+      </Box>
+    );
+  }
+
+  return (
+    <Box flexDirection="column">
+      {mission}
+      <Spacer />
+      {objective}
+      <Spacer />
+      {resume}
+    </Box>
+  );
+}
+
+function formatObjectiveLine(state: QuestState): string {
+  return `${state.activeQuest.title} [${state.activeQuest.progress.done}/${state.activeQuest.progress.total}]`;
+}
+
+function topStripWidth(totalWidth: number): { first: number; second: number; third: number } {
+  if (totalWidth < TOP_STRIP_BREAKPOINT) {
+    return { first: totalWidth, second: totalWidth, third: totalWidth };
+  }
+
+  const available = totalWidth - 4;
+  const first = Math.max(24, Math.floor(available * 0.35));
+  const second = Math.max(24, Math.floor(available * 0.25));
+  const third = Math.max(24, available - first - second);
+  return { first, second, third };
 }
 
 function boxPanel(params: {
@@ -530,10 +629,10 @@ function renderTasks(tasks: QuestState["now"], width: number, lane: "now" | "nex
 
   const bar = lane === "now" ? "▌" : "▍";
   return tasks.map((task, index) => {
-    const agent = task.agent ? task.agent[0]?.toUpperCase() ?? "·" : "·";
-    const doc = task.doc ? ` ${task.doc}${task.line ? `:${task.line}` : ""}` : "";
+    const agent = formatAgentGlyph(task.agent);
+    const doc = task.doc ? ` ${task.doc}` : "";
     return truncate(
-      `${bar} ${String(index + 1).padStart(2, "0")} [${agent}] ${task.text} ·${doc}`,
+      `${bar} ${renderConfidenceDots(task.confidence)} ${String(index + 1).padStart(2, "0")} ${task.text} [${agent}]${doc}`,
       width - 2,
     );
   });
@@ -545,7 +644,7 @@ function renderBlocked(state: QuestState, width: number): string[] {
   }
 
   return state.blocked.map((task, index) => truncate(
-    `▌ ${String(index + 1).padStart(2, "0")} [×] ${task.text} · ${task.reason} · ${task.since}`,
+    `▌ ${renderConfidenceDots(task.confidence)} ${String(index + 1).padStart(2, "0")} ${task.text} · ${task.reason} · ${task.since}`,
     width - 2,
   ));
 }
@@ -556,7 +655,7 @@ function renderAgents(state: QuestState, width: number): string[] {
   }
 
   return state.agents.map((agent) => truncate(
-    `▍ ${agent.name} · ${agent.status.toUpperCase()} · ${agent.objective} · ${agent.area}`,
+    `▍ ${formatAgentGlyph(agent.id)} ${agent.name} · ${agent.status.toUpperCase()} · ${agent.objective}`,
     width - 2,
   ));
 }
@@ -600,11 +699,6 @@ function renderCockpitLine(state: QuestState, width: number): string {
     `tail ${state.resumeNote.lastTouched}`,
   ].join(" · ");
   return truncate(value, width);
-}
-
-function row(label: string, value: string, width: number): string {
-  const prefix = `${label.padEnd(8, " ")} `;
-  return truncate(`${prefix}${value}`, width);
 }
 
 function truncate(value: string, width: number): string {
@@ -697,6 +791,28 @@ function filterPromptPresets(presets: PromptPreset[], query: string): PromptPres
     return presets;
   }
   return presets.filter((preset) => `${preset.label} ${preset.sub} ${preset.keywords}`.toLowerCase().includes(needle));
+}
+
+function renderConfidenceDots(confidence: number): string {
+  const c = Math.max(0, Math.min(1, confidence));
+  if (c >= 0.84) {
+    return "•••";
+  }
+  if (c >= 0.5) {
+    return "·••";
+  }
+  if (c >= 0.17) {
+    return "··•";
+  }
+  return "···";
+}
+
+function formatAgentGlyph(agent?: string): string {
+  if (!agent) {
+    return "··";
+  }
+
+  return AGENT_GLYPHS[agent.toLowerCase()] ?? agent.slice(0, 2).toUpperCase();
 }
 
 function buildPromptPresets(state: QuestState): PromptPreset[] {

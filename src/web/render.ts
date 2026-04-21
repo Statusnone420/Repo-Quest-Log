@@ -374,9 +374,28 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       margin-left: auto; display: inline-flex; align-items: center; gap: 4px;
       font-family: var(--mono); font-size: var(--tiny-size); letter-spacing: 0.4px;
     }
+    .agent-status { position: relative; }
+    .agent-status .dot {
+      transition: opacity 400ms ease, filter 400ms ease, background 400ms ease;
+    }
     .agent-status.active { color: var(--accent); }
+    .agent-status.active .dot { background: var(--accent); }
     .agent-status.working { color: var(--ok); }
+    .agent-status.working .dot { background: var(--ok); }
     .agent-status.idle { color: var(--dim); }
+    .agent-status.idle .dot { background: var(--dim); filter: saturate(0.4); }
+    .agent-status.working[data-pulse="true"] .dot {
+      animation: rql-pulse 600ms ease-in-out 1;
+    }
+    @keyframes rql-pulse {
+      0% { opacity: 0.4; }
+      50% { opacity: 1; }
+      100% { opacity: 1; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .agent-status .dot { transition: none; }
+      .agent-status[data-pulse="true"] .dot { animation: none; }
+    }
     .agent-objective {
       font-size: var(--small-size); line-height: 1.35; color: var(--muted);
       overflow: hidden; text-overflow: ellipsis;
@@ -605,6 +624,7 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
   ${renderSettingsScript()}
   ${renderPaletteScript()}
   ${renderTaskNavScript()}
+  ${renderAgentPulseScript()}
 </body>
 </html>`;
 }
@@ -860,7 +880,7 @@ function renderAgentsTile(agents: AgentProfile[]): string {
             ${renderAgentChip(agent.id)}
             <span class="agent-name">${escapeHtml(agent.name)}</span>
             <span class="agent-role">${escapeHtml(agent.role)}</span>
-            <span class="agent-status ${escapeHtml(agent.status)}"><span class="dot"></span>${escapeHtml(agent.status)}</span>
+            <span class="agent-status ${escapeHtml(agent.status)}" data-agent-id="${escapeHtml(agent.id)}" data-last-task="${escapeHtml(agent.lastTask ?? "")}"><span class="dot"></span>${escapeHtml(agent.status)}</span>
           </div>
           <div class="agent-objective">${escapeHtml(agent.objective)}</div>
           <div class="agent-meta">${escapeHtml(agent.file)} · ${escapeHtml(agent.area)}</div>
@@ -1210,6 +1230,29 @@ function renderPaletteScript(): string {
         }
       });
       input.addEventListener("input", function () { filter(input.value); });
+    })();
+  </script>`;
+}
+
+function renderAgentPulseScript(): string {
+  return `<script>
+    (function () {
+      var KEY = "repolog-agent-last-task";
+      var prev = {};
+      try { prev = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (_) { prev = {}; }
+      var nodes = document.querySelectorAll('.agent-status[data-agent-id]');
+      var next = {};
+      nodes.forEach(function (node) {
+        var id = node.getAttribute('data-agent-id');
+        var task = node.getAttribute('data-last-task') || "";
+        next[id] = task;
+        var wasTask = prev[id];
+        if (node.classList.contains('working') && wasTask !== undefined && wasTask !== task) {
+          node.setAttribute('data-pulse', 'true');
+          setTimeout(function () { node.removeAttribute('data-pulse'); }, 650);
+        }
+      });
+      try { localStorage.setItem(KEY, JSON.stringify(next)); } catch (_) {}
     })();
   </script>`;
 }

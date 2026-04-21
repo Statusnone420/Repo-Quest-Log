@@ -18,7 +18,7 @@ v0.1 close-out: fit-to-window desktop layout, TUI visual parity with the desktop
 - Updated tests for the new layout expectations; all 11 tests pass, `tsc` clean
 
 ## Resume Note
-> In-flight: HUD v2 polish batch. #3 landed — 3-dot confidence sigil renders left of each task index (dim + muted tokens only, no accent), omitted when `task.confidence` is undefined, tooltip shows the raw value.
+> In-flight: HUD v2 polish batch. #4 landed — agent-status dot pulses once (opacity 0.4→1 over 600ms) on `lastTask` change, fades between statuses via CSS transition, desaturates on active→idle, and honors `prefers-reduced-motion`.
 
 Last touched: `src/web/render.ts`
 

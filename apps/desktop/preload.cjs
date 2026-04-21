@@ -13,4 +13,10 @@ contextBridge.exposeInMainWorld("repologDesktop", {
   requestRefresh() {
     ipcRenderer.send("repolog:refresh");
   },
+  openDoc(doc, line) {
+    ipcRenderer.send("repolog:open-doc", { doc, line });
+  },
+  windowAction(action) {
+    ipcRenderer.send("repolog:window-action", action);
+  },
 });

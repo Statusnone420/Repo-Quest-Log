@@ -29,17 +29,17 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     :root {
       --bg: #0b0d10;
       --bg-grid: rgba(120,140,180,0.035);
-      --rql-density: 0.92;
-      --pad-x: calc(14px * var(--rql-density));
-      --pad-y: calc(10px * var(--rql-density));
-      --tile-pad: calc(12px * var(--rql-density));
-      --tile-gap: calc(10px * var(--rql-density));
-      --row-gap: calc(5px * var(--rql-density));
-      --body-size: calc(12px * var(--rql-density));
-      --small-size: calc(10.5px * var(--rql-density));
-      --tiny-size: calc(9px * var(--rql-density));
-      --title-size: calc(13px * var(--rql-density));
-      --headline-size: calc(14px * var(--rql-density));
+      --rql-density: 1.02;
+      --pad-x: calc(15px * var(--rql-density));
+      --pad-y: calc(11px * var(--rql-density));
+      --tile-pad: calc(14px * var(--rql-density));
+      --tile-gap: calc(12px * var(--rql-density));
+      --row-gap: calc(6px * var(--rql-density));
+      --body-size: calc(12.75px * var(--rql-density));
+      --small-size: calc(11.5px * var(--rql-density));
+      --tiny-size: calc(9.75px * var(--rql-density));
+      --title-size: calc(13.75px * var(--rql-density));
+      --headline-size: calc(15.5px * var(--rql-density));
       --tile: rgba(18,22,28,0.78);
       --tile-border: rgba(100,120,150,0.14);
       --tile-border-hot: rgba(140,170,220,0.32);
@@ -116,6 +116,10 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       display: inline-flex; align-items: center; gap: 4px;
       font-family: var(--mono); font-size: var(--tiny-size);
     }
+    .window-controls {
+      display: inline-flex; align-items: center; gap: 4px;
+      margin-left: 4px;
+    }
     .surface-controls button {
       appearance: none; border: 1px solid var(--tile-border);
       background: rgba(255,255,255,0.02); color: var(--ink);
@@ -135,6 +139,14 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       background: rgba(138,180,255,0.16);
       border-color: rgba(138,180,255,0.42);
       color: var(--accent);
+    }
+    .window-controls button[data-window-action="close"] {
+      color: var(--danger);
+      border-color: rgba(244,132,113,0.22);
+    }
+    .window-controls button[data-window-action="close"]:hover {
+      color: var(--ink);
+      border-color: rgba(244,132,113,0.45);
     }
     .surface-controls .label { color: var(--muted); letter-spacing: 0.8px; text-transform: uppercase; margin-left: 4px; }
     .dot { width: 6px; height: 6px; border-radius: 999px; background: var(--ok); display: inline-block; }
@@ -600,8 +612,8 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
         <span style="color: var(--dim)">/</span>
         <span class="branch">${escapeHtml(state.branch)}</span>
       </div>
-      <button type="button" class="kbd-hint" data-palette-open title="Resume-prompt palette">
-        <kbd>Ctrl</kbd><kbd>K</kbd><span>resume prompt</span>
+      <button type="button" class="kbd-hint" data-palette-open title="Copy a ready-to-paste resume prompt">
+        <kbd>Ctrl</kbd><kbd>K</kbd><span>resume prompts</span>
       </button>
       <div class="watch-meta">
         <span class="dot"></span>
@@ -610,13 +622,19 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       </div>
       <div class="surface-controls" aria-label="Display controls">
         <button type="button" data-ui-action="refresh" aria-label="Refresh desktop" title="Refresh desktop">↻</button>
-        <span class="label">Scale</span>
+        <span class="label">Size</span>
         <button type="button" data-ui-action="smaller" aria-label="Smaller">A-</button>
         <span data-ui-scale-label>100%</span>
         <button type="button" data-ui-action="larger" aria-label="Larger">A+</button>
         <span class="label">Density</span>
+        <button type="button" data-ui-density="cozy">Cozy</button>
         <button type="button" data-ui-density="wide">Wide</button>
         <button type="button" data-ui-density="compact">Compact</button>
+        <div class="window-controls" aria-label="Window controls">
+          <button type="button" data-window-action="minimize" aria-label="Minimize window" title="Minimize">_</button>
+          <button type="button" data-window-action="maximize" aria-label="Toggle maximize" title="Maximize or restore">□</button>
+          <button type="button" data-window-action="close" aria-label="Close window" title="Close">×</button>
+        </div>
       </div>
     </header>
     ${isEmptyRepo(state) ? renderEmptyState(state) : `
@@ -676,11 +694,11 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
 
   <div class="palette-overlay" data-palette data-open="false" role="dialog" aria-label="Resume-prompt palette">
     <div class="palette">
-      <input class="palette-input" type="text" placeholder="Type to filter — or press Enter to copy the top option" data-palette-input />
+      <input class="palette-input" type="text" placeholder="Type to filter prompts — press Enter to copy one" data-palette-input />
       <div class="palette-list" data-palette-list></div>
       <div class="palette-footer">
         <span><kbd>↑↓</kbd>navigate</span>
-        <span><kbd>Enter</kbd>copy to clipboard</span>
+        <span><kbd>Enter</kbd>copy prompt</span>
         <span><kbd>Esc</kbd>close</span>
       </div>
     </div>
@@ -912,7 +930,7 @@ function renderItemRow(task: Task, index: number, priorityClass: string, showAge
 
 function renderAgentChip(agent: string): string {
   const key = agent.toLowerCase();
-  const known: Record<string, string> = { codex: "X", claude: "C", gemini: "G" };
+  const known: Record<string, string> = { codex: "CX", claude: "CL", gemini: "GM" };
   const label = known[key] ?? agent[0]?.toUpperCase() ?? "·";
   const cls = known[key] ? `agent-${key}` : "";
   return `<span class="chip ${cls}">${escapeHtml(label)}</span>`;
@@ -1132,7 +1150,7 @@ function renderSettingsScript(): string {
   return `<script>
     (function () {
       var KEY = "repolog-surface-settings";
-      var defaults = { scale: 1, density: "compact" };
+      var defaults = { scale: 1.08, density: "cozy" };
 
       function clamp(value, min, max) { return Math.min(max, Math.max(min, value)); }
       function normalizeDensity(value) {
@@ -1141,28 +1159,28 @@ function renderSettingsScript(): string {
         return "compact";
       }
       function densityMultiplier(value) {
-        if (value === "wide") return 1.08;
+        if (value === "wide") return 1.1;
         if (value === "cozy") return 1;
-        return 0.92;
+        return 0.9;
       }
       function viewportMultiplier() {
         var width = window.innerWidth || 0;
         var height = window.innerHeight || 0;
-        var widthFit = width >= 1600 ? 1 : width >= 1100 ? 0.96 : 0.88;
-        var heightFit = height >= 900 ? 1 : height >= 700 ? 0.96 : height >= 600 ? 0.88 : 0.8;
+        var widthFit = width >= 1600 ? 1 : width >= 1100 ? 0.985 : 0.93;
+        var heightFit = height >= 900 ? 1 : height >= 700 ? 0.97 : height >= 600 ? 0.92 : 0.86;
         return Math.min(widthFit, heightFit);
       }
       function read() {
         try {
           var parsed = JSON.parse(localStorage.getItem(KEY) || "{}");
           var scale = typeof parsed.scale === "number" ? parsed.scale : defaults.scale;
-          return { scale: clamp(scale, 0.84, 1.16), density: normalizeDensity(parsed.density) };
+          return { scale: clamp(scale, 0.92, 1.24), density: normalizeDensity(parsed.density || defaults.density) };
         } catch (_) { return defaults; }
       }
       function save(next) { localStorage.setItem(KEY, JSON.stringify(next)); }
       function apply() {
         var prefs = read();
-        var density = clamp(densityMultiplier(prefs.density) * prefs.scale * viewportMultiplier(), 0.76, 1.2);
+        var density = clamp(densityMultiplier(prefs.density) * prefs.scale * viewportMultiplier(), 0.9, 1.28);
         document.documentElement.dataset.density = prefs.density;
         document.documentElement.style.setProperty("--rql-density", density.toFixed(3));
         var scaleLabel = document.querySelector("[data-ui-scale-label]");
@@ -1176,7 +1194,7 @@ function renderSettingsScript(): string {
       function update(patch) {
         var current = read();
         var next = {
-          scale: typeof patch.scale === "number" ? clamp(patch.scale, 0.84, 1.16) : current.scale,
+          scale: typeof patch.scale === "number" ? clamp(patch.scale, 0.92, 1.24) : current.scale,
           density: patch.density ? normalizeDensity(patch.density) : current.density,
         };
         save(next);
@@ -1193,6 +1211,11 @@ function renderSettingsScript(): string {
               if (window.__rqlToast) window.__rqlToast("resume context copied");
             }).catch(function () {});
           }
+        }
+        var desktopButton = target.closest("[data-window-action]");
+        if (desktopButton && window.repologDesktop && typeof window.repologDesktop.windowAction === "function") {
+          window.repologDesktop.windowAction(desktopButton.getAttribute("data-window-action"));
+          return;
         }
         var openRow = target.closest("[data-open-doc]");
         if (openRow && window.repologDesktop && typeof window.repologDesktop.openDoc === "function") {
@@ -1290,7 +1313,7 @@ function renderPaletteScript(): string {
         var text = p.body || "";
         if (navigator.clipboard && navigator.clipboard.writeText) {
           navigator.clipboard.writeText(text).then(function () {
-            showToast(p.label + " copied");
+            showToast(p.label + " prompt copied");
           }).catch(function () { showToast("copy failed"); });
         } else {
           showToast("clipboard unavailable");

@@ -1,9 +1,9 @@
+const fs = require("node:fs");
 const path = require("node:path");
 const { pathToFileURL } = require("node:url");
 const { mkdir, writeFile } = require("node:fs/promises");
 
-const { app, BrowserWindow, ipcMain } = require("electron");
-const { screen } = require("electron");
+const { app, BrowserWindow, ipcMain, shell, screen } = require("electron");
 const { resolveDesktopRepoRoot } = require(path.join(__dirname, "..", "..", "dist", "desktop", "root.js"));
 
 const repoRoot = path.resolve(__dirname, "..", "..");
@@ -195,6 +195,44 @@ async function start() {
 
 ipcMain.on("repolog:refresh", () => {
   void refresh();
+});
+
+ipcMain.on("repolog:open-doc", (_event, payload = {}) => {
+  const doc = typeof payload.doc === "string" ? payload.doc : "";
+  if (!doc) {
+    return;
+  }
+
+  const filePath = path.resolve(targetRoot, doc);
+  if (!filePath.startsWith(targetRoot) || !fs.existsSync(filePath)) {
+    return;
+  }
+
+  void shell.openPath(filePath);
+});
+
+ipcMain.on("repolog:window-action", (_event, action) => {
+  if (!win || win.isDestroyed()) {
+    return;
+  }
+
+  if (action === "minimize") {
+    win.minimize();
+    return;
+  }
+
+  if (action === "maximize") {
+    if (win.isMaximized()) {
+      win.unmaximize();
+    } else {
+      win.maximize();
+    }
+    return;
+  }
+
+  if (action === "close") {
+    win.close();
+  }
 });
 
 app.on("window-all-closed", () => {

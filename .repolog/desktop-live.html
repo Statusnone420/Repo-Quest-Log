@@ -8,17 +8,17 @@
     :root {
       --bg: #0b0d10;
       --bg-grid: rgba(120,140,180,0.035);
-      --rql-density: 0.92;
-      --pad-x: calc(14px * var(--rql-density));
-      --pad-y: calc(10px * var(--rql-density));
-      --tile-pad: calc(12px * var(--rql-density));
-      --tile-gap: calc(10px * var(--rql-density));
-      --row-gap: calc(5px * var(--rql-density));
-      --body-size: calc(12px * var(--rql-density));
-      --small-size: calc(10.5px * var(--rql-density));
-      --tiny-size: calc(9px * var(--rql-density));
-      --title-size: calc(13px * var(--rql-density));
-      --headline-size: calc(14px * var(--rql-density));
+      --rql-density: 1.02;
+      --pad-x: calc(15px * var(--rql-density));
+      --pad-y: calc(11px * var(--rql-density));
+      --tile-pad: calc(14px * var(--rql-density));
+      --tile-gap: calc(12px * var(--rql-density));
+      --row-gap: calc(6px * var(--rql-density));
+      --body-size: calc(12.75px * var(--rql-density));
+      --small-size: calc(11.5px * var(--rql-density));
+      --tiny-size: calc(9.75px * var(--rql-density));
+      --title-size: calc(13.75px * var(--rql-density));
+      --headline-size: calc(15.5px * var(--rql-density));
       --tile: rgba(18,22,28,0.78);
       --tile-border: rgba(100,120,150,0.14);
       --tile-border-hot: rgba(140,170,220,0.32);
@@ -95,6 +95,10 @@
       display: inline-flex; align-items: center; gap: 4px;
       font-family: var(--mono); font-size: var(--tiny-size);
     }
+    .window-controls {
+      display: inline-flex; align-items: center; gap: 4px;
+      margin-left: 4px;
+    }
     .surface-controls button {
       appearance: none; border: 1px solid var(--tile-border);
       background: rgba(255,255,255,0.02); color: var(--ink);
@@ -114,6 +118,14 @@
       background: rgba(138,180,255,0.16);
       border-color: rgba(138,180,255,0.42);
       color: var(--accent);
+    }
+    .window-controls button[data-window-action="close"] {
+      color: var(--danger);
+      border-color: rgba(244,132,113,0.22);
+    }
+    .window-controls button[data-window-action="close"]:hover {
+      color: var(--ink);
+      border-color: rgba(244,132,113,0.45);
     }
     .surface-controls .label { color: var(--muted); letter-spacing: 0.8px; text-transform: uppercase; margin-left: 4px; }
     .dot { width: 6px; height: 6px; border-radius: 999px; background: var(--ok); display: inline-block; }
@@ -579,23 +591,29 @@
         <span style="color: var(--dim)">/</span>
         <span class="branch">main</span>
       </div>
-      <button type="button" class="kbd-hint" data-palette-open title="Resume-prompt palette">
-        <kbd>Ctrl</kbd><kbd>K</kbd><span>resume prompt</span>
+      <button type="button" class="kbd-hint" data-palette-open title="Copy a ready-to-paste resume prompt">
+        <kbd>Ctrl</kbd><kbd>K</kbd><span>resume prompts</span>
       </button>
       <div class="watch-meta">
         <span class="dot"></span>
         <span>7 files</span>
-        <span style="color: var(--dim)">· 2026-04-21T21:14:52.552Z</span>
+        <span style="color: var(--dim)">· 2026-04-21T21:22:42.556Z</span>
       </div>
       <div class="surface-controls" aria-label="Display controls">
         <button type="button" data-ui-action="refresh" aria-label="Refresh desktop" title="Refresh desktop">↻</button>
-        <span class="label">Scale</span>
+        <span class="label">Size</span>
         <button type="button" data-ui-action="smaller" aria-label="Smaller">A-</button>
         <span data-ui-scale-label>100%</span>
         <button type="button" data-ui-action="larger" aria-label="Larger">A+</button>
         <span class="label">Density</span>
+        <button type="button" data-ui-density="cozy">Cozy</button>
         <button type="button" data-ui-density="wide">Wide</button>
         <button type="button" data-ui-density="compact">Compact</button>
+        <div class="window-controls" aria-label="Window controls">
+          <button type="button" data-window-action="minimize" aria-label="Minimize window" title="Minimize">_</button>
+          <button type="button" data-window-action="maximize" aria-label="Toggle maximize" title="Maximize or restore">□</button>
+          <button type="button" data-window-action="close" aria-label="Close window" title="Close">×</button>
+        </div>
       </div>
     </header>
     
@@ -616,7 +634,7 @@
 Mission: A local-first CLI + TUI + desktop + VS Code shell that makes repo intent legible at a glance and hands that intent to whichever coding agent you open next.
 Objective: All surfaces stay pinned to one shared QuestState pipeline and one renderer. v0.1 polish first; v0.2 features only after the v0.1 punch list is green. (0/0 · PLAN.md:9)
 Current task: TUI visual parity — mirror the new desktop HUD: cockpit stat bar, 3-column layout where terminal width allows, single-line priority-bar task rows, matching palette, same section order. Add Ctrl+K palette parity via an input overlay. (agent: codex, touches: src/tui/App.tsx)
-Last touched: STATE.md · idle 20m
+Last touched: STATE.md · idle 28m
 Please read STATE.md and let&#39;s continue." title="Copy resume context to clipboard">
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
             copy
@@ -625,7 +643,7 @@ Please read STATE.md and let&#39;s continue." title="Copy resume context to clip
             ⌘K
           </button>
         </div>
-        <div class="kicker">Resume where you left off <span class="meta">· idle 20m</span></div>
+        <div class="kicker">Resume where you left off <span class="meta">· idle 28m</span></div>
         <div class="strip-headline">TUI visual parity — mirror the new desktop HUD: cockpit stat bar, 3-column layout where terminal width allows, single-line priority-bar task rows, matching palette, same section order. Add Ctrl+K palette parity via an input overlay. (agent: codex, touches: src/tui/App.tsx)</div>
         <div class="strip-subline">↳ STATE.md · PLAN.md</div>
       </div>
@@ -654,19 +672,19 @@ Please read STATE.md and let&#39;s continue." title="Copy resume context to clip
     <span class="sigil" title="heuristic confidence: 0.95"><span class="on">●</span><span class="on">●</span><span class="on">●</span></span>
     <span class="item-num">01</span>
     <span class="item-text">TUI visual parity — mirror the new desktop HUD: cockpit stat bar, 3-column layout where terminal width allows, single-line priority-bar task rows, matching palette, same section order. Add Ctrl+K palette parity via an input overlay. (agent: codex, touches: src/tui/App.tsx)</span>
-    <span class="item-aside"><span class="chip agent-codex">X</span><span class="chip doc">PLAN.md</span></span>
+    <span class="item-aside"><span class="chip agent-codex">CX</span><span class="chip doc">PLAN.md</span></span>
   </div><div class="item p-now clickable" data-open-doc="PLAN.md" data-line="18" role="button" tabindex="0" title="Rename &quot;Active Quest&quot; → &quot;Objective&quot; in TUI and VS Code surfaces (agent: codex, touches: src/tui/App.tsx, extensions/vscode/)">
     <span class="bar"></span>
     <span class="sigil" title="heuristic confidence: 0.95"><span class="on">●</span><span class="on">●</span><span class="on">●</span></span>
     <span class="item-num">02</span>
     <span class="item-text">Rename &quot;Active Quest&quot; → &quot;Objective&quot; in TUI and VS Code surfaces (agent: codex, touches: src/tui/App.tsx, extensions/vscode/)</span>
-    <span class="item-aside"><span class="chip agent-codex">X</span><span class="chip doc">PLAN.md</span></span>
+    <span class="item-aside"><span class="chip agent-codex">CX</span><span class="chip doc">PLAN.md</span></span>
   </div><div class="item p-now clickable" data-open-doc="PLAN.md" data-line="19" role="button" tabindex="0" title="Fixture coverage for noisy / imperfect repo docs under tests/fixtures/ (agent: codex, touches: tests/)">
     <span class="bar"></span>
     <span class="sigil" title="heuristic confidence: 0.95"><span class="on">●</span><span class="on">●</span><span class="on">●</span></span>
     <span class="item-num">03</span>
     <span class="item-text">Fixture coverage for noisy / imperfect repo docs under tests/fixtures/ (agent: codex, touches: tests/)</span>
-    <span class="item-aside"><span class="chip agent-codex">X</span><span class="chip doc">PLAN.md</span></span>
+    <span class="item-aside"><span class="chip agent-codex">CX</span><span class="chip doc">PLAN.md</span></span>
   </div>
     </div>
   </section>
@@ -739,7 +757,7 @@ Please read STATE.md and let&#39;s continue." title="Copy resume context to clip
         <div class="change-row">
           <span class="change-file">STATE.md</span>
           <span class="change-diff"></span>
-          <span class="change-age">20m</span>
+          <span class="change-age">28m</span>
         </div>
       
         <div class="change-row">
@@ -757,7 +775,7 @@ Please read STATE.md and let&#39;s continue." title="Copy resume context to clip
         <div class="change-row">
           <span class="change-file">CLAUDE.md</span>
           <span class="change-diff"></span>
-          <span class="change-age">1h</span>
+          <span class="change-age">2h</span>
         </div>
       
         <div class="change-row">
@@ -769,13 +787,13 @@ Please read STATE.md and let&#39;s continue." title="Copy resume context to clip
         <div class="change-row">
           <span class="change-file">README.md</span>
           <span class="change-diff"></span>
-          <span class="change-age">3h</span>
+          <span class="change-age">4h</span>
         </div>
       
         <div class="change-row">
           <span class="change-file">GEMINI.md</span>
           <span class="change-diff"></span>
-          <span class="change-age">5h</span>
+          <span class="change-age">6h</span>
         </div>
       
     </div>
@@ -791,7 +809,7 @@ Please read STATE.md and let&#39;s continue." title="Copy resume context to clip
       
         <div class="agent-card">
           <div class="agent-head">
-            <span class="chip agent-codex">X</span>
+            <span class="chip agent-codex">CX</span>
             <span class="agent-name">Codex</span>
             <span class="agent-role">Implementer of Backend Code and Coding Expert You write TypeScript per PLAN.md. You do not redesign. You do not expand scope.</span>
             <span class="agent-status working" data-agent-id="codex" data-last-task="Wired the first desktop and VS Code hosts around the shared renderer; next is shell hardening and packaging."><span class="dot"></span>working</span>
@@ -802,7 +820,7 @@ Please read STATE.md and let&#39;s continue." title="Copy resume context to clip
       
         <div class="agent-card">
           <div class="agent-head">
-            <span class="chip agent-claude">C</span>
+            <span class="chip agent-claude">CL</span>
             <span class="agent-name">Claude</span>
             <span class="agent-role">Planner / doc-first. You draft specs, PRDs, schemas, and plans. You do not write implementation code without an approved plan. If asked for UI/UX input, you are unlocked to make what UI/UX changes needed to achieve the goal.</span>
             <span class="agent-status active" data-agent-id="claude" data-last-task=""><span class="dot"></span>active</span>
@@ -814,7 +832,7 @@ Please read STATE.md and let&#39;s continue." title="Copy resume context to clip
       
         <div class="agent-card">
           <div class="agent-head">
-            <span class="chip agent-gemini">G</span>
+            <span class="chip agent-gemini">GM</span>
             <span class="agent-name">Gemini</span>
             <span class="agent-role">Reviewer. You audit output. You do not write production code.</span>
             <span class="agent-status idle" data-agent-id="gemini" data-last-task=""><span class="dot"></span>idle</span>
@@ -833,11 +851,11 @@ Please read STATE.md and let&#39;s continue." title="Copy resume context to clip
 
   <div class="palette-overlay" data-palette data-open="false" role="dialog" aria-label="Resume-prompt palette">
     <div class="palette">
-      <input class="palette-input" type="text" placeholder="Type to filter — or press Enter to copy the top option" data-palette-input />
+      <input class="palette-input" type="text" placeholder="Type to filter prompts — press Enter to copy one" data-palette-input />
       <div class="palette-list" data-palette-list></div>
       <div class="palette-footer">
         <span><kbd>↑↓</kbd>navigate</span>
-        <span><kbd>Enter</kbd>copy to clipboard</span>
+        <span><kbd>Enter</kbd>copy prompt</span>
         <span><kbd>Esc</kbd>close</span>
       </div>
     </div>
@@ -845,8 +863,8 @@ Please read STATE.md and let&#39;s continue." title="Copy resume context to clip
 
   <div class="toast" data-toast>copied</div>
 
-  <script id="rql-presets" type="application/json">[{"id":"resume-claude","glyph":"C","label":"Resume for Claude Code","sub":"Paste into Claude with full context","keywords":"claude resume planner","body":"I'm resuming our Claude Code session.\nRepo: Repo Quest Log (branch: main)\nMission: A local-first CLI + TUI + desktop + VS Code shell that makes repo intent legible at a glance and hands that intent to whichever coding agent you open next.\nObjective: All surfaces stay pinned to one shared QuestState pipeline and one renderer. v0.1 polish first; v0.2 features only after the v0.1 punch list is green. (0/0)\nCurrent task: TUI visual parity — mirror the new desktop HUD: cockpit stat bar, 3-column layout where terminal width allows, single-line priority-bar task rows, matching palette, same section order. Add Ctrl+K palette parity via an input overlay. (agent: codex, touches: src/tui/App.tsx)\nLast touched: STATE.md · idle 20m\n\nNow:\n1. TUI visual parity — mirror the new desktop HUD: cockpit stat bar, 3-column layout where terminal width allows, single-line priority-bar task rows, matching palette, same section order. Add Ctrl+K palette parity via an input overlay. (agent: codex, touches: src/tui/App.tsx) (PLAN.md)\n2. Rename \"Active Quest\" → \"Objective\" in TUI and VS Code surfaces (agent: codex, touches: src/tui/App.tsx, extensions/vscode/) (PLAN.md)\n3. Fixture coverage for noisy / imperfect repo docs under tests/fixtures/ (agent: codex, touches: tests/) (PLAN.md)\n\nPlease read PLAN.md and STATE.md, then continue from \"TUI visual parity — mirror the new desktop HUD: cockpit stat bar, 3-column layout where terminal width allows, single-line priority-bar task rows, matching palette, same section order. Add Ctrl+K palette parity via an input overlay. (agent: codex, touches: src/tui/App.tsx)\"."},{"id":"resume-codex","glyph":"X","label":"Resume for Codex","sub":"Paste into Codex — implementer mode","keywords":"codex resume implementer","body":"Resuming Codex implementer session.\nRepo: Repo Quest Log (branch: main)\nMission: A local-first CLI + TUI + desktop + VS Code shell that makes repo intent legible at a glance and hands that intent to whichever coding agent you open next.\nObjective: All surfaces stay pinned to one shared QuestState pipeline and one renderer. v0.1 polish first; v0.2 features only after the v0.1 punch list is green. (0/0)\nCurrent task: TUI visual parity — mirror the new desktop HUD: cockpit stat bar, 3-column layout where terminal width allows, single-line priority-bar task rows, matching palette, same section order. Add Ctrl+K palette parity via an input overlay. (agent: codex, touches: src/tui/App.tsx)\nLast touched: STATE.md · idle 20m\n\nRead AGENTS.md for your instructions, then pick up the Now task:\n1. TUI visual parity — mirror the new desktop HUD: cockpit stat bar, 3-column layout where terminal width allows, single-line priority-bar task rows, matching palette, same section order. Add Ctrl+K palette parity via an input overlay. (agent: codex, touches: src/tui/App.tsx) (PLAN.md)\n2. Rename \"Active Quest\" → \"Objective\" in TUI and VS Code surfaces (agent: codex, touches: src/tui/App.tsx, extensions/vscode/) (PLAN.md)\n3. Fixture coverage for noisy / imperfect repo docs under tests/fixtures/ (agent: codex, touches: tests/) (PLAN.md)\n\nRun npm run lint \u0026\u0026 npm test before committing."},{"id":"resume-gemini","glyph":"G","label":"Resume for Gemini","sub":"Paste into Gemini — reviewer mode","keywords":"gemini resume reviewer","body":"Resuming Gemini reviewer session.\nRepo: Repo Quest Log (branch: main)\nMission: A local-first CLI + TUI + desktop + VS Code shell that makes repo intent legible at a glance and hands that intent to whichever coding agent you open next.\nObjective: All surfaces stay pinned to one shared QuestState pipeline and one renderer. v0.1 polish first; v0.2 features only after the v0.1 punch list is green. (0/0)\nCurrent task: TUI visual parity — mirror the new desktop HUD: cockpit stat bar, 3-column layout where terminal width allows, single-line priority-bar task rows, matching palette, same section order. Add Ctrl+K palette parity via an input overlay. (agent: codex, touches: src/tui/App.tsx)\nLast touched: STATE.md · idle 20m\n\nRead GEMINI.md for your scope. Recent work touches: STATE.md.\nPlease review the latest diff against AGENTS.md constraints."},{"id":"standup","glyph":"☀","label":"Daily standup","sub":"What's in flight + what's next","keywords":"standup daily update","body":"Standup — Repo Quest Log (main)\n\nObjective: All surfaces stay pinned to one shared QuestState pipeline and one renderer. v0.1 polish first; v0.2 features only after the v0.1 punch list is green. (0/0)\n\nIn flight:\n1. TUI visual parity — mirror the new desktop HUD: cockpit stat bar, 3-column layout where terminal width allows, single-line priority-bar task rows, matching palette, same section order. Add Ctrl+K palette parity via an input overlay. (agent: codex, touches: src/tui/App.tsx) (PLAN.md)\n2. Rename \"Active Quest\" → \"Objective\" in TUI and VS Code surfaces (agent: codex, touches: src/tui/App.tsx, extensions/vscode/) (PLAN.md)\n3. Fixture coverage for noisy / imperfect repo docs under tests/fixtures/ (agent: codex, touches: tests/) (PLAN.md)\n\nUp next:\n1. Live git panel — branch, ahead/behind, dirty count, last commit subject + relative time\n2. Agent activity feed — infer agent × file from mtimes × owned-areas in AGENTS.md / CLAUDE.md / GEMINI.md\n3. Standup export — one-keypress markdown of today's done + currently-active to clipboard\n4. Opt-in write-back for checkbox toggles only, gated by .repolog.json → \"writeback\": true, with persistent on-screen banner\n5. Schema v2 — rename activeQuest → objective, add gitContext, agentActivity, config.writeback; ship compat shim for v1\n\nBlocked:\n1. Publish npm package @repo-quest/core — waiting on need npm org + CI secrets (1h)"},{"id":"blocker-summary","glyph":"⏸","label":"Blocker summary","sub":"For a human or agent to unblock","keywords":"blocker blocked waiting","body":"Blocker summary — Repo Quest Log\n\n1. Publish npm package @repo-quest/core — waiting on need npm org + CI secrets (1h)\n\nContext: objective is \"All surfaces stay pinned to one shared QuestState pipeline and one renderer. v0.1 polish first; v0.2 features only after the v0.1 punch list is green.\". Resolving these unblocks: TUI visual parity — mirror the new desktop HUD: cockpit stat bar, 3-column layout where terminal width allows, single-line priority-bar task rows, matching palette, same section order. Add Ctrl+K palette parity via an input overlay. (agent: codex, touches: src/tui/App.tsx)."},{"id":"briefing","glyph":"📖","label":"Repo intent briefing","sub":"Onboard a fresh agent session","keywords":"briefing intent onboard fresh","body":"Briefing: Repo Quest Log\n\nMission: A local-first CLI + TUI + desktop + VS Code shell that makes repo intent legible at a glance and hands that intent to whichever coding agent you open next.\nCurrent objective: All surfaces stay pinned to one shared QuestState pipeline and one renderer. v0.1 polish first; v0.2 features only after the v0.1 punch list is green.\nBranch: main\n\nNow (3):\n1. TUI visual parity — mirror the new desktop HUD: cockpit stat bar, 3-column layout where terminal width allows, single-line priority-bar task rows, matching palette, same section order. Add Ctrl+K palette parity via an input overlay. (agent: codex, touches: src/tui/App.tsx) (PLAN.md)\n2. Rename \"Active Quest\" → \"Objective\" in TUI and VS Code surfaces (agent: codex, touches: src/tui/App.tsx, extensions/vscode/) (PLAN.md)\n3. Fixture coverage for noisy / imperfect repo docs under tests/fixtures/ (agent: codex, touches: tests/) (PLAN.md)\n\nNext (5):\n1. Live git panel — branch, ahead/behind, dirty count, last commit subject + relative time\n2. Agent activity feed — infer agent × file from mtimes × owned-areas in AGENTS.md / CLAUDE.md / GEMINI.md\n3. Standup export — one-keypress markdown of today's done + currently-active to clipboard\n4. Opt-in write-back for checkbox toggles only, gated by .repolog.json → \"writeback\": true, with persistent on-screen banner\n5. Schema v2 — rename activeQuest → objective, add gitContext, agentActivity, config.writeback; ship compat shim for v1\n\nAgents in this repo:\n- Codex (Implementer of Backend Code and Coding Expert You write TypeScript per PLAN.md. You do not redesign. You do not expand scope.): Keep the CLI, desktop app, and VS Code extension on one shared QuestState and one design-faithful renderer.\n- Claude (Planner / doc-first. You draft specs, PRDs, schemas, and plans. You do not write implementation code without an approved plan. If asked for UI/UX input, you are unlocked to make what UI/UX changes needed to achieve the goal.): Close v0.1 (fit-to-window desktop, TUI visual parity, \"Active Quest\" → \"Objective\" rename, noisy-repo fixtures, click-to-open parity) and then scope v0.2 around the agent-integration wedge: resume-prompt palette, live git panel, agent activity feed, standup export, opt-in write-back.\n0.2 and beyond - the \"tool any dev needs\" is the way forward.\n- Gemini (Reviewer. You audit output. You do not write production code.): Objective unavailable\n\nStart by reading PRD.md, PLAN.md, STATE.md. Then ask me what the current priority is before writing code."}]</script>
-  <script id="rql-state" type="application/json">{"name":"Repo Quest Log","branch":"main","mission":"A local-first CLI + TUI + desktop + VS Code shell that makes repo intent legible at a glance and hands that intent to whichever coding agent you open next.","objective":{"title":"All surfaces stay pinned to one shared QuestState pipeline and one renderer. v0.1 polish first; v0.2 features only after the v0.1 punch list is green.","doc":"PLAN.md","line":9,"progress":{"done":0,"total":0}},"resume":{"task":"TUI visual parity — mirror the new desktop HUD: cockpit stat bar, 3-column layout where terminal width allows, single-line priority-bar task rows, matching palette, same section order. Add Ctrl+K palette parity via an input overlay. (agent: codex, touches: src/tui/App.tsx)","doc":"PLAN.md","since":"20m","lastTouched":"STATE.md","thought":"Fit-to-window desktop: responsive density + inner-panel scroll fallback so the shell never shows an outer scrollbar on 1080p+ (agent: codex, touches: src/web/render.ts, apps/desktop/)"},"nowCount":3,"nextCount":5,"blockedCount":1,"agentCount":3,"filesCount":7}</script>
+  <script id="rql-presets" type="application/json">[{"id":"resume-claude","glyph":"C","label":"Resume for Claude Code","sub":"Paste into Claude with full context","keywords":"claude resume planner","body":"I'm resuming our Claude Code session.\nRepo: Repo Quest Log (branch: main)\nMission: A local-first CLI + TUI + desktop + VS Code shell that makes repo intent legible at a glance and hands that intent to whichever coding agent you open next.\nObjective: All surfaces stay pinned to one shared QuestState pipeline and one renderer. v0.1 polish first; v0.2 features only after the v0.1 punch list is green. (0/0)\nCurrent task: TUI visual parity — mirror the new desktop HUD: cockpit stat bar, 3-column layout where terminal width allows, single-line priority-bar task rows, matching palette, same section order. Add Ctrl+K palette parity via an input overlay. (agent: codex, touches: src/tui/App.tsx)\nLast touched: STATE.md · idle 28m\n\nNow:\n1. TUI visual parity — mirror the new desktop HUD: cockpit stat bar, 3-column layout where terminal width allows, single-line priority-bar task rows, matching palette, same section order. Add Ctrl+K palette parity via an input overlay. (agent: codex, touches: src/tui/App.tsx) (PLAN.md)\n2. Rename \"Active Quest\" → \"Objective\" in TUI and VS Code surfaces (agent: codex, touches: src/tui/App.tsx, extensions/vscode/) (PLAN.md)\n3. Fixture coverage for noisy / imperfect repo docs under tests/fixtures/ (agent: codex, touches: tests/) (PLAN.md)\n\nPlease read PLAN.md and STATE.md, then continue from \"TUI visual parity — mirror the new desktop HUD: cockpit stat bar, 3-column layout where terminal width allows, single-line priority-bar task rows, matching palette, same section order. Add Ctrl+K palette parity via an input overlay. (agent: codex, touches: src/tui/App.tsx)\"."},{"id":"resume-codex","glyph":"X","label":"Resume for Codex","sub":"Paste into Codex — implementer mode","keywords":"codex resume implementer","body":"Resuming Codex implementer session.\nRepo: Repo Quest Log (branch: main)\nMission: A local-first CLI + TUI + desktop + VS Code shell that makes repo intent legible at a glance and hands that intent to whichever coding agent you open next.\nObjective: All surfaces stay pinned to one shared QuestState pipeline and one renderer. v0.1 polish first; v0.2 features only after the v0.1 punch list is green. (0/0)\nCurrent task: TUI visual parity — mirror the new desktop HUD: cockpit stat bar, 3-column layout where terminal width allows, single-line priority-bar task rows, matching palette, same section order. Add Ctrl+K palette parity via an input overlay. (agent: codex, touches: src/tui/App.tsx)\nLast touched: STATE.md · idle 28m\n\nRead AGENTS.md for your instructions, then pick up the Now task:\n1. TUI visual parity — mirror the new desktop HUD: cockpit stat bar, 3-column layout where terminal width allows, single-line priority-bar task rows, matching palette, same section order. Add Ctrl+K palette parity via an input overlay. (agent: codex, touches: src/tui/App.tsx) (PLAN.md)\n2. Rename \"Active Quest\" → \"Objective\" in TUI and VS Code surfaces (agent: codex, touches: src/tui/App.tsx, extensions/vscode/) (PLAN.md)\n3. Fixture coverage for noisy / imperfect repo docs under tests/fixtures/ (agent: codex, touches: tests/) (PLAN.md)\n\nRun npm run lint \u0026\u0026 npm test before committing."},{"id":"resume-gemini","glyph":"G","label":"Resume for Gemini","sub":"Paste into Gemini — reviewer mode","keywords":"gemini resume reviewer","body":"Resuming Gemini reviewer session.\nRepo: Repo Quest Log (branch: main)\nMission: A local-first CLI + TUI + desktop + VS Code shell that makes repo intent legible at a glance and hands that intent to whichever coding agent you open next.\nObjective: All surfaces stay pinned to one shared QuestState pipeline and one renderer. v0.1 polish first; v0.2 features only after the v0.1 punch list is green. (0/0)\nCurrent task: TUI visual parity — mirror the new desktop HUD: cockpit stat bar, 3-column layout where terminal width allows, single-line priority-bar task rows, matching palette, same section order. Add Ctrl+K palette parity via an input overlay. (agent: codex, touches: src/tui/App.tsx)\nLast touched: STATE.md · idle 28m\n\nRead GEMINI.md for your scope. Recent work touches: STATE.md.\nPlease review the latest diff against AGENTS.md constraints."},{"id":"standup","glyph":"☀","label":"Daily standup","sub":"What's in flight + what's next","keywords":"standup daily update","body":"Standup — Repo Quest Log (main)\n\nObjective: All surfaces stay pinned to one shared QuestState pipeline and one renderer. v0.1 polish first; v0.2 features only after the v0.1 punch list is green. (0/0)\n\nIn flight:\n1. TUI visual parity — mirror the new desktop HUD: cockpit stat bar, 3-column layout where terminal width allows, single-line priority-bar task rows, matching palette, same section order. Add Ctrl+K palette parity via an input overlay. (agent: codex, touches: src/tui/App.tsx) (PLAN.md)\n2. Rename \"Active Quest\" → \"Objective\" in TUI and VS Code surfaces (agent: codex, touches: src/tui/App.tsx, extensions/vscode/) (PLAN.md)\n3. Fixture coverage for noisy / imperfect repo docs under tests/fixtures/ (agent: codex, touches: tests/) (PLAN.md)\n\nUp next:\n1. Live git panel — branch, ahead/behind, dirty count, last commit subject + relative time\n2. Agent activity feed — infer agent × file from mtimes × owned-areas in AGENTS.md / CLAUDE.md / GEMINI.md\n3. Standup export — one-keypress markdown of today's done + currently-active to clipboard\n4. Opt-in write-back for checkbox toggles only, gated by .repolog.json → \"writeback\": true, with persistent on-screen banner\n5. Schema v2 — rename activeQuest → objective, add gitContext, agentActivity, config.writeback; ship compat shim for v1\n\nBlocked:\n1. Publish npm package @repo-quest/core — waiting on need npm org + CI secrets (1h)"},{"id":"blocker-summary","glyph":"⏸","label":"Blocker summary","sub":"For a human or agent to unblock","keywords":"blocker blocked waiting","body":"Blocker summary — Repo Quest Log\n\n1. Publish npm package @repo-quest/core — waiting on need npm org + CI secrets (1h)\n\nContext: objective is \"All surfaces stay pinned to one shared QuestState pipeline and one renderer. v0.1 polish first; v0.2 features only after the v0.1 punch list is green.\". Resolving these unblocks: TUI visual parity — mirror the new desktop HUD: cockpit stat bar, 3-column layout where terminal width allows, single-line priority-bar task rows, matching palette, same section order. Add Ctrl+K palette parity via an input overlay. (agent: codex, touches: src/tui/App.tsx)."},{"id":"briefing","glyph":"📖","label":"Repo intent briefing","sub":"Onboard a fresh agent session","keywords":"briefing intent onboard fresh","body":"Briefing: Repo Quest Log\n\nMission: A local-first CLI + TUI + desktop + VS Code shell that makes repo intent legible at a glance and hands that intent to whichever coding agent you open next.\nCurrent objective: All surfaces stay pinned to one shared QuestState pipeline and one renderer. v0.1 polish first; v0.2 features only after the v0.1 punch list is green.\nBranch: main\n\nNow (3):\n1. TUI visual parity — mirror the new desktop HUD: cockpit stat bar, 3-column layout where terminal width allows, single-line priority-bar task rows, matching palette, same section order. Add Ctrl+K palette parity via an input overlay. (agent: codex, touches: src/tui/App.tsx) (PLAN.md)\n2. Rename \"Active Quest\" → \"Objective\" in TUI and VS Code surfaces (agent: codex, touches: src/tui/App.tsx, extensions/vscode/) (PLAN.md)\n3. Fixture coverage for noisy / imperfect repo docs under tests/fixtures/ (agent: codex, touches: tests/) (PLAN.md)\n\nNext (5):\n1. Live git panel — branch, ahead/behind, dirty count, last commit subject + relative time\n2. Agent activity feed — infer agent × file from mtimes × owned-areas in AGENTS.md / CLAUDE.md / GEMINI.md\n3. Standup export — one-keypress markdown of today's done + currently-active to clipboard\n4. Opt-in write-back for checkbox toggles only, gated by .repolog.json → \"writeback\": true, with persistent on-screen banner\n5. Schema v2 — rename activeQuest → objective, add gitContext, agentActivity, config.writeback; ship compat shim for v1\n\nAgents in this repo:\n- Codex (Implementer of Backend Code and Coding Expert You write TypeScript per PLAN.md. You do not redesign. You do not expand scope.): Keep the CLI, desktop app, and VS Code extension on one shared QuestState and one design-faithful renderer.\n- Claude (Planner / doc-first. You draft specs, PRDs, schemas, and plans. You do not write implementation code without an approved plan. If asked for UI/UX input, you are unlocked to make what UI/UX changes needed to achieve the goal.): Close v0.1 (fit-to-window desktop, TUI visual parity, \"Active Quest\" → \"Objective\" rename, noisy-repo fixtures, click-to-open parity) and then scope v0.2 around the agent-integration wedge: resume-prompt palette, live git panel, agent activity feed, standup export, opt-in write-back.\n0.2 and beyond - the \"tool any dev needs\" is the way forward.\n- Gemini (Reviewer. You audit output. You do not write production code.): Objective unavailable\n\nStart by reading PRD.md, PLAN.md, STATE.md. Then ask me what the current priority is before writing code."}]</script>
+  <script id="rql-state" type="application/json">{"name":"Repo Quest Log","branch":"main","mission":"A local-first CLI + TUI + desktop + VS Code shell that makes repo intent legible at a glance and hands that intent to whichever coding agent you open next.","objective":{"title":"All surfaces stay pinned to one shared QuestState pipeline and one renderer. v0.1 polish first; v0.2 features only after the v0.1 punch list is green.","doc":"PLAN.md","line":9,"progress":{"done":0,"total":0}},"resume":{"task":"TUI visual parity — mirror the new desktop HUD: cockpit stat bar, 3-column layout where terminal width allows, single-line priority-bar task rows, matching palette, same section order. Add Ctrl+K palette parity via an input overlay. (agent: codex, touches: src/tui/App.tsx)","doc":"PLAN.md","since":"28m","lastTouched":"STATE.md","thought":"Fit-to-window desktop: responsive density + inner-panel scroll fallback so the shell never shows an outer scrollbar on 1080p+ (agent: codex, touches: src/web/render.ts, apps/desktop/)"},"nowCount":3,"nextCount":5,"blockedCount":1,"agentCount":3,"filesCount":7}</script>
 
   <script>
     (function () {
@@ -878,7 +896,7 @@ Please read STATE.md and let&#39;s continue." title="Copy resume context to clip
   <script>
     (function () {
       var KEY = "repolog-surface-settings";
-      var defaults = { scale: 1, density: "compact" };
+      var defaults = { scale: 1.08, density: "cozy" };
 
       function clamp(value, min, max) { return Math.min(max, Math.max(min, value)); }
       function normalizeDensity(value) {
@@ -887,28 +905,28 @@ Please read STATE.md and let&#39;s continue." title="Copy resume context to clip
         return "compact";
       }
       function densityMultiplier(value) {
-        if (value === "wide") return 1.08;
+        if (value === "wide") return 1.1;
         if (value === "cozy") return 1;
-        return 0.92;
+        return 0.9;
       }
       function viewportMultiplier() {
         var width = window.innerWidth || 0;
         var height = window.innerHeight || 0;
-        var widthFit = width >= 1600 ? 1 : width >= 1100 ? 0.96 : 0.88;
-        var heightFit = height >= 900 ? 1 : height >= 700 ? 0.96 : height >= 600 ? 0.88 : 0.8;
+        var widthFit = width >= 1600 ? 1 : width >= 1100 ? 0.985 : 0.93;
+        var heightFit = height >= 900 ? 1 : height >= 700 ? 0.97 : height >= 600 ? 0.92 : 0.86;
         return Math.min(widthFit, heightFit);
       }
       function read() {
         try {
           var parsed = JSON.parse(localStorage.getItem(KEY) || "{}");
           var scale = typeof parsed.scale === "number" ? parsed.scale : defaults.scale;
-          return { scale: clamp(scale, 0.84, 1.16), density: normalizeDensity(parsed.density) };
+          return { scale: clamp(scale, 0.92, 1.24), density: normalizeDensity(parsed.density || defaults.density) };
         } catch (_) { return defaults; }
       }
       function save(next) { localStorage.setItem(KEY, JSON.stringify(next)); }
       function apply() {
         var prefs = read();
-        var density = clamp(densityMultiplier(prefs.density) * prefs.scale * viewportMultiplier(), 0.76, 1.2);
+        var density = clamp(densityMultiplier(prefs.density) * prefs.scale * viewportMultiplier(), 0.9, 1.28);
         document.documentElement.dataset.density = prefs.density;
         document.documentElement.style.setProperty("--rql-density", density.toFixed(3));
         var scaleLabel = document.querySelector("[data-ui-scale-label]");
@@ -922,7 +940,7 @@ Please read STATE.md and let&#39;s continue." title="Copy resume context to clip
       function update(patch) {
         var current = read();
         var next = {
-          scale: typeof patch.scale === "number" ? clamp(patch.scale, 0.84, 1.16) : current.scale,
+          scale: typeof patch.scale === "number" ? clamp(patch.scale, 0.92, 1.24) : current.scale,
           density: patch.density ? normalizeDensity(patch.density) : current.density,
         };
         save(next);
@@ -939,6 +957,11 @@ Please read STATE.md and let&#39;s continue." title="Copy resume context to clip
               if (window.__rqlToast) window.__rqlToast("resume context copied");
             }).catch(function () {});
           }
+        }
+        var desktopButton = target.closest("[data-window-action]");
+        if (desktopButton && window.repologDesktop && typeof window.repologDesktop.windowAction === "function") {
+          window.repologDesktop.windowAction(desktopButton.getAttribute("data-window-action"));
+          return;
         }
         var openRow = target.closest("[data-open-doc]");
         if (openRow && window.repologDesktop && typeof window.repologDesktop.openDoc === "function") {
@@ -1033,7 +1056,7 @@ Please read STATE.md and let&#39;s continue." title="Copy resume context to clip
         var text = p.body || "";
         if (navigator.clipboard && navigator.clipboard.writeText) {
           navigator.clipboard.writeText(text).then(function () {
-            showToast(p.label + " copied");
+            showToast(p.label + " prompt copied");
           }).catch(function () { showToast("copy failed"); });
         } else {
           showToast("clipboard unavailable");

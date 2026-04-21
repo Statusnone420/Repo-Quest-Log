@@ -8,6 +8,7 @@ Local-first repo HUD for markdown-driven coding-agent workflows.
 - Terminal HUD: `repolog` or `repolog watch .`
 - Desktop snapshot: `repolog desktop .`
 - Windows desktop app: `npm run desktop:app -- .`
+- One-click desktop launcher: `Launch Repo Quest Log.cmd`
 - VS Code extension shell: open `extensions/vscode/` as an extension-development folder and run the extension host
 
 ## Notes

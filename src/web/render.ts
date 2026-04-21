@@ -567,9 +567,6 @@ function renderLiveBridge(mode: SurfaceHtmlOptions["liveBridge"]): string {
     ? `
       if (window.repologDesktop && typeof window.repologDesktop.onHtml === "function") {
         window.repologDesktop.onHtml(replaceHtml);
-        if (typeof window.repologDesktop.requestRefresh === "function") {
-          window.repologDesktop.requestRefresh();
-        }
       }
     `
     : "";

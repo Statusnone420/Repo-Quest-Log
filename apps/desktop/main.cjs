@@ -5,7 +5,7 @@ const { mkdir, writeFile } = require("node:fs/promises");
 const { app, BrowserWindow, ipcMain } = require("electron");
 
 const repoRoot = path.resolve(__dirname, "..", "..");
-const targetRoot = path.resolve(process.argv[2] || process.cwd());
+const targetRoot = normalizeCliPath(process.argv[2] || process.cwd());
 
 let win = null;
 let initialLoadComplete = false;
@@ -13,6 +13,11 @@ let watcherHandle = null;
 let recentChanges = [];
 let modulesPromise = null;
 const liveHtmlPath = path.join(targetRoot, ".repolog", "desktop-live.html");
+
+function normalizeCliPath(value) {
+  const trimmed = String(value).trim().replace(/^"+|"+$/g, "");
+  return path.resolve(trimmed);
+}
 
 function mergeChanges(next, previous) {
   const merged = new Map();

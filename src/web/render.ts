@@ -225,6 +225,9 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       border-color: rgba(138,180,255,0.32);
       background: rgba(138,180,255,0.08);
     }
+    .settings-actions button[data-ui-action="open-settings"] {
+      border-color: rgba(138,180,255,0.24);
+    }
     .settings-actions button .kbd-inline {
       display: inline-flex;
       align-items: center;
@@ -242,6 +245,138 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       border-radius: 3px;
       background: rgba(255,255,255,0.04);
       color: var(--ink);
+    }
+
+    /* ---- SETTINGS PANEL OVERLAY ---- */
+    .settings-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(5,7,10,0.72);
+      backdrop-filter: blur(6px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 6vh 18px 18px;
+      z-index: 120;
+    }
+    .settings-overlay[data-open="true"] { display: flex; }
+    .settings-panel {
+      width: min(920px, 96vw);
+      max-height: 84vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      padding: 16px;
+      border-radius: 16px;
+      border: 1px solid var(--tile-border-hot);
+      background: rgba(15,18,24,0.98);
+      box-shadow: 0 34px 90px -18px rgba(0,0,0,0.72);
+    }
+    .settings-panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .settings-panel-title {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      font-family: var(--mono);
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: var(--muted);
+      font-size: var(--tiny-size);
+    }
+    .settings-panel-title strong {
+      color: var(--ink);
+      font-size: var(--title-size);
+      letter-spacing: 0;
+      text-transform: none;
+      font-family: var(--sans);
+    }
+    .settings-panel-close {
+      appearance: none;
+      border: 1px solid var(--tile-border);
+      background: rgba(255,255,255,0.02);
+      color: var(--ink);
+      border-radius: 7px;
+      padding: 4px 10px;
+      cursor: pointer;
+      font: inherit;
+    }
+    .settings-panel-close:hover { border-color: rgba(138,180,255,0.42); color: var(--accent); }
+    .settings-panel-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      min-height: 0;
+      overflow: hidden;
+    }
+    .settings-panel-card {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-width: 0;
+      min-height: 0;
+      padding: 14px;
+      border-radius: 12px;
+      border: 1px solid var(--tile-border);
+      background: rgba(255,255,255,0.02);
+    }
+    .settings-panel-card .head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-family: var(--mono);
+      font-size: var(--tiny-size);
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .settings-panel-card .value {
+      font-family: var(--sans);
+      font-size: var(--headline-size);
+      line-height: 1.3;
+      color: var(--ink);
+    }
+    .settings-panel-card .detail {
+      font-family: var(--mono);
+      font-size: var(--small-size);
+      line-height: 1.45;
+      color: var(--muted);
+    }
+    .settings-panel-card .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: auto;
+    }
+    .settings-panel-card .actions button {
+      appearance: none;
+      border: 1px solid var(--tile-border);
+      background: rgba(255,255,255,0.02);
+      color: var(--ink);
+      border-radius: 7px;
+      padding: 5px 10px;
+      cursor: pointer;
+      font: inherit;
+    }
+    .settings-panel-card .actions button:hover { border-color: rgba(138,180,255,0.42); color: var(--accent); }
+    .settings-panel-footer {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      font-family: var(--mono);
+      font-size: var(--tiny-size);
+      color: var(--dim);
+      border-top: 1px solid var(--tile-border);
+      padding-top: 10px;
+    }
+    @media (max-width: 980px) {
+      .settings-panel-grid { grid-template-columns: 1fr; overflow-y: auto; }
     }
 
     /* ---- HEADER STRIP (mission + objective + resume in ONE row) ---- */
@@ -790,6 +925,7 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       </div>
     </header>
     ${renderSettingsRack(state, options.liveBridge)}
+    ${renderSettingsPanel(state, options.liveBridge)}
     ${isEmptyRepo(state) ? renderEmptyState(state) : `
     <section class="header-strip">
       <div class="strip-cell mission">
@@ -1196,6 +1332,7 @@ function renderWritebackBanner(): string {
         <div class="settings-head">Settings <span class="pill">${writeback}</span></div>
         <div class="settings-copy">Repo picker and keyboard shortcuts live here so the desktop shell is discoverable without hunting menus.</div>
         <div class="settings-actions">
+          <button type="button" data-ui-action="open-settings" title="Open the settings panel">Open Settings</button>
           ${openRepoButton}
           <button type="button" data-ui-action="refresh" title="Refresh desktop (Ctrl+R)">Refresh <span class="kbd-inline"><kbd>Ctrl</kbd><kbd>R</kbd></span></button>
         </div>
@@ -1211,6 +1348,57 @@ function renderWritebackBanner(): string {
         <div class="settings-copy">${writebackCopy}</div>
       </div>
     </section>`;
+  }
+
+  function renderSettingsPanel(state: QuestState, liveBridge?: SurfaceHtmlOptions["liveBridge"]): string {
+    const writeback = state.config?.writeback ? "enabled" : "off by default";
+    const promptDir = state.config?.prompts?.dir?.trim() || "~/.repolog/prompts";
+    const startup = "Desktop opens the last repo automatically and keeps the current root in Electron userData.";
+    const configButton = liveBridge === "desktop"
+      ? `<button type="button" data-ui-action="open-config">Open .repolog.json</button>`
+      : "";
+    const repoButton = liveBridge === "desktop"
+      ? `<button type="button" class="primary" data-ui-action="open-repo">Open Repo</button>`
+      : "";
+    return `<div class="settings-overlay" data-settings-panel data-open="false" role="dialog" aria-label="Settings panel">
+      <section class="settings-panel">
+        <div class="settings-panel-head">
+          <div class="settings-panel-title"><strong>Settings</strong><span>write-back, prompt dir, startup</span></div>
+          <button type="button" class="settings-panel-close" data-ui-action="close-settings">Close</button>
+        </div>
+        <div class="settings-panel-grid">
+          <div class="settings-panel-card">
+            <div class="head">Write-back <span class="pill">${writeback}</span></div>
+            <div class="value">Checkbox toggles only.</div>
+            <div class="detail">${state.config?.writeback ? "Write-back is currently enabled in .repolog.json." : "Write-back is disabled until .repolog.json sets \"writeback\": true."}</div>
+            <div class="actions">
+              ${configButton}
+            </div>
+          </div>
+          <div class="settings-panel-card">
+            <div class="head">Prompt dir</div>
+            <div class="value">${escapeHtml(promptDir)}</div>
+            <div class="detail">Prompt precedence is built-ins, then user overrides, then repo overrides in <code>.repolog/prompts</code>.</div>
+            <div class="actions">
+              ${repoButton}
+            </div>
+          </div>
+          <div class="settings-panel-card">
+            <div class="head">Startup behavior</div>
+            <div class="value">Remembers your last repo.</div>
+            <div class="detail">${escapeHtml(startup)} Use Ctrl+O or the menu to switch repos.</div>
+            <div class="actions">
+              <button type="button" data-ui-action="open-settings">Refresh settings view</button>
+            </div>
+          </div>
+        </div>
+        <div class="settings-panel-footer">
+          <span><strong>Ctrl+O</strong> open repo</span>
+          <span><strong>Ctrl+K</strong> copy prompt</span>
+          <span><strong>Ctrl+R</strong> refresh scan</span>
+        </div>
+      </section>
+    </div>`;
   }
 
   function renderConfidenceLabel(confidence: number): string {
@@ -1410,6 +1598,7 @@ function renderSettingsScript(): string {
     (function () {
       var KEY = "repolog-surface-settings";
       var defaults = { scale: 1.08, density: "cozy" };
+      var settingsOverlay = document.querySelector("[data-settings-panel]");
 
       function clamp(value, min, max) { return Math.min(max, Math.max(min, value)); }
       function normalizeDensity(value) {
@@ -1459,6 +1648,12 @@ function renderSettingsScript(): string {
         save(next);
         apply();
       }
+      function openSettings() {
+        if (settingsOverlay) settingsOverlay.setAttribute("data-open", "true");
+      }
+      function closeSettings() {
+        if (settingsOverlay) settingsOverlay.setAttribute("data-open", "false");
+      }
       document.addEventListener("click", function (event) {
         var target = event.target;
         if (!target || !target.closest) return;
@@ -1474,6 +1669,10 @@ function renderSettingsScript(): string {
         var desktopButton = target.closest("[data-window-action]");
         if (desktopButton && window.repologDesktop && typeof window.repologDesktop.windowAction === "function") {
           window.repologDesktop.windowAction(desktopButton.getAttribute("data-window-action"));
+          return;
+        }
+        if (settingsOverlay && target === settingsOverlay) {
+          closeSettings();
           return;
         }
         var openRow = target.closest("[data-open-doc]");
@@ -1493,11 +1692,27 @@ function renderSettingsScript(): string {
             }
             return;
           }
+          if (action === "open-settings") {
+            openSettings();
+            return;
+          }
+          if (action === "close-settings") {
+            closeSettings();
+            return;
+          }
           if (action === "open-repo") {
             if (window.repologDesktop && typeof window.repologDesktop.openRepoPicker === "function") {
               window.repologDesktop.openRepoPicker();
             } else if (window.__rqlToast) {
               window.__rqlToast("open repo is only available in the desktop shell");
+            }
+            return;
+          }
+          if (action === "open-config") {
+            if (window.repologDesktop && typeof window.repologDesktop.openDoc === "function") {
+              window.repologDesktop.openDoc(".repolog.json", 1);
+            } else if (window.__rqlToast) {
+              window.__rqlToast("settings config is only available in the desktop shell");
             }
             return;
           }
@@ -1517,6 +1732,10 @@ function renderSettingsScript(): string {
         if ((event.metaKey || event.ctrlKey) && event.key === "-") {
           event.preventDefault();
           update({ scale: prefs.scale - 0.08 });
+        }
+        if (event.key === "Escape" && settingsOverlay && settingsOverlay.getAttribute("data-open") === "true") {
+          event.preventDefault();
+          closeSettings();
         }
       });
       apply();

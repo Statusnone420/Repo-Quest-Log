@@ -36,6 +36,39 @@ function writeLastRoot(dir) {
   }
 }
 
+function clearLastRoot() {
+  try {
+    fs.rmSync(lastRootFile(), { force: true });
+  } catch {
+    // best-effort only
+  }
+}
+
+function repoConfigFile() {
+  return path.join(targetRoot, ".repolog.json");
+}
+
+function ensureRepoConfigFile() {
+  const file = repoConfigFile();
+  if (fs.existsSync(file)) {
+    return file;
+  }
+
+  const defaultConfig = {
+    excludes: ["archive", "archives", "archived"],
+    writeback: false,
+    prompts: { dir: "~/.repolog/prompts" },
+  };
+
+  try {
+    fs.writeFileSync(file, `${JSON.stringify(defaultConfig, null, 2)}\n`, "utf8");
+  } catch {
+    // best-effort only
+  }
+
+  return file;
+}
+
 let targetRoot = resolveDesktopRepoRoot({
   argv: process.argv.slice(2),
   cwd: process.cwd(),
@@ -225,6 +258,11 @@ async function openRepoPicker() {
   await switchRoot(result.filePaths[0]);
 }
 
+async function openRepoConfig() {
+  const filePath = ensureRepoConfigFile();
+  await openDoc(filePath, 1);
+}
+
 async function switchRoot(newRoot) {
   targetRoot = path.resolve(newRoot);
   liveHtmlPath = path.join(targetRoot, ".repolog", "desktop-live.html");
@@ -290,6 +328,18 @@ ipcMain.on("repolog:refresh", () => {
 
 ipcMain.on("repolog:open-repo", () => {
   void openRepoPicker();
+});
+
+ipcMain.on("repolog:open-config", () => {
+  void openRepoConfig();
+});
+
+ipcMain.on("repolog:remember-startup-root", () => {
+  writeLastRoot(targetRoot);
+});
+
+ipcMain.on("repolog:forget-startup-root", () => {
+  clearLastRoot();
 });
 
 ipcMain.on("repolog:open-doc", (_event, payload = {}) => {

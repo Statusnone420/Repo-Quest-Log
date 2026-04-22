@@ -1,0 +1,11 @@
+{
+  "excludes": [
+    "archive",
+    "archives",
+    "archived"
+  ],
+  "writeback": true,
+  "prompts": {
+    "dir": "~/.repolog/prompts"
+  }
+}

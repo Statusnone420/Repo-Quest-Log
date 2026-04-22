@@ -16,6 +16,15 @@ contextBridge.exposeInMainWorld("repologDesktop", {
   openRepoPicker() {
     ipcRenderer.send("repolog:open-repo");
   },
+  openConfigFile() {
+    ipcRenderer.send("repolog:open-config");
+  },
+  rememberStartupRoot() {
+    ipcRenderer.send("repolog:remember-startup-root");
+  },
+  forgetStartupRoot() {
+    ipcRenderer.send("repolog:forget-startup-root");
+  },
   openDoc(doc, line) {
     ipcRenderer.send("repolog:open-doc", { doc, line });
   },

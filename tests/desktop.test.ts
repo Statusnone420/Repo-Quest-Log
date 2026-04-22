@@ -21,6 +21,9 @@ describe("renderDesktopHtml", () => {
     expect(html).toContain("Ctrl+O");
     expect(html).toContain("Prompt dir");
     expect(html).toContain("Startup behavior");
+    expect(html).toContain("Remember this repo");
+    expect(html).toContain("Forget startup memory");
+    expect(html).toContain("source: STATE.md resume note");
     expect(html).toContain("desktop-preview.html");
     expect(html).toContain("data-copy-context=");
     expect(html).toContain('data-ui-action="refresh"');

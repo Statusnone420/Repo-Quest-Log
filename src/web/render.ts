@@ -929,11 +929,11 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     ${isEmptyRepo(state) ? renderEmptyState(state) : `
     <section class="header-strip">
       <div class="strip-cell mission">
-        <div class="kicker">Mission</div>
+        <div class="kicker">Mission <span class="meta">source: PLAN.md / README.md</span></div>
         <div class="strip-headline">${escapeHtml(state.mission)}</div>
       </div>
         <div class="strip-cell objective">
-          <div class="kicker">Objective <span class="meta">${state.activeQuest.progress.done}/${state.activeQuest.progress.total}</span></div>
+          <div class="kicker">Objective <span class="meta">${state.activeQuest.progress.done}/${state.activeQuest.progress.total} · source: PLAN.md</span></div>
           <div class="strip-headline">${escapeHtml(state.activeQuest.title)}</div>
           <div class="strip-subline">${escapeHtml(state.activeQuest.doc)}${state.activeQuest.line ? `:${state.activeQuest.line}` : ""}</div>
           <div class="strip-why">Why now: ${escapeHtml(getWhyNowLine(state))}</div>
@@ -949,7 +949,7 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
             ⌘K
           </button>
         </div>
-          <div class="kicker">Current focus <span class="meta">· idle ${escapeHtml(state.resumeNote.since)}</span></div>
+          <div class="kicker">Current focus <span class="meta">· idle ${escapeHtml(state.resumeNote.since)} · source: STATE.md resume note</span></div>
           <div class="strip-headline">${escapeHtml(state.resumeNote.task)}</div>
           <div class="strip-subline">↳ ${escapeHtml(state.resumeNote.lastTouched)} · ${escapeHtml(state.resumeNote.doc)}</div>
           <div class="strip-why">Why this matters: ${escapeHtml(state.resumeNote.thought ?? getWhyNowLine(state))}</div>
@@ -967,7 +967,6 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       </nav>
 
       ${renderGitStrip(state)}
-      ${state.config?.writeback ? renderWritebackBanner() : ""}
 
       <section class="board">
       <div class="col">
@@ -1263,9 +1262,10 @@ function renderBlockedTile(tasks: BlockedTask[]): string {
     return `<section class="tile" data-area="agents">
       <div class="tile-header">
         <h3 class="tile-title agents"><span class="accent-bar"></span>Agents</h3>
-        <span class="tile-meta">${agents.length} registered</span>
+        <span class="tile-meta">${agents.length} registered · heuristic feed</span>
       </div>
     <div class="tile-body">
+        ${activity.length > 0 ? `<div class="settings-copy">Recent activity is inferred from file mtimes and owned areas, not direct authorship.</div>` : ""}
         ${agents.length === 0 ? `<div class="agent-card"><div class="agent-objective">No agent profiles discovered.</div></div>` : agents.map((agent) => {
           const status = resolveAgentStatus(agent, activity);
           const pulse = isAgentActive(agent.id, activity);
@@ -1284,7 +1284,7 @@ function renderBlockedTile(tasks: BlockedTask[]): string {
         `;}).join("")}
         ${activity.length > 0 ? `<div class="activity-list">${activity.map((entry) => `
           <div class="activity-row">
-            <span class="file">${escapeHtml(entry.agent)} · ${escapeHtml(entry.file)}</span>
+            <span class="file">Likely ${escapeHtml(entry.agent)} · ${escapeHtml(entry.file)}</span>
             <span class="ago">${escapeHtml(entry.at)} · ${renderConfidenceLabel(entry.confidence)}</span>
           </div>
         `).join("")}</div>` : ""}
@@ -1310,13 +1310,6 @@ function renderBlockedTile(tasks: BlockedTask[]): string {
       : `<span class="git-subject">No commits available</span>`;
 
     return `<section class="git-strip" aria-label="Git context">${chips}${commit}</section>`;
-  }
-
-function renderWritebackBanner(): string {
-    return `<section class="wb-banner" aria-label="Write-back enabled">
-      <div class="wb-left"><span class="wb-dot"></span><span>write-back ON</span></div>
-      <span class="wb-hint">Checkbox toggles only</span>
-    </section>`;
   }
 
   function renderSettingsRack(state: QuestState, liveBridge?: SurfaceHtmlOptions["liveBridge"]): string {
@@ -1386,9 +1379,10 @@ function renderWritebackBanner(): string {
           <div class="settings-panel-card">
             <div class="head">Startup behavior</div>
             <div class="value">Remembers your last repo.</div>
-            <div class="detail">${escapeHtml(startup)} Use Ctrl+O or the menu to switch repos.</div>
+            <div class="detail">${escapeHtml(startup)} Use the buttons below to save or clear that memory.</div>
             <div class="actions">
-              <button type="button" data-ui-action="open-settings">Refresh settings view</button>
+              <button type="button" data-ui-action="remember-startup-root">Remember this repo</button>
+              <button type="button" data-ui-action="forget-startup-root">Forget startup memory</button>
             </div>
           </div>
         </div>
@@ -1434,7 +1428,7 @@ function renderDecisionsTile(decisions: Decision[] | undefined): string {
   return `<section class="tile tight" data-area="decisions" data-decisions-expanded="false">
     <div class="tile-header">
       <h3 class="tile-title changes"><span class="accent-bar"></span>Decisions</h3>
-      <span class="tile-meta">${decisions.length} logged</span>
+      <span class="tile-meta">${decisions.length} logged · from STATE.md</span>
     </div>
     <div class="tile-body">
       ${visible.map((d) => renderDecisionRow(d, false)).join("")}
@@ -1709,10 +1703,30 @@ function renderSettingsScript(): string {
             return;
           }
           if (action === "open-config") {
-            if (window.repologDesktop && typeof window.repologDesktop.openDoc === "function") {
+            if (window.repologDesktop && typeof window.repologDesktop.openConfigFile === "function") {
+              window.repologDesktop.openConfigFile();
+            } else if (window.repologDesktop && typeof window.repologDesktop.openDoc === "function") {
               window.repologDesktop.openDoc(".repolog.json", 1);
             } else if (window.__rqlToast) {
               window.__rqlToast("settings config is only available in the desktop shell");
+            }
+            return;
+          }
+          if (action === "remember-startup-root") {
+            if (window.repologDesktop && typeof window.repologDesktop.rememberStartupRoot === "function") {
+              window.repologDesktop.rememberStartupRoot();
+              if (window.__rqlToast) window.__rqlToast("startup memory saved");
+            } else if (window.__rqlToast) {
+              window.__rqlToast("startup memory is only available in the desktop shell");
+            }
+            return;
+          }
+          if (action === "forget-startup-root") {
+            if (window.repologDesktop && typeof window.repologDesktop.forgetStartupRoot === "function") {
+              window.repologDesktop.forgetStartupRoot();
+              if (window.__rqlToast) window.__rqlToast("startup memory cleared");
+            } else if (window.__rqlToast) {
+              window.__rqlToast("startup memory is only available in the desktop shell");
             }
             return;
           }

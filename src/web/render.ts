@@ -2064,49 +2064,6 @@ function renderSettingsScript(): string {
         }
         if (window.__rqlToast) window.__rqlToast("standup export is unavailable");
       }
-      function collectConfig() {
-        function valueFor(field) {
-          var node = document.querySelector('[data-config-field="' + field + '"]');
-          return node;
-        }
-        var excludesNode = valueFor("excludes");
-        var promptsNode = valueFor("promptsDir");
-        var debounceNode = valueFor("watchDebounce");
-        var writebackNode = valueFor("writeback");
-        var reportNode = valueFor("reportFileChanges");
-        var excludes = [];
-        if (excludesNode && typeof excludesNode.value === "string") {
-          excludes = excludesNode.value.split(/\r?\n/).map(function (line) { return line.trim(); }).filter(Boolean);
-        }
-        return {
-          excludes: excludes,
-          writeback: !!(writebackNode && writebackNode.checked),
-          prompts: { dir: promptsNode && typeof promptsNode.value === "string" ? promptsNode.value.trim() : "" },
-          watch: {
-            debounce: Math.max(100, Math.min(10000, parseInt(debounceNode && debounceNode.value ? debounceNode.value : "500", 10) || 500)),
-            reportFileChanges: !!(reportNode && reportNode.checked),
-          },
-        };
-      }
-      function saveConfig() {
-        var payload = collectConfig();
-        if (window.repologDesktop && typeof window.repologDesktop.writeConfig === "function") {
-          return Promise.resolve(window.repologDesktop.writeConfig(payload)).then(function (result) {
-            if (window.__rqlToast) {
-              window.__rqlToast(result && result.success ? "settings saved" : "settings save failed");
-            }
-          }).catch(function (error) {
-            if (window.__rqlToast) window.__rqlToast("settings save failed: " + String(error));
-          });
-        }
-        if (vscode) {
-          vscode.postMessage({ type: "writeConfig", payload: payload });
-          if (window.__rqlToast) window.__rqlToast("settings save sent");
-          return Promise.resolve();
-        }
-        if (window.__rqlToast) window.__rqlToast("settings save is unavailable");
-        return Promise.resolve();
-      }
       document.addEventListener("click", function (event) {
         var target = event.target;
         if (!target || !target.closest) return;
@@ -2164,28 +2121,6 @@ function renderSettingsScript(): string {
             }
             return;
           }
-          if (action === "init-plan" || action === "init-state" || action === "init-config") {
-            var target = action === "init-plan" ? "plan" : action === "init-state" ? "state" : "config";
-            if (window.repologDesktop && typeof window.repologDesktop.initTemplate === "function") {
-              window.repologDesktop.initTemplate(target).then(function () {
-                if (window.__rqlToast) window.__rqlToast(target.toUpperCase() + " created");
-              }).catch(function (error) {
-                if (window.__rqlToast) window.__rqlToast("template creation failed: " + String(error));
-              });
-            } else if (vscode) {
-              vscode.postMessage({ type: "initTemplate", target: target });
-            } else if (window.__rqlToast) {
-              window.__rqlToast("template creation is only available in the desktop shell");
-            }
-            return;
-          }
-          if (action === "dismiss-wizard") {
-            if (window.repologDesktop && typeof window.repologDesktop.dismissWizard === "function") {
-              window.repologDesktop.dismissWizard();
-            }
-            closeSettings();
-            return;
-          }
           if (action === "open-config") {
             if (window.repologDesktop && typeof window.repologDesktop.openConfigFile === "function") {
               window.repologDesktop.openConfigFile();
@@ -2194,10 +2129,6 @@ function renderSettingsScript(): string {
             } else if (window.__rqlToast) {
               window.__rqlToast("settings config is only available in the desktop shell");
             }
-            return;
-          }
-          if (action === "save-config") {
-            saveConfig();
             return;
           }
           if (action === "run-doctor") {

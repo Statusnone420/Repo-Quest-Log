@@ -8,6 +8,19 @@ That product direction is strategically aligned with where agent tooling is goin
 
 The most important implication is this: the next pass should not try to make the app “bigger.” It should make the app **more reusable inside real developer workflows**. The right additions are the ones that help a developer or agent resume, validate, open, export, or hand off work faster, while keeping the current local-first and markdown-first philosophy intact. That is also consistent with the PRD’s own line in the sand: legibility, not orchestration. fileciteturn14file0
 
+## Execution tracker
+
+Overall progress: **30%**
+
+| Workstream | Progress | What is actually left |
+|---|---:|---|
+| Foundation pass | 75% | Keep the shared helpers thin, finish any remaining doc/source reconciliation, and avoid reintroducing duplicated prompt or change logic. |
+| Workflow tooling pass | 20% | External prompt files, `repolog prompt`, `repolog status --short`, `repolog doctor`, and command-palette parity in every surface. |
+| Context enrichment pass | 0% | Schema v2 compat, `gitContext`, `agentActivity`, and minimal git/activity rendering. |
+| Safe write-back pass | 0% | Opt-in checkbox-only write-back, banner, and adversarial tests. |
+
+The next coding agent should treat the table above as the real priority order. If the percentage changes, update this table first.
+
 ## Codebase map
 
 The core pipeline is already clean. `src/engine/fileset.ts` defines the markdown files and heading heuristics that matter. `src/engine/parse.ts` walks the repo, respects ignore rules, parses frontmatter, and builds sections/checklists from markdown. `src/engine/normalize.ts` turns that parsed material into `QuestState`, including mission, active quest, task buckets, agent profiles, recent changes, decisions, and the resume note. `src/engine/scan.ts` adds git branch and per-file diff summaries on top of that normalized state, while `src/engine/watcher.ts` debounces file events and refreshes state when relevant docs or `.repolog.json` change. fileciteturn22file0 fileciteturn23file0 fileciteturn25file0 fileciteturn26file0 fileciteturn27file0 fileciteturn28file0 fileciteturn29file0 fileciteturn30file0
@@ -65,6 +78,8 @@ Done means:
 - `npm run lint && npm test` stays green
 - new unit tests cover prompt rendering, config loading, time formatting, and editor command formatting. fileciteturn52file0 fileciteturn44file0 fileciteturn45file0 fileciteturn46file0 fileciteturn47file0 fileciteturn58file0
 
+Current estimate: **75%**
+
 ### Workflow tooling pass
 
 This should be the real value-add pass.
@@ -96,6 +111,8 @@ Done means:
 - `repolog doctor` gives a useful answer on both a healthy fixture and a messy fixture
 - VS Code exposes prompt and doctor actions through commands / Quick Picks, not only webview buttons. fileciteturn44file0 fileciteturn58file0
 
+Current estimate: **20%**
+
 ### Context enrichment pass
 
 Once the utilities are consolidated, implement schema v2 compatibility in a disciplined way.
@@ -124,6 +141,8 @@ Done means:
 - agent activity appears in the Agents rail with explicit confidence
 - desktop click-to-open can hit an exact line when VS Code CLI is available. fileciteturn15file0 fileciteturn14file0
 
+Current estimate: **0%**
+
 ### Safe write-back pass
 
 Write-back should be the last pass, not the first.
@@ -149,6 +168,8 @@ Done means:
 - every surface clearly indicates write-back is on
 - stale or unsafe matches fail closed with a warning
 - the write-back tests are the most adversarial tests in the repo. fileciteturn15file0
+
+Current estimate: **0%**
 
 ## Open questions and safe defaults
 

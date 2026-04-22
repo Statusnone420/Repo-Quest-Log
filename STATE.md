@@ -3,7 +3,7 @@
 Live "where we are." Update this as work progresses. The normalizer reads this to build the Resume Note.
 
 ## Current Focus
-v0.1 close-out: finish TUI visual parity, clean remaining UI-copy drift, and keep the desktop / VS Code / TUI surfaces aligned to one shared `QuestState`. v0.2 wedge work starts only after the v0.1 punch list is green.
+v0.1 close-out: keep the desktop / VS Code / TUI surfaces aligned to one shared `QuestState`, then move the remaining work into prompt-file externalization, CLI workflow tooling, and schema v2 prep. v0.2 wedge work starts only after the v0.1 punch list is green.
 
 ## Last Session
 - Desktop shell is now in a usable state: packaged rebuild succeeds, the direct exe in `release\win-unpacked\Repo Quest Log.exe` is the preferred test target, click-to-open works, and the shell has in-app refresh + window controls.
@@ -12,10 +12,11 @@ v0.1 close-out: finish TUI visual parity, clean remaining UI-copy drift, and kee
 - Shared workflow helpers were centralized into `src/engine/prompts.ts`, `src/engine/changes.ts`, `src/engine/time.ts`, and `src/engine/editor.ts` so the TUI, desktop shell, and renderer stop duplicating prompt and recent-change logic.
 - Desktop click-to-open now tries exact-line `code -g` opens before falling back to the system file handler, and the same path is exercised by the VS Code view via the shared change-merging helper.
 - Fixture coverage now includes a noisy repo with malformed config plus archived markdown, and the tests assert the extractor keeps the useful signals while ignoring the archived tree.
+- The docs now carry a live percent tracker in `plan_implementation.md`, and `CLAUDE.md` has been repointed to own the rest of that handoff.
 - `npm run build`, `npm run lint`, and `npm test` are green.
 
 ## Resume Note
-> Shared prompt presets and the desktop line-open path are now consolidated. Current repo state should still show the calm HUD layout, with the main remaining work being any follow-on v0.1 polish the plan still lists.
+> Shared prompt presets and the desktop line-open path are consolidated. The next doc-driven step is prompt-file externalization plus CLI workflow tooling, with `plan_implementation.md` now acting as the live handoff for the remaining work.
 
 Last touched: `src/engine/prompts.ts`
 

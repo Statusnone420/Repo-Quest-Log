@@ -8,6 +8,7 @@ Close v0.1 with a fit-to-window desktop, a TUI that visually matches it, and cle
 
 ## Current Focus
 All surfaces stay pinned to one shared `QuestState` pipeline and one renderer. v0.1 polish first; v0.2 features only after the v0.1 punch list is green.
+Detailed completion estimates now live in `plan_implementation.md`.
 
 ## Now — v0.1 close-out
 - [x] Fit-to-window desktop: responsive density + inner-panel scroll fallback so the shell never shows an outer scrollbar on 1080p+ (agent: codex, touches: src/web/render.ts, apps/desktop/)
@@ -15,9 +16,9 @@ All surfaces stay pinned to one shared `QuestState` pipeline and one renderer. v
 - [x] Resume-prompt palette (Ctrl+K) pulled forward from v0.2 — 6 presets, in-memory templates, clipboard + toast (claude, touches: src/web/render.ts)
 - [x] Rename "Active Quest" → "Objective" in desktop UI copy (schema key stays `activeQuest` until v0.2 schema v2)
 - [ ] **TUI visual parity** — top strip + cockpit + compact task rows + Ctrl+K overlay landed in `src/tui/App.tsx`; finish visual cleanup and verify parity against the desktop HUD. (agent: codex, touches: src/tui/App.tsx)
-- [ ] Rename "Active Quest" → "Objective" in TUI and VS Code surfaces (agent: codex, touches: src/tui/App.tsx, extensions/vscode/)
-- [ ] Fixture coverage for noisy / imperfect repo docs under tests/fixtures/ (agent: codex, touches: tests/)
-- [ ] Click-to-open doc links verified in every remaining surface (agent: codex, touches: extensions/vscode/)
+- [x] Rename "Active Quest" → "Objective" in TUI and VS Code surfaces (agent: codex, touches: src/tui/App.tsx, extensions/vscode/)
+- [x] Fixture coverage for noisy / imperfect repo docs under tests/fixtures/ (agent: codex, touches: tests/)
+- [x] Click-to-open doc links verified in every remaining surface (agent: codex, touches: extensions/vscode/)
 - [ ] Externalize prompt-palette templates to `~/.repolog/prompts/*.md` so users can edit them (agent: codex, touches: src/engine/, src/web/render.ts)
 
 ## Next — v0.2 (agent-integration wedge)

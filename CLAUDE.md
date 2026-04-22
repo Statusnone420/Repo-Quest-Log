@@ -25,7 +25,7 @@ Instructions for Claude (Claude Code) working in this repo. "RepoLog"
 - Touch `docs/design/**` — that's the human's and describes the UI spec
 
 ## Current Objective
-Close v0.1 (fit-to-window desktop, TUI visual parity, "Active Quest" → "Objective" rename, noisy-repo fixtures, click-to-open parity) and then scope v0.2 around the agent-integration wedge: resume-prompt palette, live git panel, agent activity feed, standup export, opt-in write-back.
+Take over the rest of `plan_implementation.md`, keep the execution tracker current, and use it to drive the remaining v0.1/v0.2 handoff from docs before code.
 0.2 and beyond - the "tool any dev needs" is the way forward.
 
 ## UI copy rule
@@ -39,4 +39,8 @@ When you finish a plan, add a task to `PLAN.md` under "Now" in the form:
 Then stop. The human will prompt Codex to pick it up.
 
 ## Current Handoff
-Current Codex handoff: **finish TUI visual parity and remaining copy drift** — the desktop shell is now stable enough for screenshot-based comparison, archive/exclude filtering is live, and root docs should stay aligned with the current HUD state. After TUI parity: noisy-fixture coverage, VS Code click-to-open parity, then v0.2 scoping.
+Current Codex handoff: follow the live tracker in `plan_implementation.md`. Remaining work is prompt-file externalization / CLI workflow tooling, schema v2 prep, and write-back only after doctor/status are green.
+
+## Plan Ownership
+- `plan_implementation.md` is the live handoff doc for the rest of this effort.
+- Keep the percent tracker in that file updated after each pass so the next coding agent can see what is actually left.

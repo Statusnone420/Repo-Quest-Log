@@ -18,3 +18,5 @@ Local-first repo HUD for markdown-driven coding-agent workflows.
 - The desktop app and VS Code panel share the renderer in `src/web/render.ts`.
 - `.repolog.json` supports repo-local excludes; archive / archived / archives are ignored by default.
 - The design source of truth remains `docs/design/Repo Quest Log.html`.
+- You can point the CLI or packaged desktop app at another repo by passing the repo path as the first non-flag argument. For example: `repolog scan C:\path\to\repo`, `repolog watch C:\path\to\repo`, `repolog desktop C:\path\to\repo`, or `release\win-unpacked\Repo Quest Log.exe C:\path\to\repo`.
+- That makes the current exe suitable for read-only cross-repo testing now; the next remaining step is the workflow tooling in `plan_implementation.md`.

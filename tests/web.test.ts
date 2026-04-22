@@ -14,6 +14,8 @@ describe("web renderers", () => {
     expect(html).toContain("Ctrl+O");
     expect(html).toContain("Ctrl+Shift+C");
     expect(html).toContain("Prompt dir");
+    expect(html).toContain("Save settings");
+    expect(html).toContain('data-config-field="excludes"');
     expect(html).toContain("Startup");
     expect(html).toContain("data-writeback-toggle");
     expect(html).toContain("Run doctor");
@@ -60,6 +62,7 @@ describe("web renderers", () => {
     expect(html).toContain("STATE.md");
     expect(html).toContain("AGENTS.md");
     expect(html).toContain("CLAUDE.md");
+    expect(html).toContain("Create PLAN.md");
   });
 });
 

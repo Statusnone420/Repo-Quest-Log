@@ -54,7 +54,7 @@ export function buildTuneup(state: QuestState, _doctorReport: DoctorReport): Tun
       severity: "high",
       file: "PLAN.md",
       heading: "## Objective",
-      fix: "Add a `## Objective` section. The first non-empty line becomes the title.",
+      fix: "Add a `## Objective` section with 1 to 2 sentences describing what this repo aims to become.",
       suggestedMarkdown: "## Objective\n\nDescribe the current milestone or goal in one sentence.\n",
     });
   }
@@ -67,7 +67,7 @@ export function buildTuneup(state: QuestState, _doctorReport: DoctorReport): Tun
       severity: "high",
       file: "PLAN.md",
       heading: "## Now",
-      fix: "Add a `## Now` heading with at least one `- [ ]` checklist item.",
+      fix: "Add a `## Now` heading with at least one unchecked checklist item so RepoLog can surface active work.",
       suggestedMarkdown: "## Now\n\n- [ ] First active task\n",
     });
   }
@@ -105,7 +105,7 @@ export function buildTuneup(state: QuestState, _doctorReport: DoctorReport): Tun
       severity: "high",
       file: "STATE.md",
       heading: "## Resume Note",
-      fix: 'Add a `## Resume Note` section to STATE.md so RepoLog can answer "where was I?"',
+      fix: 'Add a `## Resume Note` section to STATE.md so RepoLog can answer "where was I?" for the next agent.',
       suggestedMarkdown: "## Resume Note\n\n> Session N: brief summary of what was done and what comes next.\n",
     });
   }
@@ -160,19 +160,19 @@ function buildPrompt(state: QuestState, gaps: Gap[], score: number, charter: str
   const repoName = state.name || "this repo";
 
   const gapList = gaps
-    .map((gap) => {
-      const md = gap.suggestedMarkdown
-        ? `\n\n   Suggested markdown:\n   \`\`\`markdown\n${gap.suggestedMarkdown.split("\n").map((l) => `   ${l}`).join("\n").trimEnd()}\n   \`\`\``
+    .map((gap, index) => {
+      const md = gap.suggestedMarkdown.trim()
+        ? `\n   Add:\n   \`\`\`markdown\n${gap.suggestedMarkdown.split("\n").map((l) => `   ${l}`).join("\n").trimEnd()}\n   \`\`\``
         : "";
-      return `- **${gap.id}** (${gap.severity}) — \`${gap.file}\`: ${gap.fix}${md}`;
+      return `${index + 1}. ${gap.heading}\n   File: \`${gap.file}\`\n   Fix: ${gap.fix}${md}`;
     })
     .join("\n\n");
 
   const header = `# RepoLog Tuneup — \`${repoName}\`
 
-This repo uses **Repo Quest Log** (RepoLog) to maintain a structured markdown dashboard for agents and humans. RepoLog reads specific headings from PLAN.md, STATE.md, AGENTS.md, and similar files to build a live HUD.
+RepoLog found opportunities to improve your repo's legibility. Here's a suggested prompt for Claude, Codex, or Gemini to apply the fixes below.
 
-**Your task:** bring this repo to 100% RepoLog legibility. Current score: **${score}/100**.`;
+Current score: **${score}/100**.`;
 
   const body =
     gaps.length === 0
@@ -184,6 +184,7 @@ This repo uses **Repo Quest Log** (RepoLog) to maintain a structured markdown da
 1. Run \`repolog doctor\` to verify findings.
 2. Update \`STATE.md\` with a resume note describing what you changed.
 3. If \`.repolog/CHARTER.md\` does not exist, run \`repolog tuneup --write-charter\` to generate it.
+4. Re-run \`repolog doctor\` after the edits land.
 
 The charter below describes the conventions agents must follow when editing markdown in this repo.
 

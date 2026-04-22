@@ -36,7 +36,7 @@ Instructions for any coding agent working in this repo (Codex, generic agents, C
 - Prefer standard-library solutions over dependencies
 
 ## Current Objective
-Keep the CLI, desktop app, and VS Code extension on one shared `QuestState` and one design-faithful renderer.
+Keep the CLI, desktop app, and VS Code extension on one shared `QuestState` and one design-faithful renderer while landing the v0.4 first-run/config/write-back pass.
 
 ## Last Task
-Desktop shell hardening landed: packaged rebuild works, click-to-open works in desktop, archive/exclude filtering is live, and the current push is TUI visual parity plus root-doc sync.
+Desktop shell hardening landed: packaged rebuild works, click-to-open works in desktop, archive/exclude filtering is live, and the current push is v0.4 init/config/write-back scaffolding plus root-doc sync.

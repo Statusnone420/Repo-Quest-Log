@@ -1,6 +1,6 @@
 {
   "name": "repo-quest-log",
-  "version": "0.0.2",
+  "version": "0.0.4",
   "description": "Local-first companion that makes repo intent legible at a glance.",
   "type": "module",
   "bin": {

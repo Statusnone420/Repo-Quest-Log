@@ -98,8 +98,13 @@ export interface AgentActivity {
 }
 
 export interface RepoConfigSnapshot {
+  excludes: string[];
   writeback: boolean;
   prompts?: { dir?: string };
+  watch?: {
+    debounce: number;
+    reportFileChanges: boolean;
+  };
   charterPresent?: boolean;
   hasFrontmatter?: boolean;
 }

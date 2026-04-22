@@ -19,6 +19,15 @@ contextBridge.exposeInMainWorld("repologDesktop", {
   openConfigFile() {
     ipcRenderer.send("repolog:open-config");
   },
+  firstRunCheck() {
+    return ipcRenderer.invoke("repolog:first-run-check");
+  },
+  dismissWizard() {
+    return ipcRenderer.invoke("repolog:wizard-dismiss");
+  },
+  initTemplate(target, force) {
+    return ipcRenderer.invoke("repolog:init-template", { target, force });
+  },
   rememberStartupRoot() {
     ipcRenderer.send("repolog:remember-startup-root");
   },
@@ -36,6 +45,9 @@ contextBridge.exposeInMainWorld("repologDesktop", {
   },
   runTuneup() {
     return ipcRenderer.invoke("repolog:run-tuneup");
+  },
+  writeConfig(payload) {
+    return ipcRenderer.invoke("repolog:write-config", payload);
   },
   writeTuneupCharter(charter) {
     return ipcRenderer.invoke("repolog:write-tuneup-charter", charter);

@@ -100,6 +100,31 @@ class RepoQuestViewProvider {
             await this.view.webview.postMessage({ type: "repolog:toast", message: `failed to write CHARTER.md: ${errorText}` });
           }
         }
+
+        if (message.type === "writeConfig") {
+          try {
+            const modules = await this.loadModules();
+            await modules.writeRepoConfig(this.rootDir, message.payload || {});
+            await this.refresh();
+            await this.view.webview.postMessage({ type: "repolog:toast", message: "settings saved" });
+          } catch (e) {
+            const errorText = e instanceof Error ? e.message : String(e);
+            await this.view.webview.postMessage({ type: "repolog:toast", message: `settings save failed: ${errorText}` });
+          }
+        }
+
+        if (message.type === "initTemplate") {
+          try {
+            const modules = await this.loadModules();
+            const target = message.target || "plan";
+            await modules.writeInitTemplates(this.rootDir, [target], { write: true, force: !!message.force });
+            await this.refresh();
+            await this.view.webview.postMessage({ type: "repolog:toast", message: `${target.toUpperCase()} created` });
+          } catch (e) {
+            const errorText = e instanceof Error ? e.message : String(e);
+            await this.view.webview.postMessage({ type: "repolog:toast", message: `template creation failed: ${errorText}` });
+          }
+        }
       },
       undefined,
       this.context.subscriptions
@@ -166,15 +191,19 @@ class RepoQuestViewProvider {
         import(pathToFileURL(path.join(repoRoot, "dist", "engine", "changes.js")).href),
         import(pathToFileURL(path.join(repoRoot, "dist", "engine", "scan.js")).href),
         import(pathToFileURL(path.join(repoRoot, "dist", "engine", "watcher.js")).href),
+        import(pathToFileURL(path.join(repoRoot, "dist", "engine", "config.js")).href),
+        import(pathToFileURL(path.join(repoRoot, "dist", "engine", "init.js")).href),
         import(pathToFileURL(path.join(repoRoot, "dist", "web", "render.js")).href),
         import(pathToFileURL(path.join(repoRoot, "dist", "engine", "prompts.js")).href),
         import(pathToFileURL(path.join(repoRoot, "dist", "engine", "standup.js")).href),
         import(pathToFileURL(path.join(repoRoot, "dist", "engine", "doctor.js")).href),
         import(pathToFileURL(path.join(repoRoot, "dist", "engine", "tuneup.js")).href),
-      ]).then(([changes, scan, watcher, web, prompts, standup, doctor, tuneup]) => ({
+      ]).then(([changes, scan, watcher, config, init, web, prompts, standup, doctor, tuneup]) => ({
         mergeChanges: changes.mergeChanges,
         scanRepo: scan.scanRepo,
         startWatcher: watcher.startWatcher,
+        writeRepoConfig: config.writeRepoConfig,
+        writeInitTemplates: init.writeInitTemplates,
         renderVSCodeHtml: web.renderVSCodeHtml,
         loadPromptPresets: prompts.loadPromptPresets,
         buildStandupMarkdown: standup.buildStandupMarkdown,

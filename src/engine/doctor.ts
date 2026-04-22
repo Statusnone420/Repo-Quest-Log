@@ -2,6 +2,7 @@ import { readFile, stat } from "node:fs/promises";
 import { resolve } from "node:path";
 
 import { HEADING_PATTERNS } from "./fileset.js";
+import { validateAndFillConfig } from "./config.js";
 import { scanRepo } from "./scan.js";
 import { buildTuneup, type TuneupResult } from "./tuneup.js";
 import type { QuestState } from "./types.js";
@@ -44,9 +45,9 @@ export async function runDoctor(rootDir: string): Promise<DoctorReport> {
         code: `missing-${doc.file.toLowerCase()}`,
         message: `${doc.file} is missing at repo root.`,
         suggestion: doc.file === "PLAN.md"
-          ? "Add PLAN.md with `## Objective`, `## Now`, `## Next`, `## Blocked` headings so RepoLog can surface tasks."
+          ? "Add PLAN.md with `## Objective`, `## Now`, `## Next`, and `## Blocked` headings so RepoLog can explain what this repo is trying to become and what to do next."
           : doc.file === "STATE.md"
-          ? "Add STATE.md with a `## Resume Note` section so the HUD can answer \"where was I?\""
+          ? "Add STATE.md with a `## Resume Note` section so the HUD can answer \"where was I?\" for the next agent."
           : "Add README.md so the scanner has a mission fallback.",
       });
     }
@@ -105,7 +106,7 @@ export async function runDoctor(rootDir: string): Promise<DoctorReport> {
       severity: "warn",
       code: "missing-objective",
       message: "Objective title could not be extracted.",
-      suggestion: "Add a `## Objective` section in PLAN.md. The first non-empty line under it becomes the title.",
+      suggestion: "Add a `## Objective` section in PLAN.md with 1 to 2 sentences describing what this repo aims to become. RepoLog uses that heading to anchor the current milestone.",
     });
   }
 
@@ -153,7 +154,7 @@ async function probeConfig(rootDir: string, findings: DoctorFinding[]): Promise<
   const path = resolve(rootDir, ".repolog.json");
   try {
     const raw = await readFile(path, "utf8");
-    JSON.parse(raw);
+    validateAndFillConfig(JSON.parse(raw));
     return "ok";
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {
@@ -163,7 +164,7 @@ async function probeConfig(rootDir: string, findings: DoctorFinding[]): Promise<
       severity: "warn",
       code: "invalid-config",
       message: ".repolog.json is present but could not be parsed.",
-      suggestion: "Validate the file as JSON. See docs/SCHEMA.md for the accepted keys (excludes, writeback, prompts.dir).",
+      suggestion: "Validate the file as JSON and keep only supported keys: excludes, writeback, prompts.dir, watch.debounce, watch.reportFileChanges, and schemaVersion.",
     });
     return "invalid";
   }

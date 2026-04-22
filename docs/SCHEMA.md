@@ -112,6 +112,11 @@ export interface RepoConfig {
   prompts?: {
     dir: string;           // default "~/.repolog/prompts"
   };
+  watch: {
+    debounce: number;      // default 500
+    reportFileChanges: boolean; // default true
+  };
+  schemaVersion: number;   // default 2
 }
 
 export interface QuestState {
@@ -168,7 +173,9 @@ export interface QuestState {
 {
   "excludes": ["docs/Archived"],
   "writeback": false,
-  "prompts": { "dir": "~/.repolog/prompts" }
+  "prompts": { "dir": "~/.repolog/prompts" },
+  "watch": { "debounce": 500, "reportFileChanges": true },
+  "schemaVersion": 2
 }
 ```
 
@@ -176,6 +183,7 @@ export interface QuestState {
 - `excludes` / `exclude` / `ignore` / `ignored` may contain repo-relative paths or folder names to skip from scanning and watcher-based recent-changes. Folder-name excludes match any path segment; path excludes match that subtree exactly.
 - `archive`, `archives`, and `archived` are ignored by default even without a config file so stale planning docs do not pollute the HUD.
 - `writeback: true` enables **checkbox toggles only** (see below). Nothing else is ever written.
+- `watch.debounce` controls the watcher debounce window in milliseconds; `watch.reportFileChanges` toggles file-change reporting in the HUD.
 - Invalid JSON → log a warning and fall back to defaults; never crash the scan.
 
 ## Write-back rules (v2, opt-in)

@@ -90,7 +90,7 @@ export function normalizeQuestState(
     decisions,
     gitContext: options.gitContext,
     agentActivity: [...(options.agentActivity ?? [])],
-    config: options.config ?? { writeback: false },
+    config: options.config ?? { excludes: [], writeback: false },
   };
 }
 

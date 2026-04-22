@@ -404,6 +404,61 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       font-size: var(--tiny-size);
     }
     .settings-panel-card .actions button:hover { border-color: rgba(138,180,255,0.42); color: var(--accent); }
+    .settings-config {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 4px;
+    }
+    .settings-config .field {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      min-width: 0;
+    }
+    .settings-config label {
+      font-family: var(--mono);
+      font-size: var(--tiny-size);
+      color: var(--muted);
+      letter-spacing: 0.4px;
+    }
+    .settings-config textarea,
+    .settings-config input[type="text"],
+    .settings-config input[type="number"] {
+      width: 100%;
+      border: 1px solid var(--tile-border);
+      border-radius: 7px;
+      background: rgba(0,0,0,0.28);
+      color: var(--ink);
+      font: inherit;
+      font-family: var(--mono);
+      font-size: var(--tiny-size);
+      padding: 7px 8px;
+    }
+    .settings-config textarea {
+      min-height: 92px;
+      resize: vertical;
+    }
+    .settings-config .span-2 {
+      grid-column: 1 / -1;
+    }
+    .settings-config .toggle-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      font-family: var(--mono);
+      font-size: var(--tiny-size);
+      color: var(--muted);
+    }
+    .settings-config .toggle-row label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--ink);
+      text-transform: none;
+      letter-spacing: 0;
+    }
     .settings-panel-footer {
       display: flex;
       flex-wrap: wrap;
@@ -1610,6 +1665,9 @@ function renderSettingsRack(state: QuestState, liveBridge?: SurfaceHtmlOptions["
 function renderSettingsPanel(state: QuestState, liveBridge?: SurfaceHtmlOptions["liveBridge"]): string {
   const wbStatus = state.config?.writeback ? "on" : "off";
   const promptDir = state.config?.prompts?.dir?.trim() || "~/.repolog/prompts";
+  const hasPlan = state.scannedFiles.some((file) => /PLAN\.md$/i.test(file));
+  const hasState = state.scannedFiles.some((file) => /STATE\.md$/i.test(file));
+  const setupNeeded = !hasPlan || !hasState;
   const configButton = liveBridge === "desktop"
     ? `<button type="button" data-ui-action="open-config">Open .repolog.json</button>`
     : "";
@@ -1652,6 +1710,46 @@ function renderSettingsPanel(state: QuestState, liveBridge?: SurfaceHtmlOptions[
             <button type="button" data-tuneup-action="send-claude">→ Claude</button>
             <button type="button" data-tuneup-action="send-codex">→ Codex</button>
             <button type="button" data-tuneup-action="send-gemini">→ Gemini</button>
+          </div>
+        </div>
+        ${setupNeeded ? `
+        <div class="settings-panel-card">
+          <div class="head">Setup <span class="pill">first run</span></div>
+          <div class="detail">Generate the missing repo scaffolding so RepoLog can read the objective and resume note directly from markdown.</div>
+          <div class="actions">
+            ${hasPlan ? "" : `<button type="button" data-ui-action="init-plan" class="primary">Create PLAN.md</button>`}
+            ${hasState ? "" : `<button type="button" data-ui-action="init-state">Create STATE.md</button>`}
+            <button type="button" data-ui-action="init-config">Create .repolog.json</button>
+            <button type="button" data-ui-action="dismiss-wizard">Skip for now</button>
+          </div>
+        </div>` : ""}
+        <div class="settings-panel-card">
+          <div class="head">Config <span class="pill">${wbStatus}</span></div>
+          <div class="detail">Edit \`.repolog.json\` without touching JSON by hand. Save writes the file atomically and refreshes the HUD.</div>
+          <div class="settings-config" data-config-form>
+            <div class="field span-2">
+              <label for="rql-config-excludes">Excludes</label>
+              <textarea id="rql-config-excludes" data-config-field="excludes" spellcheck="false">${escapeHtml((state.config?.excludes ?? []).join("\n"))}</textarea>
+            </div>
+            <div class="field span-2">
+              <label for="rql-config-prompts">Prompts dir</label>
+              <input id="rql-config-prompts" data-config-field="promptsDir" type="text" value="${escapeHtml(promptDir)}" />
+            </div>
+            <div class="field">
+              <label for="rql-config-debounce">Watch debounce (ms)</label>
+              <input id="rql-config-debounce" data-config-field="watchDebounce" type="number" min="100" max="10000" step="50" value="${String(state.config?.watch?.debounce ?? 500)}" />
+            </div>
+            <div class="field">
+              <label>Write-back</label>
+              <div class="toggle-row">
+                <label><input data-config-field="writeback" type="checkbox"${state.config?.writeback ? " checked" : ""} /> enabled</label>
+                <label><input data-config-field="reportFileChanges" type="checkbox"${state.config?.watch?.reportFileChanges !== false ? " checked" : ""} /> report file changes</label>
+              </div>
+            </div>
+          </div>
+          <div class="actions">
+            <button type="button" data-ui-action="save-config" class="primary">Save settings</button>
+            ${configButton}
           </div>
         </div>
         <div class="settings-panel-grid">
@@ -1966,6 +2064,49 @@ function renderSettingsScript(): string {
         }
         if (window.__rqlToast) window.__rqlToast("standup export is unavailable");
       }
+      function collectConfig() {
+        function valueFor(field) {
+          var node = document.querySelector('[data-config-field="' + field + '"]');
+          return node;
+        }
+        var excludesNode = valueFor("excludes");
+        var promptsNode = valueFor("promptsDir");
+        var debounceNode = valueFor("watchDebounce");
+        var writebackNode = valueFor("writeback");
+        var reportNode = valueFor("reportFileChanges");
+        var excludes = [];
+        if (excludesNode && typeof excludesNode.value === "string") {
+          excludes = excludesNode.value.split(/\r?\n/).map(function (line) { return line.trim(); }).filter(Boolean);
+        }
+        return {
+          excludes: excludes,
+          writeback: !!(writebackNode && writebackNode.checked),
+          prompts: { dir: promptsNode && typeof promptsNode.value === "string" ? promptsNode.value.trim() : "" },
+          watch: {
+            debounce: Math.max(100, Math.min(10000, parseInt(debounceNode && debounceNode.value ? debounceNode.value : "500", 10) || 500)),
+            reportFileChanges: !!(reportNode && reportNode.checked),
+          },
+        };
+      }
+      function saveConfig() {
+        var payload = collectConfig();
+        if (window.repologDesktop && typeof window.repologDesktop.writeConfig === "function") {
+          return Promise.resolve(window.repologDesktop.writeConfig(payload)).then(function (result) {
+            if (window.__rqlToast) {
+              window.__rqlToast(result && result.success ? "settings saved" : "settings save failed");
+            }
+          }).catch(function (error) {
+            if (window.__rqlToast) window.__rqlToast("settings save failed: " + String(error));
+          });
+        }
+        if (vscode) {
+          vscode.postMessage({ type: "writeConfig", payload: payload });
+          if (window.__rqlToast) window.__rqlToast("settings save sent");
+          return Promise.resolve();
+        }
+        if (window.__rqlToast) window.__rqlToast("settings save is unavailable");
+        return Promise.resolve();
+      }
       document.addEventListener("click", function (event) {
         var target = event.target;
         if (!target || !target.closest) return;
@@ -2023,6 +2164,28 @@ function renderSettingsScript(): string {
             }
             return;
           }
+          if (action === "init-plan" || action === "init-state" || action === "init-config") {
+            var target = action === "init-plan" ? "plan" : action === "init-state" ? "state" : "config";
+            if (window.repologDesktop && typeof window.repologDesktop.initTemplate === "function") {
+              window.repologDesktop.initTemplate(target).then(function () {
+                if (window.__rqlToast) window.__rqlToast(target.toUpperCase() + " created");
+              }).catch(function (error) {
+                if (window.__rqlToast) window.__rqlToast("template creation failed: " + String(error));
+              });
+            } else if (vscode) {
+              vscode.postMessage({ type: "initTemplate", target: target });
+            } else if (window.__rqlToast) {
+              window.__rqlToast("template creation is only available in the desktop shell");
+            }
+            return;
+          }
+          if (action === "dismiss-wizard") {
+            if (window.repologDesktop && typeof window.repologDesktop.dismissWizard === "function") {
+              window.repologDesktop.dismissWizard();
+            }
+            closeSettings();
+            return;
+          }
           if (action === "open-config") {
             if (window.repologDesktop && typeof window.repologDesktop.openConfigFile === "function") {
               window.repologDesktop.openConfigFile();
@@ -2031,6 +2194,10 @@ function renderSettingsScript(): string {
             } else if (window.__rqlToast) {
               window.__rqlToast("settings config is only available in the desktop shell");
             }
+            return;
+          }
+          if (action === "save-config") {
+            saveConfig();
             return;
           }
           if (action === "run-doctor") {

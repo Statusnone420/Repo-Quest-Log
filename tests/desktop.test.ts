@@ -10,10 +10,10 @@ import type { QuestState } from "../src/engine/types.js";
 
 describe("renderDesktopHtml", () => {
   it("renders the desktop HUD shell from QuestState", () => {
-    const html = renderDesktopHtml(sampleState(), { appVersion: "0.0.2" });
+    const html = renderDesktopHtml(sampleState(), { appVersion: "0.0.4" });
 
     expect(html).toContain("repo quest log");
-    expect(html).toContain("v0.0.2");
+    expect(html).toContain("v0.0.4");
     expect(html).toContain("Ship v0.1");
     expect(html).toContain("Current focus");
     expect(html).toContain("Why this matters");
@@ -22,6 +22,8 @@ describe("renderDesktopHtml", () => {
     expect(html).toContain("Ctrl+O");
     expect(html).toContain("Ctrl+Shift+C");
     expect(html).toContain("Prompt dir");
+    expect(html).toContain("Save settings");
+    expect(html).toContain('data-config-field="watchDebounce"');
     expect(html).toContain("Startup");
     expect(html).toContain("Remember");
     expect(html).toContain("Forget");

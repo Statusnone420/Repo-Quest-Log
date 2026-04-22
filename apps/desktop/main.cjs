@@ -52,6 +52,33 @@ function clearLastRoot() {
   }
 }
 
+function firstRunStateFile() {
+  try {
+    return path.join(app.getPath("userData"), "first-run-state.json");
+  } catch {
+    return path.join(repoRoot, ".repolog", "first-run-state.json");
+  }
+}
+
+function readFirstRunState() {
+  try {
+    const raw = fs.readFileSync(firstRunStateFile(), "utf8");
+    return JSON.parse(raw);
+  } catch {
+    return {};
+  }
+}
+
+function writeFirstRunState(data) {
+  try {
+    const file = firstRunStateFile();
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(file, JSON.stringify(data, null, 2), "utf8");
+  } catch {
+    // best-effort only
+  }
+}
+
 function repoConfigFile() {
   return path.join(targetRoot, ".repolog.json");
 }
@@ -97,6 +124,7 @@ async function loadModules() {
   if (!modulesPromise) {
     modulesPromise = Promise.all([
       importModule("dist/engine/config.js"),
+      importModule("dist/engine/init.js"),
       importModule("dist/engine/changes.js"),
       importModule("dist/engine/editor.js"),
       importModule("dist/engine/doctor.js"),
@@ -106,8 +134,10 @@ async function loadModules() {
       importModule("dist/engine/standup.js"),
       importModule("dist/web/render.js"),
       importModule("dist/engine/prompts.js"),
-    ]).then(([config, changes, editor, doctor, scan, watcher, writeback, standup, web, prompts]) => ({
+    ]).then(([config, init, changes, editor, doctor, scan, watcher, writeback, standup, web, prompts]) => ({
       readRepoConfig: config.readRepoConfig,
+      writeRepoConfig: config.writeRepoConfig,
+      writeInitTemplates: init.writeInitTemplates,
       mergeChanges: changes.mergeChanges,
       formatCodeOpenTarget: editor.formatCodeOpenTarget,
       formatDoctorReport: doctor.formatDoctorReport,
@@ -285,6 +315,24 @@ async function openRepoConfig() {
   await openDoc(filePath, 1);
 }
 
+async function firstRunCheck() {
+  const planPath = path.join(targetRoot, "PLAN.md");
+  const statePath = path.join(targetRoot, "STATE.md");
+  const charterPath = path.join(targetRoot, ".repolog", "CHARTER.md");
+  const state = readFirstRunState();
+  return {
+    hasPlanMd: fs.existsSync(planPath),
+    hasStateMd: fs.existsSync(statePath),
+    hasCharterMd: fs.existsSync(charterPath),
+    wizardPrompts: [
+      fs.existsSync(planPath) ? "" : "Create PLAN.md first so RepoLog can understand the repo objective.",
+      fs.existsSync(statePath) ? "" : "Add STATE.md so the resume note has a home.",
+      fs.existsSync(charterPath) ? "" : "Generate CHARTER.md so agents know the markdown rules.",
+    ].filter(Boolean),
+    lastWizardRun: state.lastWizardRun || null,
+  };
+}
+
 async function switchRoot(newRoot) {
   targetRoot = path.resolve(newRoot);
   liveHtmlPath = path.join(targetRoot, ".repolog", "desktop-live.html");
@@ -402,6 +450,34 @@ ipcMain.handle("repolog:toggle-checklist", async (_event, payload = {}) => {
   }
 
   return result;
+});
+
+ipcMain.handle("repolog:first-run-check", async () => firstRunCheck());
+
+ipcMain.handle("repolog:wizard-dismiss", async () => {
+  writeFirstRunState({ lastWizardRun: Date.now() });
+  return { ok: true };
+});
+
+ipcMain.handle("repolog:init-template", async (_event, payload = {}) => {
+  const { writeInitTemplates } = await loadModules();
+  const target = payload && typeof payload.target === "string" ? payload.target : "plan";
+  const force = payload && payload.force === true;
+  await writeInitTemplates(targetRoot, [target], { write: true, force });
+  await refresh();
+  await startWatcherForTarget();
+  return { success: true };
+});
+
+ipcMain.handle("repolog:write-config", async (_event, payload = {}) => {
+  const { writeRepoConfig } = await loadModules();
+  await writeRepoConfig(targetRoot, payload);
+  await refresh();
+  await startWatcherForTarget();
+  if (win && !win.isDestroyed()) {
+    win.webContents.send("repolog:config-changed", { ok: true });
+  }
+  return { success: true };
 });
 
 ipcMain.handle("repolog:run-doctor", async () => {

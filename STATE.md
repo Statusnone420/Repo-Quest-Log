@@ -9,7 +9,17 @@ owner: claude
 Live "where we are." Update this as work progresses. The normalizer reads this to build the Resume Note.
 
 ## Current Focus
-v0.3 Slice 1 complete + Settings panel redesigned. Scrollable body, fixed head/footer, tuneup card first, compressed settings cards, legend removed. 42 tests green.
+v0.4 implementation pass started. Config validation/init scaffolding landed, the suite is green at 49 tests, and the next slice is desktop/VS Code save wiring plus first-run setup.
+
+## Last Session — v0.4 scaffold and release sync (2026-04-22)
+- **`src/engine/config.ts`**: Added `validateAndFillConfig`, `defaultRepoConfig`, and atomic `writeRepoConfig`. Config now carries `excludes`, `writeback`, `prompts.dir`, `watch.debounce`, `watch.reportFileChanges`, and `schemaVersion`.
+- **`src/engine/init.ts`**: Added plan/state/config template builders plus `writeInitTemplates(...)` for `repolog init`.
+- **`src/cli/index.ts`**: Added `repolog init [--plan|--state|--config|--all] [--write] [--force]` and `--version` parsing. Entry point is now test-safe when imported.
+- **`src/engine/writeback.ts`**: Hardened checklist toggles with same-file locking, temp-file writes, rename-based replacement, and post-write verification.
+- **`src/engine/doctor.ts` / `src/engine/tuneup.ts`**: Clearer findings and paste-ready tuneup prompts with numbered gaps and verification steps.
+- **`tests/config.test.ts` / `tests/cli.test.ts`** (NEW): Added coverage for config defaults/validation/write path and init parser/template generation.
+- **Versions/docs**: Bumped packages toward `0.0.4`, updated changelog, README install hint, and start of v0.4 tracker sync.
+- `npm run lint` and `npm test` — green (49 tests, 17 files).
 
 ## Last Session — v0.3 Tuneup + Settings redesign (2026-04-22)
 - **`src/engine/tuneup.ts`** (NEW): `buildTuneup(state, doctorReport): TuneupResult`. Score weights: mission(15) + objective(15) + now-heading(15) + agents-owned-areas(10) + state-resume(10) + plan-next(10) + charter-present(15) + frontmatter(10) = 100. Generates per-repo prompt, CHARTER.md contents, and per-agent prompts.
@@ -40,9 +50,9 @@ v0.3 Slice 1 complete + Settings panel redesigned. Scrollable body, fixed head/f
 - `npm run build`, `npm run lint`, `npm test` all green (30 tests, 13 files).
 
 ## Resume Note
-> **v0.4 Plan Audit & Corrections (2026-04-22):** Comprehensive review of IMPLEMENTATION_PLAN_v0.4.md identified 17 gaps blocking agent execution. Corrected version ships: section numbering fixed (removed duplication), all IPC handler shapes specified with input/output types, RepoConfig defaults table added (excludes[], writeback=false, etc.), CLI init behavior clarified (write to repo root), test fixture requirements linked (healthy/noisy), SCHEMA.md prerequisite documented, atomicity guidance for Windows added (fs.renameSync with network retry), order dependencies explicit (1a→1d sequential), all error cases and edge cases called out. Plan is now 100% executable by AGENTS.md with zero ambiguity. Build gate: npm run build && npm run lint && npm test required before signing off on any pass.
+> v0.4 implementation is underway. Init/templates, config validation, and write-back hardening landed with tests; next agent should wire the UI save flow, first-run wizard, and release/install polish, then rerun `npm run lint && npm test` before calling the slice done.
 
-Last touched: `IMPLEMENTATION_PLAN_v0.4.md`, `STATE.md`
+Last touched: `IMPLEMENTATION_PLAN_v0.4.md`, `STATE.md`, `src/engine/config.ts`
 
 ## Recent Decisions
 - 2026-04-21 — `repolog doctor` is the trust layer for messy repos: it explains *why* state looks sparse and which exact heading to add. The CLI exits 1 when any warn-level finding fires, so CI can gate on it.

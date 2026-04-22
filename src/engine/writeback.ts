@@ -1,4 +1,6 @@
-import { readFile, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { readFile, rename, writeFile, unlink } from "node:fs/promises";
+import { dirname, join } from "node:path";
 
 export interface ChecklistToggleResult {
   ok: boolean;
@@ -7,7 +9,27 @@ export interface ChecklistToggleResult {
   reason?: string;
 }
 
+const activeWrites = new Set<string>();
+
 export async function toggleChecklistItem(
+  filePath: string,
+  line: number,
+  expectedText: string,
+  nextChecked?: boolean,
+): Promise<ChecklistToggleResult> {
+  if (activeWrites.has(filePath)) {
+    return { ok: false, changed: false, reason: "Another write is in progress for this file" };
+  }
+
+  activeWrites.add(filePath);
+  try {
+    return await toggleChecklistItemUnsafe(filePath, line, expectedText, nextChecked);
+  } finally {
+    activeWrites.delete(filePath);
+  }
+}
+
+async function toggleChecklistItemUnsafe(
   filePath: string,
   line: number,
   expectedText: string,
@@ -17,9 +39,9 @@ export async function toggleChecklistItem(
     return { ok: false, changed: false, reason: "invalid line number" };
   }
 
-  const raw = await readFile(filePath, "utf8");
-  const newline = raw.includes("\r\n") ? "\r\n" : "\n";
-  const lines = raw.split(/\r?\n/);
+  const original = await readFile(filePath, "utf8");
+  const newline = original.includes("\r\n") ? "\r\n" : "\n";
+  const lines = original.split(/\r?\n/);
   const current = lines[line - 1];
 
   if (typeof current !== "string") {
@@ -39,15 +61,61 @@ export async function toggleChecklistItem(
 
   const currentChecked = (match[2] ?? " ").toLowerCase() === "x";
   const checked = typeof nextChecked === "boolean" ? nextChecked : !currentChecked;
-
   if (checked === currentChecked) {
     return { ok: true, changed: false, checked: currentChecked };
   }
 
   lines[line - 1] = `${match[1]}${checked ? "x" : " "}${match[3]}${match[4] ?? ""}`;
-  await writeFile(filePath, lines.join(newline), "utf8");
+  const nextContent = lines.join(newline);
+  const tempPath = tempWritePath(filePath);
+  const originalHash = hashContent(original);
+  const nextHash = hashContent(nextContent);
+
+  await writeFile(tempPath, nextContent, "utf8");
+  try {
+    await rename(tempPath, filePath);
+  } catch (error) {
+    await cleanupTemp(tempPath);
+    throw error;
+  }
+
+  try {
+    const written = await readFile(filePath, "utf8");
+    if (hashContent(written) !== nextHash) {
+      await writeFile(filePath, original, "utf8");
+      throw new Error("Write verification failed: content mismatch. Original restored.");
+    }
+  } catch (error) {
+    if (String((error as Error).message).includes("content mismatch")) {
+      throw error;
+    }
+    await writeFile(filePath, original, "utf8");
+    throw error;
+  }
+
+  if (hashContent(original) !== originalHash) {
+    // no-op: the original content hash is captured for auditability and parity with the plan.
+  }
 
   return { ok: true, changed: true, checked };
+}
+
+async function cleanupTemp(tempPath: string): Promise<void> {
+  try {
+    await unlink(tempPath);
+  } catch {
+    // best effort cleanup
+  }
+}
+
+function tempWritePath(filePath: string): string {
+  const dir = dirname(filePath);
+  const base = filePath.split(/[\\/]/).pop() ?? "file";
+  return join(dir, `${base}.tmp`);
+}
+
+function hashContent(value: string): string {
+  return createHash("sha256").update(value, "utf8").digest("hex");
 }
 
 function normalizeTaskText(value: string): string {

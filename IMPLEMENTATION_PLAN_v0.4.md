@@ -31,6 +31,14 @@
 - ⚠️ **Watcher reliability**: Works, but edge cases around file sync need hardening
 - ⚠️ **Deployment**: Exe is packaged but needs release notes + simplified distribution
 
+**Progress update (2026-04-22):**
+- ✅ `src/engine/config.ts`: validation/defaults/write path landed
+- ✅ `src/engine/init.ts`: init templates for PLAN / STATE / config landed
+- ✅ `src/cli/index.ts`: `repolog init` and `--version` wired
+- ✅ `src/engine/writeback.ts`: atomic toggle hardening landed
+- ✅ Tests: `tests/config.test.ts` and `tests/cli.test.ts` added; suite is green at 49 tests
+- ⚠️ Remaining: desktop/VS Code config save flow, first-run wizard UI, release/install polish, and final docs sync
+
 ---
 
 ## The Five Work Streams

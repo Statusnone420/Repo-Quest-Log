@@ -2,7 +2,7 @@
   "name": "repo-quest-log",
   "displayName": "Repo Quest Log",
   "description": "A local-first repo HUD for markdown-driven agent workflows.",
-  "version": "0.0.2",
+  "version": "0.0.4",
   "publisher": "local",
   "repository": {
     "type": "git",

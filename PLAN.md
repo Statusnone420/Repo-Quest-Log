@@ -4,17 +4,17 @@ One sentence: **what this repo is trying to become.**
 > A local-first CLI + TUI + desktop + VS Code shell that makes repo intent legible at a glance and hands that intent to whichever coding agent you open next.
 
 ## Objective
-Ship v0.3 release. Begin v0.4 planning: gh integration (PRs, issues), macOS prototyping, and optional LLM summarization. "Tool any dev needs" remains north star.
+Ship v0.4 implementation: first-run setup, config UI, watcher/write-back hardening, and release polish. "Tool any dev needs" remains north star.
 
 ## Current Focus
-v0.3 Slice 1 complete. CLI, TUI, desktop, and VS Code stay pinned to one shared `QuestState` pipeline and one renderer. Next phase: ship v0.3 final release and begin v0.4 prep.
+v0.4 execution started. CLI, TUI, desktop, and VS Code stay pinned to one shared `QuestState` pipeline and one renderer. Init/config validation scaffolding landed; next wire the save flow, first-run wizard, and release docs.
 
 **Objective Sync Rule:** When PLAN.md's `## Objective` changes, review and update all agent objectives (CLAUDE.md, GEMINI.md, AGENTS.md) to align with the new direction. Each agent's objective should support the repo objective from their specific angle (e.g., Claude = execution, Gemini = architecture).
 
 ## Now
-- [ ] Finalize v0.3 release: verify all tests pass, update CHANGELOG, tag release
-- [ ] Begin v0.4 planning: `gh` integration (open PRs, assigned issues)
-- [ ] Audit test coverage and performance under load
+- [ ] Finish first-run wizard + startup health check
+- [ ] Finish settings/config save flow across desktop and VS Code
+- [ ] Harden watcher/write-back path and release docs
 
 ## Next
 - [ ] `gh` integration: open PRs on current branch + assigned issues (if gh installed)

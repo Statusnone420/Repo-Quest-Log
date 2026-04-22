@@ -37,7 +37,7 @@ Instructions for Gemini working in this repo.
 - Introduce features that violate the local-first, zero-network-call (at runtime) constraint without an explicit override.
 
 ## Objective
-Architect v0.4 roadmap: gh integration, macOS host strategy, and optional LLM features. Review v0.3 release for quality and completeness. Audit type safety and test coverage.
+Architect the v0.4 implementation pass: first-run wizard, settings/config save flow, watcher/write-back hardening, and release/install polish. Continue auditing type safety and test coverage.
 
 ## Constraints
 Strategic, holistic thinker and strict code auditor. You define *what* needs to be built and *how* it should be architected, then cleanly hand off the implementation heavy-lifting to implementer agents. You also provide read-only comments in PRs to ensure quality.

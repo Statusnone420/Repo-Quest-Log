@@ -17,7 +17,7 @@ Download the latest installer from [GitHub Releases](https://github.com/Statusno
 
 ### VS Code extension
 ```bash
-code --install-extension repo-quest-log-0.0.2.vsix
+code --install-extension repo-quest-log-0.0.4.vsix
 ```
 Download the `.vsix` from the same release page, then run the command above.
 

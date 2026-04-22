@@ -20,6 +20,7 @@ class RepoQuestViewProvider {
     this.recentChanges = [];
     this.watcherHandle = undefined;
     this.modulesPromise = undefined;
+    this.currentState = undefined;
   }
 
   async resolveWebviewView(view) {
@@ -47,6 +48,26 @@ class RepoQuestViewProvider {
           } catch (e) {
             vscode.window.showErrorMessage(`Could not open ${message.doc}: ${e.message}`);
           }
+          return;
+        }
+
+        if (message.type === "copyStandup") {
+          try {
+            const modules = await this.loadModules();
+            const state = this.currentState || await modules.scanRepo(this.rootDir);
+            const markdown = await modules.buildStandupMarkdown(this.rootDir, state);
+            await vscode.env.clipboard.writeText(markdown);
+            await this.view.webview.postMessage({
+              type: "repolog:toast",
+              message: "standup export copied",
+            });
+          } catch (e) {
+            const errorText = e instanceof Error ? e.message : String(e);
+            await this.view.webview.postMessage({
+              type: "repolog:toast",
+              message: `standup export failed: ${errorText}`,
+            });
+          }
         }
       },
       undefined,
@@ -68,6 +89,7 @@ class RepoQuestViewProvider {
       recentChanges: this.recentChanges,
       lastTouchedFile: this.recentChanges[0] && this.recentChanges[0].file,
     });
+    this.currentState = state;
     const presets = await modules.loadPromptPresets(state, { rootDir: this.rootDir });
     const html = modules.renderVSCodeHtml(state, { liveBridge: "vscode", presets });
 
@@ -115,12 +137,14 @@ class RepoQuestViewProvider {
         import(pathToFileURL(path.join(repoRoot, "dist", "engine", "watcher.js")).href),
         import(pathToFileURL(path.join(repoRoot, "dist", "web", "render.js")).href),
         import(pathToFileURL(path.join(repoRoot, "dist", "engine", "prompts.js")).href),
-      ]).then(([changes, scan, watcher, web, prompts]) => ({
+        import(pathToFileURL(path.join(repoRoot, "dist", "engine", "standup.js")).href),
+      ]).then(([changes, scan, watcher, web, prompts, standup]) => ({
         mergeChanges: changes.mergeChanges,
         scanRepo: scan.scanRepo,
         startWatcher: watcher.startWatcher,
         renderVSCodeHtml: web.renderVSCodeHtml,
         loadPromptPresets: prompts.loadPromptPresets,
+        buildStandupMarkdown: standup.buildStandupMarkdown,
       }));
     }
 

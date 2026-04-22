@@ -9,6 +9,7 @@ import { spawn } from "node:child_process";
 import { renderDesktopHtml } from "../desktop/render.js";
 import { formatDoctorReport, runDoctor } from "../engine/doctor.js";
 import { loadPromptPresets } from "../engine/prompts.js";
+import { buildStandupMarkdown } from "../engine/standup.js";
 import { scanRepo } from "../engine/scan.js";
 import { formatStaticFrame, WatchApp } from "../tui/App.js";
 
@@ -67,6 +68,18 @@ async function main(): Promise<void> {
     return;
   }
 
+  if (command.mode === "standup") {
+    const state = await scanRepo(command.rootDir);
+    const body = await buildStandupMarkdown(command.rootDir, state);
+    if (command.copy) {
+      await copyToClipboard(body);
+      process.stderr.write("copied standup export to clipboard\n");
+      return;
+    }
+    process.stdout.write(`${body}\n`);
+    return;
+  }
+
   if (command.mode === "desktop") {
     const state = await scanRepo(command.rootDir);
     const html = renderDesktopHtml(state);
@@ -90,7 +103,8 @@ type Command =
   | { mode: "doctor"; rootDir: string; json: boolean }
   | { mode: "desktop"; rootDir: string; outputFile: string }
   | { mode: "prompt"; rootDir: string; action: "list" }
-  | { mode: "prompt"; rootDir: string; action: "render"; id: string; copy: boolean };
+  | { mode: "prompt"; rootDir: string; action: "render"; id: string; copy: boolean }
+  | { mode: "standup"; rootDir: string; copy: boolean };
 
 function readCommand(args: string[]): Command {
   if (args.includes("--help") || args.includes("-h")) {
@@ -135,6 +149,10 @@ function readCommand(args: string[]): Command {
       : resolve(rootDir, ".repolog", "desktop-preview.html");
     return { mode: "desktop", rootDir, outputFile };
   }
+  if (first === "standup") {
+    const rootDir = resolve(second ?? ".");
+    return { mode: "standup", rootDir, copy: args.includes("--copy") };
+  }
   if (first === "watch") {
     return { mode: "watch", rootDir: resolve(second ?? ".") };
   }
@@ -172,6 +190,7 @@ function printHelp(): void {
       "  repolog doctor [path] [--json]  Explain what was scanned and why state looks empty",
       "  repolog prompt list             List available prompt presets",
       "  repolog prompt <id> [--copy]    Render a prompt; --copy sends to clipboard",
+      "  repolog standup [path] [--copy] Render today's standup export; --copy sends to clipboard",
       "",
       "Keys in watch mode:",
       "  q quit",

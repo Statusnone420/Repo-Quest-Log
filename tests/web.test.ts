@@ -12,6 +12,7 @@ describe("web renderers", () => {
     expect(html).toContain("Why this matters");
     expect(html).toContain("Settings");
     expect(html).toContain("Ctrl+O");
+    expect(html).toContain("Ctrl+Shift+S");
     expect(html).toContain("Prompt dir");
     expect(html).toContain("Startup behavior");
     expect(html).toContain("data-writeback-toggle");
@@ -29,6 +30,7 @@ describe("web renderers", () => {
     expect(html).toContain("data-palette");
     expect(html).toContain("Objective");
     expect(html).toContain("Resume for Claude Code");
+    expect(html).toContain("Standup");
   });
 
   it("renders a VS Code panel document", () => {

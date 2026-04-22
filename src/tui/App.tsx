@@ -5,6 +5,7 @@ import { Box, Text, useApp, useInput, useStdin } from "ink";
 
 import { mergeChanges } from "../engine/changes.js";
 import { buildPromptPresets, loadPromptPresets, type PromptPreset } from "../engine/prompts.js";
+import { buildStandupMarkdown } from "../engine/standup.js";
 import { scanRepo } from "../engine/scan.js";
 import { startWatcher } from "../engine/watcher.js";
 import type { FileChange, QuestState } from "../engine/types.js";
@@ -46,7 +47,7 @@ export function formatStaticFrame(
 
   const cockpit = plainPanel("COCKPIT", topWidth, [renderCockpitLine(state, topWidth - 2)]);
 
-  const footer = `watching ${state.scannedFiles.length} files · ${options.scanning ? "scanning..." : `last scan ${state.lastScan}`} · ${options.interactive ? "[q] quit [r] rescan [ctrl+k] palette" : "read-only output"}${options.error ? ` · error: ${options.error}` : ""}`;
+  const footer = `watching ${state.scannedFiles.length} files · ${options.scanning ? "scanning..." : `last scan ${state.lastScan}`} · ${options.interactive ? "[q] quit [r] rescan [s] standup [ctrl+k] palette" : "read-only output"}${options.error ? ` · error: ${options.error}` : ""}`;
 
   if (threeColumn) {
     const board = computeThreeColumnWidths(topWidth);
@@ -273,6 +274,23 @@ export function WatchApp({ rootDir }: WatchAppProps) {
     if (input === "r") {
       setStatusLine("Rescanning...");
       void refreshRef.current();
+      return;
+    }
+
+    if (input.toLowerCase() === "s") {
+      if (!state) {
+        return;
+      }
+      setStatusLine("Copying standup export...");
+      void (async () => {
+        try {
+          const markdown = await buildStandupMarkdown(rootDir, state);
+          const copied = await copyToClipboard(markdown);
+          setStatusLine(copied ? "Standup export copied" : "Clipboard unavailable");
+        } catch (error) {
+          setStatusLine(error instanceof Error ? error.message : String(error));
+        }
+      })();
     }
   });
 
@@ -346,7 +364,7 @@ function renderFrame(
     lines: [renderCockpitLine(state, topWidth - 2)],
   });
 
-  const footer = `watching ${state.scannedFiles.length} files · ${options.scanning ? "scanning..." : `last scan ${state.lastScan}`} · ${options.isRawModeSupported ? "[q] quit [r] rescan [ctrl+k] palette" : "read-only output"}${options.paletteOpen ? " · palette open" : ""}${options.error ? ` · error: ${options.error}` : ""}`;
+  const footer = `watching ${state.scannedFiles.length} files · ${options.scanning ? "scanning..." : `last scan ${state.lastScan}`} · ${options.isRawModeSupported ? "[q] quit [r] rescan [s] standup [ctrl+k] palette" : "read-only output"}${options.paletteOpen ? " · palette open" : ""}${options.error ? ` · error: ${options.error}` : ""}`;
 
   if (threeColumn) {
     const board = computeThreeColumnWidths(topWidth);

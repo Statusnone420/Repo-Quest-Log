@@ -20,6 +20,7 @@ describe("renderDesktopHtml", () => {
     expect(html).toContain("Settings");
     expect(html).toContain("Open Repo");
     expect(html).toContain("Ctrl+O");
+    expect(html).toContain("Ctrl+Shift+S");
     expect(html).toContain("Prompt dir");
     expect(html).toContain("Startup behavior");
     expect(html).toContain("Remember this repo");
@@ -32,6 +33,7 @@ describe("renderDesktopHtml", () => {
     expect(html).toContain("data-copy-context=");
     expect(html).toContain('data-ui-action="refresh"');
     expect(html).toContain("change-spark");
+    expect(html).toContain("Standup");
   });
 });
 

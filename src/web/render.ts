@@ -1440,6 +1440,7 @@ function renderSettingsRack(state: QuestState, liveBridge?: SurfaceHtmlOptions["
   const openRepoButton = liveBridge === "desktop"
     ? `<button type="button" class="primary" data-ui-action="open-repo" title="Open a repo folder (Ctrl+O)">Open Repo <span class="kbd-inline"><kbd>Ctrl</kbd><kbd>O</kbd></span></button>`
     : "";
+  const standupButton = `<button type="button" data-ui-action="standup-export" title="Copy today's standup export (Ctrl+Shift+S)">Standup <span class="kbd-inline"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>S</kbd></span></button>`;
   return `<section class="settings-rack" aria-label="Settings and shortcuts">
       <div class="settings-card">
         <div class="settings-head">Settings <span class="pill">${writeback}</span></div>
@@ -1447,11 +1448,13 @@ function renderSettingsRack(state: QuestState, liveBridge?: SurfaceHtmlOptions["
         <div class="settings-actions">
           <button type="button" data-ui-action="open-settings" title="Open the settings panel">Open Settings</button>
           ${openRepoButton}
+          ${standupButton}
           <button type="button" data-ui-action="refresh" title="Refresh desktop (Ctrl+R)">Refresh <span class="kbd-inline"><kbd>Ctrl</kbd><kbd>R</kbd></span></button>
         </div>
         <div class="settings-chip-row" aria-label="Shortcut reminders">
           <span class="chiplet"><strong>Ctrl+K</strong> prompt</span>
           <span class="chiplet"><strong>Ctrl+O</strong> repo</span>
+          <span class="chiplet"><strong>Ctrl+Shift+S</strong> standup</span>
           <span class="chiplet"><strong>Ctrl+R</strong> refresh</span>
         </div>
       </div>
@@ -1476,6 +1479,7 @@ function renderSettingsPanel(state: QuestState, liveBridge?: SurfaceHtmlOptions[
   const repoButton = liveBridge === "desktop"
     ? `<button type="button" class="primary" data-ui-action="open-repo">Open Repo</button>`
     : "";
+  const standupButton = `<button type="button" data-ui-action="standup-export">Copy standup export</button>`;
     return `<div class="settings-overlay" data-settings-panel data-open="false" role="dialog" aria-label="Settings panel">
       <section class="settings-panel">
         <div class="settings-panel-head">
@@ -1491,6 +1495,7 @@ function renderSettingsPanel(state: QuestState, liveBridge?: SurfaceHtmlOptions[
             <div class="actions">
               ${configButton}
               ${doctorButton}
+              ${standupButton}
             </div>
           </div>
           <div class="settings-panel-card">
@@ -1524,6 +1529,7 @@ function renderSettingsPanel(state: QuestState, liveBridge?: SurfaceHtmlOptions[
         <div class="settings-panel-footer">
           <span><strong>Ctrl+O</strong> open repo</span>
           <span><strong>Ctrl+K</strong> copy prompt</span>
+          <span><strong>Ctrl+Shift+S</strong> standup export</span>
           <span><strong>Ctrl+R</strong> refresh scan</span>
         </div>
         <pre class="settings-panel-report" data-doctor-report hidden></pre>
@@ -1715,6 +1721,9 @@ function renderLiveBridge(mode: SurfaceHtmlOptions["liveBridge"]): string {
       window.addEventListener("message", function (event) {
         var data = event && event.data;
         if (!data || data.type !== "repolog:replaceHtml") {
+          if (data && data.type === "repolog:toast" && window.__rqlToast && data.message) {
+            window.__rqlToast(data.message);
+          }
           return;
         }
         replaceHtml(data.html);
@@ -1730,6 +1739,7 @@ function renderSettingsScript(): string {
       var defaults = { scale: 1.08, density: "cozy" };
       var settingsOverlay = document.querySelector("[data-settings-panel]");
       var doctorReport = document.querySelector("[data-doctor-report]");
+      var vscode = typeof acquireVsCodeApi === "function" ? acquireVsCodeApi() : null;
 
       function clamp(value, min, max) { return Math.min(max, Math.max(min, value)); }
       function normalizeDensity(value) {
@@ -1784,6 +1794,26 @@ function renderSettingsScript(): string {
       }
       function closeSettings() {
         if (settingsOverlay) settingsOverlay.setAttribute("data-open", "false");
+      }
+      function copyStandup() {
+        if (window.repologDesktop && typeof window.repologDesktop.copyStandup === "function") {
+          Promise.resolve(window.repologDesktop.copyStandup()).then(function (result) {
+            if (!window.__rqlToast) return;
+            if (result && result.ok) {
+              window.__rqlToast("standup export copied");
+            } else {
+              window.__rqlToast((result && result.reason) ? result.reason : "standup export failed");
+            }
+          }).catch(function () {
+            if (window.__rqlToast) window.__rqlToast("standup export failed");
+          });
+          return;
+        }
+        if (vscode) {
+          vscode.postMessage({ type: "copyStandup" });
+          return;
+        }
+        if (window.__rqlToast) window.__rqlToast("standup export is unavailable");
       }
       document.addEventListener("click", function (event) {
         var target = event.target;
@@ -1870,6 +1900,10 @@ function renderSettingsScript(): string {
             }
             return;
           }
+          if (action === "standup-export") {
+            copyStandup();
+            return;
+          }
           if (action === "remember-startup-root") {
             if (window.repologDesktop && typeof window.repologDesktop.rememberStartupRoot === "function") {
               window.repologDesktop.rememberStartupRoot();
@@ -1897,6 +1931,11 @@ function renderSettingsScript(): string {
       });
       document.addEventListener("keydown", function (event) {
         var prefs = read();
+        if ((event.metaKey || event.ctrlKey) && event.shiftKey && (event.key === "s" || event.key === "S")) {
+          event.preventDefault();
+          copyStandup();
+          return;
+        }
         if ((event.metaKey || event.ctrlKey) && (event.key === "+" || event.key === "=")) {
           event.preventDefault();
           update({ scale: prefs.scale + 0.08 });

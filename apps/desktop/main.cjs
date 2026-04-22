@@ -4,7 +4,7 @@ const { pathToFileURL } = require("node:url");
 const { spawn } = require("node:child_process");
 const { mkdir, writeFile } = require("node:fs/promises");
 
-const { app, BrowserWindow, Menu, dialog, ipcMain, shell, screen } = require("electron");
+const { app, BrowserWindow, Menu, dialog, ipcMain, shell, screen, clipboard } = require("electron");
 const { resolveDesktopRepoRoot } = require(path.join(__dirname, "..", "..", "dist", "desktop", "root.js"));
 
 const repoRoot = path.resolve(__dirname, "..", "..");
@@ -103,9 +103,10 @@ async function loadModules() {
       importModule("dist/engine/scan.js"),
       importModule("dist/engine/watcher.js"),
       importModule("dist/engine/writeback.js"),
+      importModule("dist/engine/standup.js"),
       importModule("dist/web/render.js"),
       importModule("dist/engine/prompts.js"),
-    ]).then(([config, changes, editor, doctor, scan, watcher, writeback, web, prompts]) => ({
+    ]).then(([config, changes, editor, doctor, scan, watcher, writeback, standup, web, prompts]) => ({
       readRepoConfig: config.readRepoConfig,
       mergeChanges: changes.mergeChanges,
       formatCodeOpenTarget: editor.formatCodeOpenTarget,
@@ -114,6 +115,7 @@ async function loadModules() {
       scanRepo: scan.scanRepo,
       startWatcher: watcher.startWatcher,
       toggleChecklistItem: writeback.toggleChecklistItem,
+      buildStandupMarkdown: standup.buildStandupMarkdown,
       renderDesktopHtml: web.renderDesktopHtml,
       loadPromptPresets: prompts.loadPromptPresets,
     }));
@@ -406,6 +408,19 @@ ipcMain.handle("repolog:run-doctor", async () => {
     text: formatDoctorReport(report),
     hasWarn: report.findings.some((finding) => finding.severity === "warn"),
   };
+});
+
+ipcMain.handle("repolog:copy-standup", async () => {
+  try {
+    const { buildStandupMarkdown, scanRepo } = await loadModules();
+    const state = currentState ?? await scanRepo(targetRoot);
+    const markdown = await buildStandupMarkdown(targetRoot, state);
+    clipboard.writeText(markdown);
+    return { ok: true, text: markdown };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return { ok: false, reason: message };
+  }
 });
 
 ipcMain.on("repolog:remember-startup-root", () => {

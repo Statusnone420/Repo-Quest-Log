@@ -13,6 +13,7 @@ describe("formatStaticFrame", () => {
     expect(frame).toContain("RESUME");
     expect(frame).not.toContain("┌─ Quest ");
     expect(frame).toContain("[ctrl+k] palette");
+    expect(frame).toContain("[s] standup");
   });
 
   it("uses compact task rows with confidence dots and agent glyphs", () => {

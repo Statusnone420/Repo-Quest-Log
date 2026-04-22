@@ -34,6 +34,9 @@ contextBridge.exposeInMainWorld("repologDesktop", {
   runDoctor() {
     return ipcRenderer.invoke("repolog:run-doctor");
   },
+  copyStandup() {
+    return ipcRenderer.invoke("repolog:copy-standup");
+  },
   windowAction(action) {
     ipcRenderer.send("repolog:window-action", action);
   },

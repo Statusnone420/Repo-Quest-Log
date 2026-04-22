@@ -10,22 +10,6 @@ if (!fs.existsSync(path.join(repoRoot, "dist"))) {
   repoRoot = path.resolve(__dirname, "..", "..");
 }
 
-function mergeChanges(next, previous) {
-  const merged = new Map();
-
-  for (const change of next) {
-    merged.set(change.file, change);
-  }
-
-  for (const change of previous) {
-    if (!merged.has(change.file)) {
-      merged.set(change.file, change);
-    }
-  }
-
-  return [...merged.values()].slice(0, 10);
-}
-
 class RepoQuestViewProvider {
   constructor(context) {
     this.context = context;
@@ -79,7 +63,7 @@ class RepoQuestViewProvider {
     }
 
     const modules = await this.loadModules();
-    this.recentChanges = mergeChanges(changes, this.recentChanges);
+    this.recentChanges = modules.mergeChanges(changes, this.recentChanges);
     const state = await modules.scanRepo(this.rootDir, {
       recentChanges: this.recentChanges,
       lastTouchedFile: this.recentChanges[0] && this.recentChanges[0].file,
@@ -125,10 +109,12 @@ class RepoQuestViewProvider {
   async loadModules() {
     if (!this.modulesPromise) {
       this.modulesPromise = Promise.all([
+        import(pathToFileURL(path.join(repoRoot, "dist", "engine", "changes.js")).href),
         import(pathToFileURL(path.join(repoRoot, "dist", "engine", "scan.js")).href),
         import(pathToFileURL(path.join(repoRoot, "dist", "engine", "watcher.js")).href),
         import(pathToFileURL(path.join(repoRoot, "dist", "web", "render.js")).href),
-      ]).then(([scan, watcher, web]) => ({
+      ]).then(([changes, scan, watcher, web]) => ({
+        mergeChanges: changes.mergeChanges,
         scanRepo: scan.scanRepo,
         startWatcher: watcher.startWatcher,
         renderVSCodeHtml: web.renderVSCodeHtml,

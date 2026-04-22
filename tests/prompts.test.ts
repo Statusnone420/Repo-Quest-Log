@@ -1,0 +1,63 @@
+import { describe, expect, it } from "vitest";
+
+import { buildContextPrompt, buildPromptPresets } from "../src/engine/prompts.js";
+import type { QuestState } from "../src/engine/types.js";
+
+describe("prompt helpers", () => {
+  it("builds the shared resume context and prompt presets", () => {
+    const state = sampleState();
+
+    expect(buildContextPrompt(state)).toContain("Objective: Ship v0.1");
+
+    const presets = buildPromptPresets(state);
+    expect(presets).toHaveLength(6);
+    expect(presets[0]?.label).toBe("Resume for Claude Code");
+    expect(presets[1]?.label).toBe("Resume for Codex");
+    expect(presets[2]?.label).toBe("Resume for Gemini");
+  });
+});
+
+function sampleState(): QuestState {
+  return {
+    schemaVersion: 1,
+    name: "Repo Quest Log",
+    branch: "main",
+    lastScan: "2026-04-21T17:19:15.779Z",
+    scannedFiles: ["PLAN.md", "STATE.md"],
+    mission: "A local-first CLI + TUI that makes repo intent legible at a glance.",
+    activeQuest: {
+      title: "Ship v0.1",
+      doc: "PLAN.md",
+      line: 6,
+      progress: { done: 1, total: 7 },
+    },
+    resumeNote: {
+      task: "Wire desktop shell",
+      doc: "PLAN.md",
+      since: "just now",
+      lastTouched: "desktop-preview.html",
+      thought: "About to render the HUD from QuestState.",
+    },
+    now: [
+      { id: "1", text: "Wire desktop shell", doc: "PLAN.md", confidence: 1, agent: "codex" },
+    ],
+    next: [
+      { id: "2", text: "Wire VS Code extension", doc: "PLAN.md", confidence: 0.5, agent: "codex" },
+    ],
+    blocked: [],
+    agents: [
+      {
+        id: "claude",
+        name: "Claude",
+        file: "CLAUDE.md",
+        role: "Planner",
+        area: "docs/**",
+        objective: "Keep plans short",
+        constraints: [],
+        status: "active",
+      },
+    ],
+    recentChanges: [{ file: "PLAN.md", at: "1m", diff: "+3 -1" }],
+    decisions: [],
+  };
+}

@@ -4,6 +4,7 @@ import { execFileSync } from "node:child_process";
 import { isExcludedPath, readRepoConfig } from "./config.js";
 import { normalizeQuestState } from "./normalize.js";
 import { parseRepo } from "./parse.js";
+import { relativeSince } from "./time.js";
 import type { FileChange, QuestState } from "./types.js";
 
 export interface ScanOptions {
@@ -95,31 +96,4 @@ function readDiffSummary(rootDir: string, file: string): string | undefined {
   } catch {
     return undefined;
   }
-}
-
-function relativeSince(iso?: string): string {
-  if (!iso) {
-    return "just now";
-  }
-
-  const timestamp = Date.parse(iso);
-  if (Number.isNaN(timestamp)) {
-    return "just now";
-  }
-
-  const deltaMs = Math.max(0, Date.now() - timestamp);
-  const minute = 60_000;
-  const hour = 60 * minute;
-  const day = 24 * hour;
-
-  if (deltaMs < minute) {
-    return "just now";
-  }
-  if (deltaMs < hour) {
-    return `${Math.max(1, Math.round(deltaMs / minute))}m`;
-  }
-  if (deltaMs < day) {
-    return `${Math.max(1, Math.round(deltaMs / hour))}h`;
-  }
-  return `${Math.max(1, Math.round(deltaMs / day))}d`;
 }

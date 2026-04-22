@@ -9,13 +9,15 @@ v0.1 close-out: finish TUI visual parity, clean remaining UI-copy drift, and kee
 - Desktop shell is now in a usable state: packaged rebuild succeeds, the direct exe in `release\win-unpacked\Repo Quest Log.exe` is the preferred test target, click-to-open works, and the shell has in-app refresh + window controls.
 - Desktop readability pass landed in `src/web/render.ts`: larger defaults, clearer agent chips (`CX` / `CL` / `GM`), less cryptic Ctrl+K copy, and better header-strip fit without outer scroll.
 - Repo-level excludes are now live via `.repolog.json`; `archive` / `archives` / `archived` are ignored by default so stale docs stop polluting Recent changes.
-- TUI parity work advanced in `src/tui/App.tsx`: top repo line, separate Mission / Objective / Resume strip, cockpit line, compact task rows, and Ctrl+K prompt overlay are all in place. Visual cleanup and parity verification still remain.
-- Tests now cover the TUI frame plus exclude behavior; `npm run lint` and `npm test` are green.
+- Shared workflow helpers were centralized into `src/engine/prompts.ts`, `src/engine/changes.ts`, `src/engine/time.ts`, and `src/engine/editor.ts` so the TUI, desktop shell, and renderer stop duplicating prompt and recent-change logic.
+- Desktop click-to-open now tries exact-line `code -g` opens before falling back to the system file handler, and the same path is exercised by the VS Code view via the shared change-merging helper.
+- Fixture coverage now includes a noisy repo with malformed config plus archived markdown, and the tests assert the extractor keeps the useful signals while ignoring the archived tree.
+- `npm run build`, `npm run lint`, and `npm test` are green.
 
 ## Resume Note
-> Desktop is stable enough for screenshot comparison. Current repo state should show 3 Now / 5 Next / 1 Blocked / 3 Agents with archived docs filtered out. Main remaining implementation task is TUI visual parity cleanup, not desktop shell rescue.
+> Shared prompt presets and the desktop line-open path are now consolidated. Current repo state should still show the calm HUD layout, with the main remaining work being any follow-on v0.1 polish the plan still lists.
 
-Last touched: `src/tui/App.tsx`
+Last touched: `src/engine/prompts.ts`
 
 ## Recent Decisions
 - TypeScript over Rust for v0.1 (faster iteration, Ink for TUI)

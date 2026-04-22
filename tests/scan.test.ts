@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { mkdir, rm, writeFile } from "node:fs/promises";
+import { cp, mkdir, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { tmpdir } from "node:os";
 
@@ -70,6 +70,42 @@ describe("scanRepo", () => {
       const state = await scanRepo(cwd);
 
       expect(state.scannedFiles).not.toContain("docs/Notes/todo_notes.md");
+    } finally {
+      await rm(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it("keeps useful signals from a noisy fixture repo", async () => {
+    const fixtureRoot = join(process.cwd(), "tests", "fixtures", "noisy");
+    const cwd = join(tmpdir(), `repo-quest-log-scan-${Date.now()}-noisy`);
+
+    try {
+      await cp(fixtureRoot, cwd, { recursive: true });
+      const state = await scanRepo(cwd);
+
+      expect(state.scannedFiles).toContain("PLAN.md");
+      expect(state.scannedFiles).toContain("README.md");
+      expect(state.scannedFiles).not.toContain("docs/Archived/old.md");
+      expect(state.activeQuest).toEqual(
+        expect.objectContaining({
+          title: "Stabilize noisy-fixture extraction.",
+          progress: { done: 1, total: 2 },
+        }),
+      );
+      expect(state.now.map((task) => task.text)).toEqual([
+        "Wire the shared prompt module into the HUD",
+        "Fix desktop click-to-open at exact lines",
+      ]);
+      expect(state.next.map((task) => task.text)).toEqual([
+        "Add prompt-file loading later",
+        "Refresh the README without changing behavior",
+      ]);
+      expect(state.blocked[0]).toEqual(
+        expect.objectContaining({
+          text: "Confirm archived markdown is excluded",
+          reason: "Waiting on fixture coverage for archived docs.",
+        }),
+      );
     } finally {
       await rm(cwd, { recursive: true, force: true });
     }

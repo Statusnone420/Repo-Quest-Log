@@ -1,6 +1,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const { pathToFileURL } = require("node:url");
+const { spawn } = require("node:child_process");
 const { mkdir, writeFile } = require("node:fs/promises");
 
 const { app, BrowserWindow, ipcMain, shell, screen } = require("electron");
@@ -21,29 +22,17 @@ let modulesPromise = null;
 let revealTimer = null;
 const liveHtmlPath = path.join(targetRoot, ".repolog", "desktop-live.html");
 
-function mergeChanges(next, previous) {
-  const merged = new Map();
-
-  for (const change of next) {
-    merged.set(change.file, change);
-  }
-
-  for (const change of previous) {
-    if (!merged.has(change.file)) {
-      merged.set(change.file, change);
-    }
-  }
-
-  return [...merged.values()].slice(0, 10);
-}
-
 async function loadModules() {
   if (!modulesPromise) {
     modulesPromise = Promise.all([
+      importModule("dist/engine/changes.js"),
+      importModule("dist/engine/editor.js"),
       importModule("dist/engine/scan.js"),
       importModule("dist/engine/watcher.js"),
       importModule("dist/web/render.js"),
-    ]).then(([scan, watcher, web]) => ({
+    ]).then(([changes, editor, scan, watcher, web]) => ({
+      mergeChanges: changes.mergeChanges,
+      formatCodeOpenTarget: editor.formatCodeOpenTarget,
       scanRepo: scan.scanRepo,
       startWatcher: watcher.startWatcher,
       renderDesktopHtml: web.renderDesktopHtml,
@@ -115,7 +104,7 @@ function revealWindow() {
 }
 
 async function refresh(changes = []) {
-  const { scanRepo, renderDesktopHtml } = await loadModules();
+  const { mergeChanges, scanRepo, renderDesktopHtml } = await loadModules();
   recentChanges = mergeChanges(changes, recentChanges);
 
   try {
@@ -208,7 +197,8 @@ ipcMain.on("repolog:open-doc", (_event, payload = {}) => {
     return;
   }
 
-  void shell.openPath(filePath);
+  const line = Number.isInteger(payload.line) ? payload.line : undefined;
+  void openDoc(filePath, line);
 });
 
 ipcMain.on("repolog:window-action", (_event, action) => {
@@ -252,6 +242,35 @@ if (require.main === module) {
     const message = error instanceof Error ? error.stack || error.message : String(error);
     process.stderr.write(`${message}\n`);
     app.exit(1);
+  });
+}
+
+async function openDoc(filePath, line) {
+  const { formatCodeOpenTarget } = await loadModules();
+  const target = formatCodeOpenTarget(filePath, line);
+
+  if (line !== undefined) {
+    const opened = await tryOpenWithCode(target);
+    if (opened) {
+      return;
+    }
+  }
+
+  await shell.openPath(filePath);
+}
+
+function tryOpenWithCode(target) {
+  return new Promise((resolve) => {
+    const child = spawn("code", ["-g", target], {
+      cwd: targetRoot,
+      detached: true,
+      windowsHide: true,
+      stdio: "ignore",
+    });
+
+    child.once("error", () => resolve(false));
+    child.once("close", (code) => resolve(code === 0));
+    child.unref();
   });
 }
 

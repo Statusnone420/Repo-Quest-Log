@@ -31,6 +31,8 @@ describe("desktop shell sizing", () => {
     expect(source).toContain("minWidth: 700");
     expect(source).toContain("minHeight: 560");
     expect(source).toContain("useContentSize: true");
+    expect(source).toContain("formatCodeOpenTarget");
+    expect(source).toContain('spawn("code", ["-g"');
   });
 });
 

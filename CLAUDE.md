@@ -25,7 +25,7 @@ Instructions for Claude (Claude Code) working in this repo. "RepoLog"
 - Run build/lint/tests before finishing a pass
 
 ## Do Not
-- Expand scope beyond the active pass in `plan_implementation.md`
+- Expand scope beyond the active pass in `plan_implementation.md` (unless the user asks you to)
 - Touch `docs/design/**` — that's the human's and describes the UI spec
 - Add new runtime dependencies without a note
 - Redesign landed work unless source disagrees with docs

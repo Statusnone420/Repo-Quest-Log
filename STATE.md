@@ -9,9 +9,12 @@ owner: claude
 Live "where we are." Update this as work progresses. The normalizer reads this to build the Resume Note.
 
 ## Current Focus
-v0.4 init/config/wizard handlers regressed (clicked broke all UI interactions except Ctrl+K). Root cause: one of the three new event handlers (init-plan/init-state/init-config, dismiss-wizard, or save-config) threw an uncaught error that silenced the entire click listener. Handlers were removed to restore stability (65825c9). **Next agent must re-implement these three handlers with proper error handling, testing, and verification.** Do not add untested code directly to the listener; wrap in try-catch, test on both fixture repos, and verify build/lint/test pass before signing off.
+v0.4 init/config/wizard handlers are back with guarded click handling. The shared renderer now wraps the new init-plan/init-state/init-config, dismiss-wizard, and save-config paths in try/catch, and the build/lint/test/desktop-build gates are green. Remaining v0.4 work can continue from the live tracker.
 
 ## Last Session — v0.4 handler regression fix & re-handoff (2026-04-22)
+- **Fix completed**: Re-implemented the wizard/config handlers in `src/web/render.ts` with explicit try/catch protection around the new branches and an outer click-listener safety net.
+- **Coverage added**: Added fixture-backed web tests for both `tests/fixtures/healthy/` and `tests/fixtures/noisy/` so the setup card renders safely from real scan output.
+- **Verification**: `npm run build`, `npm run lint`, `npm test`, and `npm run desktop:build` all passed.
 - **v0.4 implementation attempt 1**: Agent added init/config/wizard handlers but one threw an uncaught error, breaking ALL click event handling (except Ctrl+K). Isolated issue to: `init-plan`, `init-state`, `init-config`, `dismiss-wizard`, or `save-config` handlers.
 - **Triage**: Removed all three handler blocks + `collectConfig()`/`saveConfig()` functions. Click listener restored. UI responsive again.
 - **Verdict**: Root cause was likely an error in `window.repologDesktop.initTemplate()` or `window.repologDesktop.writeConfig()` calls, or possibly `vscode` object was undefined causing cascading errors.
@@ -56,9 +59,9 @@ v0.4 init/config/wizard handlers regressed (clicked broke all UI interactions ex
 - `npm run build`, `npm run lint`, `npm test` all green (30 tests, 13 files).
 
 ## Resume Note
-> v0.4 implementation is underway. Init/templates, config validation, and write-back hardening landed with tests; next agent should wire the UI save flow, first-run wizard, and release/install polish, then rerun `npm run lint && npm test` before calling the slice done.
+> v0.4 handler regression is fixed. Init/config/wizard click paths are guarded again and verified; next agent should continue with the remaining v0.4 first-run/config/write-back polish from `IMPLEMENTATION_PLAN_v0.4.md`.
 
-Last touched: `IMPLEMENTATION_PLAN_v0.4.md`, `STATE.md`, `src/engine/config.ts`
+Last touched: `IMPLEMENTATION_PLAN_v0.4.md`, `STATE.md`, `src/web/render.ts`
 
 ## Recent Decisions
 - 2026-04-21 — `repolog doctor` is the trust layer for messy repos: it explains *why* state looks sparse and which exact heading to add. The CLI exits 1 when any warn-level finding fires, so CI can gate on it.

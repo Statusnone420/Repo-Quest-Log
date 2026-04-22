@@ -4,8 +4,13 @@
     "archives",
     "archived"
   ],
-  "writeback": false,
+  "writeback": true,
   "prompts": {
-    "dir": "~/.repolog/prompts"
-  }
+    "dir": "C:\\Users\\Antho\\.repolog\\prompts"
+  },
+  "watch": {
+    "debounce": 500,
+    "reportFileChanges": true
+  },
+  "schemaVersion": 2
 }

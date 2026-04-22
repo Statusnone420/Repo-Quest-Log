@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
+import { cp, rm } from "node:fs/promises";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
 
 import { renderDesktopHtml, renderVSCodeHtml } from "../src/web/render.js";
+import { scanRepo } from "../src/engine/scan.js";
 import type { QuestState } from "../src/engine/types.js";
 
 describe("web renderers", () => {
@@ -64,6 +68,52 @@ describe("web renderers", () => {
     expect(html).toContain("CLAUDE.md");
     expect(html).toContain("Create PLAN.md");
   });
+
+  it("renders the setup card from the healthy fixture without throwing", async () => {
+    const root = await copyFixture("healthy");
+
+    try {
+      const state = await scanRepo(root);
+      const html = renderDesktopHtml(state, { liveBridge: "desktop" });
+
+      expect(html).toContain("Settings");
+      expect(html).toContain("Save settings");
+      expect(html).toContain('data-ui-action="save-config"');
+      expect(html).toContain('data-ui-action="init-state"');
+      expect(html).toContain('data-ui-action="dismiss-wizard"');
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  it("renders the first-run setup buttons from the noisy fixture", async () => {
+    const root = await copyFixture("noisy");
+
+    try {
+      const state = await scanRepo(root);
+      const html = renderDesktopHtml(state, { liveBridge: "desktop" });
+
+      expect(html).toContain('data-ui-action="init-state"');
+      expect(html).toContain('data-ui-action="init-config"');
+      expect(html).toContain('data-ui-action="dismiss-wizard"');
+      expect(html).toContain('data-ui-action="save-config"');
+      expect(html).toContain("Create STATE.md");
+      expect(html).toContain("Create .repolog.json");
+      expect(html).toContain("Skip for now");
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  it("emits desktop scripts that parse as valid JavaScript", () => {
+    const html = renderDesktopHtml(sampleState(), { liveBridge: "desktop" });
+    const scripts = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((match) => match[1]);
+
+    expect(scripts.length).toBeGreaterThan(0);
+    for (const script of scripts) {
+      expect(() => new Function(script)).not.toThrow();
+    }
+  });
 });
 
 function sampleState(): QuestState {
@@ -119,4 +169,11 @@ function sampleState(): QuestState {
     decisions: [],
     config: { writeback: false, prompts: { dir: "~/.repolog/prompts" } },
   };
+}
+
+async function copyFixture(name: "healthy" | "noisy"): Promise<string> {
+  const source = join(process.cwd(), "tests", "fixtures", name);
+  const target = join(tmpdir(), `repo-quest-log-${name}-${Date.now()}-${Math.random().toString(16).slice(2)}`);
+  await cp(source, target, { recursive: true });
+  return target;
 }

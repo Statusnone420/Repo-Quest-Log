@@ -2064,118 +2064,218 @@ function renderSettingsScript(): string {
         }
         if (window.__rqlToast) window.__rqlToast("standup export is unavailable");
       }
+      function collectConfig() {
+        try {
+          function valueFor(field) {
+            return document.querySelector('[data-config-field="' + field + '"]');
+          }
+          var excludesNode = valueFor("excludes");
+          var promptsNode = valueFor("promptsDir");
+          var debounceNode = valueFor("watchDebounce");
+          var writebackNode = valueFor("writeback");
+          var reportNode = valueFor("reportFileChanges");
+          var excludes = [];
+          if (excludesNode && typeof excludesNode.value === "string") {
+            excludes = excludesNode.value.split(/\\r?\\n/).map(function (line) { return line.trim(); }).filter(Boolean);
+          }
+          return {
+            excludes: excludes,
+            writeback: !!(writebackNode && writebackNode.checked),
+            prompts: { dir: promptsNode && typeof promptsNode.value === "string" ? promptsNode.value.trim() : "" },
+            watch: {
+              debounce: Math.max(100, Math.min(10000, parseInt(debounceNode && debounceNode.value ? debounceNode.value : "500", 10) || 500)),
+              reportFileChanges: !!(reportNode && reportNode.checked),
+            },
+          };
+        } catch (error) {
+          if (window.__rqlToast) window.__rqlToast("Error reading config: " + String(error).slice(0, 50));
+          return { excludes: [], writeback: false, prompts: { dir: "" }, watch: { debounce: 500, reportFileChanges: true } };
+        }
+      }
+      function saveConfig() {
+        try {
+          var payload = collectConfig();
+          if (window.repologDesktop && typeof window.repologDesktop.writeConfig === "function") {
+            return Promise.resolve(window.repologDesktop.writeConfig(payload)).then(function (result) {
+              if (window.__rqlToast) {
+                window.__rqlToast(result && result.success ? "Settings saved ✓" : "Settings save failed");
+              }
+            }).catch(function (error) {
+              if (window.__rqlToast) window.__rqlToast("Save failed: " + String(error).slice(0, 50));
+            });
+          }
+          if (vscode && typeof vscode.postMessage === "function") {
+            vscode.postMessage({ type: "writeConfig", payload: payload });
+            if (window.__rqlToast) window.__rqlToast("Settings sent to editor");
+            return Promise.resolve();
+          }
+          if (window.__rqlToast) window.__rqlToast("Settings save unavailable");
+          return Promise.resolve();
+        } catch (error) {
+          if (window.__rqlToast) window.__rqlToast("Save error: " + String(error).slice(0, 50));
+          return Promise.resolve();
+        }
+      }
       document.addEventListener("click", function (event) {
-        var target = event.target;
-        if (!target || !target.closest) return;
-        var copyBtn = target.closest("[data-copy-context]");
-        if (copyBtn) {
-          var text = copyBtn.getAttribute("data-copy-context");
-          if (text && navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(text).then(function () {
-              if (window.__rqlToast) window.__rqlToast("resume context copied");
-            }).catch(function () {});
-          }
-        }
-        var desktopButton = target.closest("[data-window-action]");
-        if (desktopButton && window.repologDesktop && typeof window.repologDesktop.windowAction === "function") {
-          window.repologDesktop.windowAction(desktopButton.getAttribute("data-window-action"));
-          return;
-        }
-        if (settingsOverlay && target === settingsOverlay) {
-          closeSettings();
-          return;
-        }
-        if (target.closest && target.closest("[data-writeback-toggle]")) {
-          return;
-        }
-        var openRow = target.closest("[data-open-doc]");
-        if (openRow && window.repologDesktop && typeof window.repologDesktop.openDoc === "function") {
-          var doc = openRow.getAttribute("data-open-doc");
-          var line = parseInt(openRow.getAttribute("data-line") || "1", 10);
-          window.repologDesktop.openDoc(doc, line);
-        }
-        var button = target.closest("[data-ui-action], [data-ui-density]");
-        if (!button) return;
-        if (button.hasAttribute("data-ui-action")) {
-          var action = button.getAttribute("data-ui-action");
-          var prefs = read();
-          if (action === "refresh") {
-            if (window.repologDesktop && typeof window.repologDesktop.requestRefresh === "function") {
-              window.repologDesktop.requestRefresh();
+        try {
+          var target = event.target;
+          if (!target || !target.closest) return;
+          var copyBtn = target.closest("[data-copy-context]");
+          if (copyBtn) {
+            var text = copyBtn.getAttribute("data-copy-context");
+            if (text && navigator.clipboard && navigator.clipboard.writeText) {
+              navigator.clipboard.writeText(text).then(function () {
+                if (window.__rqlToast) window.__rqlToast("resume context copied");
+              }).catch(function () {});
             }
+          }
+          var desktopButton = target.closest("[data-window-action]");
+          if (desktopButton && window.repologDesktop && typeof window.repologDesktop.windowAction === "function") {
+            window.repologDesktop.windowAction(desktopButton.getAttribute("data-window-action"));
             return;
           }
-          if (action === "open-settings") {
-            openSettings();
-            return;
-          }
-          if (action === "close-settings") {
+          if (settingsOverlay && target === settingsOverlay) {
             closeSettings();
             return;
           }
-          if (action === "open-repo") {
-            if (window.repologDesktop && typeof window.repologDesktop.openRepoPicker === "function") {
-              window.repologDesktop.openRepoPicker();
-            } else if (window.__rqlToast) {
-              window.__rqlToast("open repo is only available in the desktop shell");
-            }
+          if (target.closest && target.closest("[data-writeback-toggle]")) {
             return;
           }
-          if (action === "open-config") {
-            if (window.repologDesktop && typeof window.repologDesktop.openConfigFile === "function") {
-              window.repologDesktop.openConfigFile();
-            } else if (window.repologDesktop && typeof window.repologDesktop.openDoc === "function") {
-              window.repologDesktop.openDoc(".repolog.json", 1);
-            } else if (window.__rqlToast) {
-              window.__rqlToast("settings config is only available in the desktop shell");
-            }
-            return;
+          var openRow = target.closest("[data-open-doc]");
+          if (openRow && window.repologDesktop && typeof window.repologDesktop.openDoc === "function") {
+            var doc = openRow.getAttribute("data-open-doc");
+            var line = parseInt(openRow.getAttribute("data-line") || "1", 10);
+            window.repologDesktop.openDoc(doc, line);
           }
-          if (action === "run-doctor") {
-            if (window.repologDesktop && typeof window.repologDesktop.runDoctor === "function") {
-              window.repologDesktop.runDoctor().then(function (report) {
-                if (!doctorReport) return;
-                doctorReport.hidden = false;
-                doctorReport.setAttribute("data-visible", "true");
-                doctorReport.textContent = report && report.text ? report.text : "repolog doctor returned no output";
-                if (window.__rqlToast) {
-                  window.__rqlToast(report && report.hasWarn ? "doctor found warnings" : "doctor is clean");
+          var button = target.closest("[data-ui-action], [data-ui-density]");
+          if (!button) return;
+          if (button.hasAttribute("data-ui-action")) {
+            var action = button.getAttribute("data-ui-action");
+            var prefs = read();
+            if (action === "refresh") {
+              if (window.repologDesktop && typeof window.repologDesktop.requestRefresh === "function") {
+                window.repologDesktop.requestRefresh();
+              }
+              return;
+            }
+            if (action === "open-settings") {
+              openSettings();
+              return;
+            }
+            if (action === "close-settings") {
+              closeSettings();
+              return;
+            }
+            if (action === "open-repo") {
+              if (window.repologDesktop && typeof window.repologDesktop.openRepoPicker === "function") {
+                window.repologDesktop.openRepoPicker();
+              } else if (window.__rqlToast) {
+                window.__rqlToast("open repo is only available in the desktop shell");
+              }
+              return;
+            }
+            if (action === "open-config") {
+              if (window.repologDesktop && typeof window.repologDesktop.openConfigFile === "function") {
+                window.repologDesktop.openConfigFile();
+              } else if (window.repologDesktop && typeof window.repologDesktop.openDoc === "function") {
+                window.repologDesktop.openDoc(".repolog.json", 1);
+              } else if (window.__rqlToast) {
+                window.__rqlToast("settings config is only available in the desktop shell");
+              }
+              return;
+            }
+            if (action === "init-plan" || action === "init-state" || action === "init-config") {
+              try {
+                var targetDoc = action === "init-plan" ? "plan" : action === "init-state" ? "state" : "config";
+                if (window.repologDesktop && typeof window.repologDesktop.initTemplate === "function") {
+                  Promise.resolve(window.repologDesktop.initTemplate(targetDoc)).then(function () {
+                    if (window.__rqlToast) window.__rqlToast(targetDoc.toUpperCase() + " created ✓");
+                  }).catch(function (error) {
+                    if (window.__rqlToast) window.__rqlToast("Failed to create " + targetDoc + ": " + String(error).slice(0, 50));
+                  });
+                } else if (vscode && typeof vscode.postMessage === "function") {
+                  vscode.postMessage({ type: "initTemplate", target: targetDoc });
+                  if (window.__rqlToast) window.__rqlToast("Creating " + targetDoc + "…");
+                } else {
+                  if (window.__rqlToast) window.__rqlToast("Init not available in this shell");
                 }
-              }).catch(function () {
-                if (window.__rqlToast) window.__rqlToast("doctor failed");
-              });
-            } else if (window.__rqlToast) {
-              window.__rqlToast("doctor is only available in the desktop shell");
+              } catch (error) {
+                if (window.__rqlToast) window.__rqlToast("Error: " + String(error).slice(0, 50));
+              }
+              return;
             }
-            return;
-          }
-          if (action === "standup-export") {
-            copyStandup();
-            return;
-          }
-          if (action === "remember-startup-root") {
-            if (window.repologDesktop && typeof window.repologDesktop.rememberStartupRoot === "function") {
-              window.repologDesktop.rememberStartupRoot();
-              if (window.__rqlToast) window.__rqlToast("startup memory saved");
-            } else if (window.__rqlToast) {
-              window.__rqlToast("startup memory is only available in the desktop shell");
+            if (action === "run-doctor") {
+              if (window.repologDesktop && typeof window.repologDesktop.runDoctor === "function") {
+                window.repologDesktop.runDoctor().then(function (report) {
+                  if (!doctorReport) return;
+                  doctorReport.hidden = false;
+                  doctorReport.setAttribute("data-visible", "true");
+                  doctorReport.textContent = report && report.text ? report.text : "repolog doctor returned no output";
+                  if (window.__rqlToast) {
+                    window.__rqlToast(report && report.hasWarn ? "doctor found warnings" : "doctor is clean");
+                  }
+                }).catch(function () {
+                  if (window.__rqlToast) window.__rqlToast("doctor failed");
+                });
+              } else if (window.__rqlToast) {
+                window.__rqlToast("doctor is only available in the desktop shell");
+              }
+              return;
             }
-            return;
-          }
-          if (action === "forget-startup-root") {
-            if (window.repologDesktop && typeof window.repologDesktop.forgetStartupRoot === "function") {
-              window.repologDesktop.forgetStartupRoot();
-              if (window.__rqlToast) window.__rqlToast("startup memory cleared");
-            } else if (window.__rqlToast) {
-              window.__rqlToast("startup memory is only available in the desktop shell");
+            if (action === "standup-export") {
+              copyStandup();
+              return;
             }
-            return;
+            if (action === "dismiss-wizard") {
+              try {
+                if (window.repologDesktop && typeof window.repologDesktop.dismissWizard === "function") {
+                  Promise.resolve(window.repologDesktop.dismissWizard()).then(function () {
+                    closeSettings();
+                  }).catch(function (error) {
+                    if (window.__rqlToast) window.__rqlToast("Error dismissing wizard: " + String(error).slice(0, 50));
+                  });
+                } else {
+                  closeSettings();
+                }
+              } catch (error) {
+                if (window.__rqlToast) window.__rqlToast("Error dismissing wizard: " + String(error).slice(0, 50));
+              }
+              return;
+            }
+            if (action === "save-config") {
+              try {
+                saveConfig();
+              } catch (error) {
+                if (window.__rqlToast) window.__rqlToast("Error saving config: " + String(error).slice(0, 50));
+              }
+              return;
+            }
+            if (action === "remember-startup-root") {
+              if (window.repologDesktop && typeof window.repologDesktop.rememberStartupRoot === "function") {
+                window.repologDesktop.rememberStartupRoot();
+                if (window.__rqlToast) window.__rqlToast("startup memory saved");
+              } else if (window.__rqlToast) {
+                window.__rqlToast("startup memory is only available in the desktop shell");
+              }
+              return;
+            }
+            if (action === "forget-startup-root") {
+              if (window.repologDesktop && typeof window.repologDesktop.forgetStartupRoot === "function") {
+                window.repologDesktop.forgetStartupRoot();
+                if (window.__rqlToast) window.__rqlToast("startup memory cleared");
+              } else if (window.__rqlToast) {
+                window.__rqlToast("startup memory is only available in the desktop shell");
+              }
+              return;
+            }
+            if (action === "smaller") update({ scale: prefs.scale - 0.08 });
+            if (action === "larger") update({ scale: prefs.scale + 0.08 });
           }
-          if (action === "smaller") update({ scale: prefs.scale - 0.08 });
-          if (action === "larger") update({ scale: prefs.scale + 0.08 });
-        }
-        if (button.hasAttribute("data-ui-density")) {
-          update({ density: button.getAttribute("data-ui-density") || "wide" });
+          if (button.hasAttribute("data-ui-density")) {
+            update({ density: button.getAttribute("data-ui-density") || "wide" });
+          }
+        } catch (error) {
+          if (window.__rqlToast) window.__rqlToast("Click handler error: " + String(error).slice(0, 50));
         }
       });
       document.addEventListener("keydown", function (event) {

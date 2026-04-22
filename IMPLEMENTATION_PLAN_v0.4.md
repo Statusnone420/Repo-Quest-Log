@@ -8,18 +8,18 @@
 
 ---
 
-## 🔴 CURRENT STATUS: REGRESSION FIX IN PROGRESS
+## ✅ CURRENT STATUS: HANDLER REGRESSION FIXED
 
-**What happened:** First v0.4 implementation (commit 65825c9) added init/config/wizard handlers but one threw an uncaught error in the click event listener, breaking all UI interactions except Ctrl+K. Handlers were surgically removed to restore stability. **Next agent must re-implement with proper error handling.** See `FIX_V0.4_HANDLERS.md` for exact implementation spec.
+**What happened:** First v0.4 implementation (commit 65825c9) added init/config/wizard handlers but one threw an uncaught error in the click event listener, breaking all UI interactions except Ctrl+K. The handlers were re-implemented with explicit try/catch protection, the shared click listener is guarded again, and the fix is verified. See `FIX_V0.4_HANDLERS.md` for the applied implementation spec.
 
 **Progress:**
 - ✅ All core engine features (doctor, tuneup, watcher, writeback) working
 - ✅ Desktop app responsive again
-- ⚠️ Wizard buttons disabled (init-plan, init-state, init-config)
-- ⚠️ Settings save button disabled (save-config)
-- ⏳ Awaiting corrected re-implementation with error handling
+- ✅ Wizard buttons restored with guarded handlers (init-plan, init-state, init-config, dismiss-wizard)
+- ✅ Settings save button restored with guarded handler (save-config)
+- ✅ Build, lint, test, and desktop packaging all pass
 
-**Next step:** Follow `FIX_V0.4_HANDLERS.md` spec exactly. All code provided. Wrap in try-catch, test both fixtures, verify build/test/lint pass before signing off.
+**Next step:** Continue the remaining v0.4 first-run/config/write-back work from the live tracker. Keep the existing verification gate in place before any further renderer changes.
 
 ---
 

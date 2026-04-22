@@ -3,7 +3,20 @@
 Live "where we are." Update this as work progresses. The normalizer reads this to build the Resume Note.
 
 ## Current Focus
-v0.2 is closed. Shared `QuestState` now carries `gitContext`, `agentActivity`, and `config.writeback`; standup export is shipped; 0.0.2 ship/shareability polish is landed; and the next session should start the v0.3 kickoff.
+v0.3 Slice 1 — "Tune this repo" — is complete. `repolog tuneup` CLI, desktop Settings panel, TUI overlay, VS Code command, and `buildTuneup` engine are all wired and green.
+
+## Last Session — v0.3 Tuneup slice (2026-04-22)
+- **`src/engine/tuneup.ts`** (NEW): `buildTuneup(state, doctorReport): TuneupResult`. Score weights: mission(15) + objective(15) + now-heading(15) + agents-owned-areas(10) + state-resume(10) + plan-next(10) + charter-present(15) + frontmatter(10) = 100. Generates per-repo prompt, CHARTER.md contents, and per-agent prompts.
+- **`src/engine/types.ts`**: Added `charterPresent?` and `hasFrontmatter?` to `RepoConfigSnapshot`.
+- **`src/engine/scan.ts`**: Detects `.repolog/CHARTER.md` and parsed doc frontmatter; sets both fields on config snapshot.
+- **`src/engine/doctor.ts`**: `DoctorReport` now includes `tuneup: { score, gaps }` built from `buildTuneup`.
+- **`src/cli/index.ts`**: `repolog tuneup [path] [--write-charter] [--copy] [--agent=claude|codex|gemini]`. Missing agent → stderr note + generic prompt. Charter write uses `--write-charter` flag.
+- **`src/web/render.ts`**: "Tune this repo" full-width card in settings panel. Coverage meter (accent ≥80, warn 50-79, danger <50), read-only prompt textarea (max-height 40vh), Copy / Write CHARTER.md / Preview Gaps / Send to Claude|Codex|Gemini buttons. Desktop calls `window.repologDesktop.runTuneup()`; VS Code posts `{ type: "runTuneup" }`.
+- **`src/tui/App.tsx`**: `t` hotkey triggers `runDoctor` + `buildTuneup` then shows `TuneupOverlay` (score bar + gap list). `q`/Esc dismisses.
+- **`extensions/vscode/extension.js`**: `repoQuestLog.tuneup` command registered — runs quick pick with Copy / Write CHARTER / per-agent options. Webview handles `runTuneup` and `writeTuneupCharter` messages.
+- **`apps/desktop/main.cjs` + `preload.cjs`**: `repolog:run-tuneup` and `repolog:write-tuneup-charter` IPC handlers.
+- **`tests/tuneup.test.ts`** (NEW): 8 tests — pristine=100, missing-objective gap, missing-now gap, per-agent prompt content, charter determinism, missing-charter gap, prompt structure, doctor JSON output.
+- `npm run build && npm run lint && npm test` — 42 tests, 15 files, all green.
 
 ## Last Session
 - Standup export landed across CLI, shared engine formatting, TUI, desktop, and VS Code webview. New CLI: `repolog standup [--since=today|yesterday|7d] [--copy] [--json]`. Standup copy hotkey is now `Ctrl+Shift+C` in the shared renderer, with the prompt-palette toast styling and a 2s timeout.
@@ -21,11 +34,9 @@ v0.2 is closed. Shared `QuestState` now carries `gitContext`, `agentActivity`, a
 - `npm run build`, `npm run lint`, `npm test` all green (30 tests, 13 files).
 
 ## Resume Note
-> v0.2 is closed. Standup export shipped via CLI/TUI/desktop/VS Code, `release/repo-quest-log-0.0.2.vsix` now packages from `npm run pack:vscode`, and README/CHANGELOG/version docs are synced to 0.0.2. Next session: v0.3 kickoff.
+> v0.3 Slice 1 complete. `repolog tuneup` CLI, `buildTuneup` engine (score/gaps/prompt/charter/perAgent), desktop Settings "Tune this repo" card, TUI `t` overlay, VS Code `repoQuestLog.tuneup` command, and full test suite landed. 42 tests green. Next: v0.3 remaining slices or release.
 
-Last touched: `CHANGELOG.md`
-
-> Session N: v0.2 closed. Standup export + 0.0.2 ship polish. VSIX packaged. Commits 553f02e…HEAD. Next session: v0.3 kickoff.
+Last touched: `STATE.md`
 
 ## Recent Decisions
 - 2026-04-21 — `repolog doctor` is the trust layer for messy repos: it explains *why* state looks sparse and which exact heading to add. The CLI exits 1 when any warn-level finding fires, so CI can gate on it.

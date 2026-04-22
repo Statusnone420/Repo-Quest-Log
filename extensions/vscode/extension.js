@@ -69,6 +69,37 @@ class RepoQuestViewProvider {
             });
           }
         }
+
+        if (message.type === "runTuneup") {
+          try {
+            const modules = await this.loadModules();
+            const state = this.currentState || await modules.scanRepo(this.rootDir);
+            const report = await modules.runDoctor(this.rootDir);
+            const tuneup = modules.buildTuneup(state, report);
+            await this.view.webview.postMessage({ type: "repolog:tuneup", data: tuneup });
+          } catch (e) {
+            const errorText = e instanceof Error ? e.message : String(e);
+            await this.view.webview.postMessage({
+              type: "repolog:toast",
+              message: `tuneup failed: ${errorText}`,
+            });
+          }
+        }
+
+        if (message.type === "writeTuneupCharter") {
+          try {
+            const fs = require("node:fs");
+            const nodePath = require("node:path");
+            const charterDir = nodePath.join(this.rootDir, ".repolog");
+            const charterPath = nodePath.join(charterDir, "CHARTER.md");
+            fs.mkdirSync(charterDir, { recursive: true });
+            fs.writeFileSync(charterPath, message.charter || "", "utf8");
+            await this.view.webview.postMessage({ type: "repolog:toast", message: "CHARTER.md written" });
+          } catch (e) {
+            const errorText = e instanceof Error ? e.message : String(e);
+            await this.view.webview.postMessage({ type: "repolog:toast", message: `failed to write CHARTER.md: ${errorText}` });
+          }
+        }
       },
       undefined,
       this.context.subscriptions
@@ -138,13 +169,17 @@ class RepoQuestViewProvider {
         import(pathToFileURL(path.join(repoRoot, "dist", "web", "render.js")).href),
         import(pathToFileURL(path.join(repoRoot, "dist", "engine", "prompts.js")).href),
         import(pathToFileURL(path.join(repoRoot, "dist", "engine", "standup.js")).href),
-      ]).then(([changes, scan, watcher, web, prompts, standup]) => ({
+        import(pathToFileURL(path.join(repoRoot, "dist", "engine", "doctor.js")).href),
+        import(pathToFileURL(path.join(repoRoot, "dist", "engine", "tuneup.js")).href),
+      ]).then(([changes, scan, watcher, web, prompts, standup, doctor, tuneup]) => ({
         mergeChanges: changes.mergeChanges,
         scanRepo: scan.scanRepo,
         startWatcher: watcher.startWatcher,
         renderVSCodeHtml: web.renderVSCodeHtml,
         loadPromptPresets: prompts.loadPromptPresets,
         buildStandupMarkdown: standup.buildStandupMarkdown,
+        runDoctor: doctor.runDoctor,
+        buildTuneup: tuneup.buildTuneup,
       }));
     }
 
@@ -183,6 +218,57 @@ function activate(context) {
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider("repoQuestLog.view", provider),
     vscode.commands.registerCommand("repoQuestLog.refresh", () => provider.refresh()),
+    vscode.commands.registerCommand("repoQuestLog.tuneup", async () => {
+      if (!provider.view) {
+        vscode.window.showInformationMessage("Open the Repo Quest Log panel first.");
+        return;
+      }
+      try {
+        const modules = await provider.loadModules();
+        const rootDir = provider.rootDir;
+        if (!rootDir) {
+          vscode.window.showInformationMessage("No workspace folder open.");
+          return;
+        }
+        const state = provider.currentState || await modules.scanRepo(rootDir);
+        const report = await modules.runDoctor(rootDir);
+        const tuneup = modules.buildTuneup(state, report);
+
+        const action = await vscode.window.showQuickPick(
+          [
+            { label: "Copy tuneup prompt", id: "copy" },
+            { label: "Write .repolog/CHARTER.md", id: "charter" },
+            { label: `Score: ${tuneup.score}/100 · ${tuneup.gaps.length} gap(s)`, id: "info" },
+            ...Object.keys(tuneup.perAgent).map((agentId) => ({
+              label: `Copy prompt for ${agentId}`,
+              id: `agent-${agentId}`,
+            })),
+          ],
+          { placeHolder: "RepoLog Tuneup" },
+        );
+
+        if (!action || action.id === "info") return;
+
+        if (action.id === "copy") {
+          await vscode.env.clipboard.writeText(tuneup.prompt);
+          vscode.window.showInformationMessage("Tuneup prompt copied to clipboard.");
+        } else if (action.id === "charter") {
+          const nodePath = require("node:path");
+          const nodeFs = require("node:fs");
+          const charterDir = nodePath.join(rootDir, ".repolog");
+          nodeFs.mkdirSync(charterDir, { recursive: true });
+          nodeFs.writeFileSync(nodePath.join(charterDir, "CHARTER.md"), tuneup.charter, "utf8");
+          vscode.window.showInformationMessage("CHARTER.md written to .repolog/");
+        } else if (action.id.startsWith("agent-")) {
+          const agentId = action.id.slice("agent-".length);
+          const prompt = tuneup.perAgent[agentId] || tuneup.prompt;
+          await vscode.env.clipboard.writeText(prompt);
+          vscode.window.showInformationMessage(`Tuneup prompt for ${agentId} copied.`);
+        }
+      } catch (e) {
+        vscode.window.showErrorMessage(`Tuneup failed: ${e instanceof Error ? e.message : String(e)}`);
+      }
+    }),
   );
 }
 

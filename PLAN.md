@@ -31,10 +31,19 @@ Detailed completion estimates now live in `plan_implementation.md`.
 - [x] Opt-in write-back for checkbox toggles only, gated by `.repolog.json` → `"writeback": true`, with persistent on-screen banner
 - [x] Schema v2 — rename `activeQuest` → `objective`, add `gitContext`, `agentActivity`, `config.writeback`; ship compat shim for v1
 
+## Now — v0.3
+- [x] `repolog tuneup` CLI + `buildTuneup` engine (score, gaps, prompt, charter, perAgent)
+- [x] "Tune this repo" Settings panel card (coverage meter, prompt textarea, action buttons)
+- [x] TUI `t` hotkey — tuneup overlay with score bar + gap list
+- [x] VS Code `repoQuestLog.tuneup` command (quick pick: copy/charter/per-agent)
+- [x] Desktop IPC `repolog:run-tuneup` + `repolog:write-tuneup-charter`
+- [x] `CHARTER.md` generation: `.repolog/CHARTER.md` written via `--write-charter` or UI button
+- [x] `tests/tuneup.test.ts` — 8 tests, all green
+
 ## Later — v0.3+
 - [ ] `gh` integration: open PRs on current branch + assigned issues, only if gh is installed and authed
 - [ ] macOS host decision: SwiftUI + WKWebView vs native redraw
-- [ ] Publish `@repo-quest/core` and `repo-quest-log` binary to npm (needs npm org + CI secrets)
+- [ ] Publish binary to npm (from README; not a priority — GitHub releases are the ship channel)
 - [ ] Optional LLM "summarize this week" pass, user-supplied key, off by default
 
 ## Blocked

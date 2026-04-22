@@ -100,6 +100,8 @@ export interface AgentActivity {
 export interface RepoConfigSnapshot {
   writeback: boolean;
   prompts?: { dir?: string };
+  charterPresent?: boolean;
+  hasFrontmatter?: boolean;
 }
 
 export interface QuestState {

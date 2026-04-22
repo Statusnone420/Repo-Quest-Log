@@ -3,9 +3,11 @@ import { Box, Text, useApp, useInput, useStdin } from "ink";
 
 import { copyTextToClipboard } from "../engine/clipboard.js";
 import { mergeChanges } from "../engine/changes.js";
+import { runDoctor } from "../engine/doctor.js";
 import { buildPromptPresets, loadPromptPresets, type PromptPreset } from "../engine/prompts.js";
 import { buildStandupMarkdown } from "../engine/standup.js";
 import { scanRepo } from "../engine/scan.js";
+import { buildTuneup, type TuneupResult } from "../engine/tuneup.js";
 import { startWatcher } from "../engine/watcher.js";
 import type { FileChange, QuestState } from "../engine/types.js";
 
@@ -46,7 +48,7 @@ export function formatStaticFrame(
 
   const cockpit = plainPanel("COCKPIT", topWidth, [renderCockpitLine(state, topWidth - 2)]);
 
-  const footer = `watching ${state.scannedFiles.length} files · ${options.scanning ? "scanning..." : `last scan ${state.lastScan}`} · ${options.interactive ? "[q] quit [r] rescan [s] standup [ctrl+k] palette" : "read-only output"}${options.error ? ` · error: ${options.error}` : ""}`;
+  const footer = `watching ${state.scannedFiles.length} files · ${options.scanning ? "scanning..." : `last scan ${state.lastScan}`} · ${options.interactive ? "[q] quit [r] rescan [t] tuneup [s] standup [ctrl+k] palette" : "read-only output"}${options.error ? ` · error: ${options.error}` : ""}`;
 
   if (threeColumn) {
     const board = computeThreeColumnWidths(topWidth);
@@ -112,6 +114,8 @@ export function WatchApp({ rootDir }: WatchAppProps) {
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [paletteQuery, setPaletteQuery] = useState("");
   const [paletteIndex, setPaletteIndex] = useState(0);
+  const [tuneupOpen, setTuneupOpen] = useState(false);
+  const [tuneupResult, setTuneupResult] = useState<TuneupResult | null>(null);
   const [statusLine, setStatusLine] = useState<string | null>(null);
   const recentChangesRef = useRef<FileChange[]>([]);
   const refreshRef = useRef<() => Promise<void>>(async () => {});
@@ -220,6 +224,14 @@ export function WatchApp({ rootDir }: WatchAppProps) {
       return;
     }
 
+    if (tuneupOpen) {
+      if (key.escape || input === "q") {
+        setTuneupOpen(false);
+        return;
+      }
+      return;
+    }
+
     if (paletteOpen) {
       if (key.escape) {
         setPaletteOpen(false);
@@ -276,6 +288,27 @@ export function WatchApp({ rootDir }: WatchAppProps) {
       return;
     }
 
+    if (input.toLowerCase() === "t") {
+      if (!state) return;
+      if (tuneupOpen) {
+        setTuneupOpen(false);
+        return;
+      }
+      setStatusLine("Analyzing repo…");
+      void (async () => {
+        try {
+          const report = await runDoctor(rootDir);
+          const result = buildTuneup(report.state, report);
+          setTuneupResult(result);
+          setTuneupOpen(true);
+          setStatusLine(null);
+        } catch (err) {
+          setStatusLine(err instanceof Error ? err.message : String(err));
+        }
+      })();
+      return;
+    }
+
     if (input.toLowerCase() === "s") {
       if (!state) {
         return;
@@ -318,7 +351,15 @@ export function WatchApp({ rootDir }: WatchAppProps) {
         isRawModeSupported,
         paletteOpen,
       })}
-      {paletteOpen ? (
+      {tuneupOpen && tuneupResult ? (
+        <>
+          <Spacer />
+          <TuneupOverlay
+            width={Math.max(80, (process.stdout.columns || 110) - 4)}
+            result={tuneupResult}
+          />
+        </>
+      ) : paletteOpen ? (
         <>
           <Spacer />
           <PaletteOverlay
@@ -363,7 +404,7 @@ function renderFrame(
     lines: [renderCockpitLine(state, topWidth - 2)],
   });
 
-  const footer = `watching ${state.scannedFiles.length} files · ${options.scanning ? "scanning..." : `last scan ${state.lastScan}`} · ${options.isRawModeSupported ? "[q] quit [r] rescan [s] standup [ctrl+k] palette" : "read-only output"}${options.paletteOpen ? " · palette open" : ""}${options.error ? ` · error: ${options.error}` : ""}`;
+  const footer = `watching ${state.scannedFiles.length} files · ${options.scanning ? "scanning..." : `last scan ${state.lastScan}`} · ${options.isRawModeSupported ? "[q] quit [r] rescan [t] tuneup [s] standup [ctrl+k] palette" : "read-only output"}${options.paletteOpen ? " · palette open" : ""}${options.error ? ` · error: ${options.error}` : ""}`;
 
   if (threeColumn) {
     const board = computeThreeColumnWidths(topWidth);
@@ -507,6 +548,36 @@ function PaletteOverlay(params: {
     color: palette.warn,
     lines,
   });
+}
+
+function TuneupOverlay(params: { width: number; result: TuneupResult }) {
+  const { score, gaps } = params.result;
+  const bar = buildScoreBar(score, params.width - 18);
+  const meterLine = `  score  ${bar} ${String(score).padStart(3)}/100`;
+  const gapLines = gaps.length === 0
+    ? ["  no gaps — this repo is at 100% legibility"]
+    : gaps.slice(0, 12).map(
+        (g) => truncate(`  [${g.severity.padEnd(4)}] ${g.file}: ${g.fix}`, params.width - 2),
+      );
+  const lines = [
+    meterLine,
+    "",
+    ...gapLines,
+    "",
+    " q/esc close",
+  ];
+  return boxPanel({
+    title: "TUNE THIS REPO",
+    width: params.width,
+    color: score >= 80 ? palette.accent : score >= 50 ? palette.warn : palette.danger,
+    lines,
+  });
+}
+
+function buildScoreBar(score: number, length: number): string {
+  const filled = Math.round((score / 100) * length);
+  const empty = length - filled;
+  return "█".repeat(Math.max(0, filled)) + "░".repeat(Math.max(0, empty));
 }
 
 function renderTopbarLine(state: QuestState, width: number): string {

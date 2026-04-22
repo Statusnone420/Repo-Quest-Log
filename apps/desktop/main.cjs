@@ -118,7 +118,10 @@ async function loadModules() {
       buildStandupMarkdown: standup.buildStandupMarkdown,
       renderDesktopHtml: web.renderDesktopHtml,
       loadPromptPresets: prompts.loadPromptPresets,
-    }));
+    })).then(async (mods) => {
+      const tuneup = await importModule("dist/engine/tuneup.js");
+      return { ...mods, buildTuneup: tuneup.buildTuneup };
+    });
   }
 
   return modulesPromise;
@@ -421,6 +424,20 @@ ipcMain.handle("repolog:copy-standup", async () => {
     const message = error instanceof Error ? error.message : String(error);
     return { ok: false, reason: message };
   }
+});
+
+ipcMain.handle("repolog:run-tuneup", async () => {
+  const { runDoctor, buildTuneup, scanRepo } = await loadModules();
+  const state = currentState ?? await scanRepo(targetRoot);
+  const report = await runDoctor(targetRoot);
+  return buildTuneup(state, report);
+});
+
+ipcMain.handle("repolog:write-tuneup-charter", async (_event, charter) => {
+  const charterDir = path.join(targetRoot, ".repolog");
+  fs.mkdirSync(charterDir, { recursive: true });
+  fs.writeFileSync(path.join(charterDir, "CHARTER.md"), typeof charter === "string" ? charter : "", "utf8");
+  return { ok: true };
 });
 
 ipcMain.on("repolog:remember-startup-root", () => {

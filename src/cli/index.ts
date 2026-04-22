@@ -10,6 +10,7 @@ import { formatDoctorReport, runDoctor } from "../engine/doctor.js";
 import { loadPromptPresets } from "../engine/prompts.js";
 import { buildStandupForRepo, type StandupSince } from "../engine/standup.js";
 import { scanRepo } from "../engine/scan.js";
+import { buildTuneup } from "../engine/tuneup.js";
 import { formatStaticFrame, WatchApp } from "../tui/App.js";
 
 async function main(): Promise<void> {
@@ -32,6 +33,52 @@ async function main(): Promise<void> {
     process.stdout.write(`${formatDoctorReport(report)}\n`);
     const hasWarn = report.findings.some((f) => f.severity === "warn");
     if (hasWarn) process.exitCode = 1;
+    return;
+  }
+
+  if (command.mode === "tuneup") {
+    const report = await runDoctor(command.rootDir);
+    const tuneup = buildTuneup(report.state, report);
+
+    if (command.agent) {
+      const agentPrompt = tuneup.perAgent[command.agent];
+      if (!agentPrompt) {
+        process.stderr.write(`note: no agent file found for "${command.agent}" — using generic prompt\n`);
+        const output = tuneup.prompt;
+        if (command.copy) {
+          const copied = await copyTextToClipboard(output);
+          if (!copied) process.stderr.write("clipboard unavailable\n");
+          else process.stderr.write("tuneup prompt copied to clipboard\n");
+          return;
+        }
+        process.stdout.write(`${output}\n`);
+        return;
+      }
+      if (command.copy) {
+        const copied = await copyTextToClipboard(agentPrompt);
+        if (!copied) process.stderr.write("clipboard unavailable\n");
+        else process.stderr.write(`tuneup prompt for ${command.agent} copied to clipboard\n`);
+        return;
+      }
+      process.stdout.write(`${agentPrompt}\n`);
+      return;
+    }
+
+    if (command.writeCharter) {
+      const charterPath = resolve(command.rootDir, ".repolog", "CHARTER.md");
+      await mkdir(resolve(command.rootDir, ".repolog"), { recursive: true });
+      await writeFile(charterPath, tuneup.charter, "utf8");
+      process.stderr.write(`wrote ${charterPath}\n`);
+    }
+
+    if (command.copy) {
+      const copied = await copyTextToClipboard(tuneup.prompt);
+      if (!copied) process.stderr.write("clipboard unavailable\n");
+      else process.stderr.write("tuneup prompt copied to clipboard\n");
+      return;
+    }
+
+    process.stdout.write(`${tuneup.prompt}\n`);
     return;
   }
 
@@ -108,6 +155,7 @@ async function main(): Promise<void> {
 type Command =
   | { mode: "scan" | "watch" | "status"; rootDir: string }
   | { mode: "doctor"; rootDir: string; json: boolean }
+  | { mode: "tuneup"; rootDir: string; writeCharter: boolean; copy: boolean; agent: string | null }
   | { mode: "desktop"; rootDir: string; outputFile: string }
   | { mode: "prompt"; rootDir: string; action: "list" }
   | { mode: "prompt"; rootDir: string; action: "render"; id: string; copy: boolean }
@@ -138,6 +186,17 @@ function readCommand(args: string[]): Command {
   if (first === "doctor") {
     const pathArg = args.slice(1).find((arg) => !arg.startsWith("-"));
     return { mode: "doctor", rootDir: resolve(pathArg ?? "."), json: args.includes("--json") };
+  }
+  if (first === "tuneup") {
+    const pathArg = args.slice(1).find((arg) => !arg.startsWith("-"));
+    const agentArg = args.find((a) => a.startsWith("--agent="))?.slice("--agent=".length) ?? null;
+    return {
+      mode: "tuneup",
+      rootDir: resolve(pathArg ?? "."),
+      writeCharter: args.includes("--write-charter"),
+      copy: args.includes("--copy"),
+      agent: agentArg,
+    };
   }
   if (first === "prompt") {
     const rootIdx = args.indexOf("--root");
@@ -189,6 +248,7 @@ function printHelp(): void {
       "  repolog desktop [path] Write a desktop HUD snapshot HTML file",
       "  repolog status [path] --short   Print a one-line status summary",
       "  repolog doctor [path] [--json]  Explain what was scanned and why state looks empty",
+      "  repolog tuneup [path] [--write-charter] [--copy] [--agent=claude|codex|gemini]",
       "  repolog prompt list             List available prompt presets",
       "  repolog prompt <id> [--copy]    Render a prompt; --copy sends to clipboard",
       "  repolog standup [path] [--since=today|yesterday|7d] [--copy] [--json]",
@@ -196,6 +256,7 @@ function printHelp(): void {
       "Keys in watch mode:",
       "  q quit",
       "  r rescan",
+      "  t tuneup overlay",
       "",
     ].join("\n"),
   );

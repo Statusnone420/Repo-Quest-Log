@@ -1,5 +1,6 @@
 import { basename, resolve } from "node:path";
 import { execFileSync } from "node:child_process";
+import { stat } from "node:fs/promises";
 
 import { inferAgentActivity } from "./activity.js";
 import { extractAgentProfiles } from "./agents.js";
@@ -25,6 +26,11 @@ export async function scanRepo(rootDir: string, options: ScanOptions = {}): Prom
   const agents = extractAgentProfiles(docs);
   const agentActivity = inferAgentActivity(agents, recentChanges);
 
+  const charterPresent = await fileExists(resolve(resolvedRoot, ".repolog", "CHARTER.md"));
+  const hasFrontmatter = docs.some(
+    (doc) => doc.frontmatter && Object.keys(doc.frontmatter).length > 0,
+  );
+
   return normalizeQuestState(docs, {
     repoRoot: resolvedRoot,
     repoName: basename(resolvedRoot),
@@ -35,8 +41,17 @@ export async function scanRepo(rootDir: string, options: ScanOptions = {}): Prom
     lastTouchedAt: options.lastTouchedAt,
     gitContext,
     agentActivity,
-    config: { writeback: config.writeback, prompts: config.prompts },
+    config: { writeback: config.writeback, prompts: config.prompts, charterPresent, hasFrontmatter },
   });
+}
+
+async function fileExists(path: string): Promise<boolean> {
+  try {
+    await stat(path);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function buildRecentChanges(

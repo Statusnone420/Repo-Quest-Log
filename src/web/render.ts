@@ -417,6 +417,130 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       background: rgba(255,255,255,0.02);
     }
     .settings-panel-report[data-visible="true"] { display: block; }
+
+    /* ---- TUNEUP CARD ---- */
+    .tuneup-card {
+      grid-column: 1 / -1;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 14px;
+      border-radius: 12px;
+      border: 1px solid var(--tile-border);
+      background: rgba(255,255,255,0.02);
+      min-width: 0;
+    }
+    .tuneup-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      font-family: var(--mono);
+      font-size: var(--tiny-size);
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .tuneup-meter-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+    .tuneup-meter {
+      flex: 1;
+      height: 6px;
+      border-radius: 3px;
+      background: rgba(255,255,255,0.06);
+      overflow: hidden;
+    }
+    .tuneup-meter-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.4s ease, background 0.3s;
+    }
+    .tuneup-score {
+      font-family: var(--mono);
+      font-size: var(--small-size);
+      color: var(--ink);
+      white-space: nowrap;
+      min-width: 52px;
+      text-align: right;
+    }
+    .tuneup-prompt-area {
+      font-family: var(--mono);
+      font-size: var(--tiny-size);
+      line-height: 1.5;
+      color: var(--muted);
+      background: rgba(255,255,255,0.02);
+      border: 1px solid var(--tile-border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      max-height: 40vh;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      resize: none;
+      display: none;
+    }
+    .tuneup-prompt-area[data-visible="true"] { display: block; }
+    .tuneup-gaps {
+      display: none;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .tuneup-gaps[data-visible="true"] { display: flex; }
+    .tuneup-gap-row {
+      display: grid;
+      grid-template-columns: 48px minmax(0, 1fr);
+      gap: 8px;
+      align-items: baseline;
+      font-family: var(--mono);
+      font-size: var(--tiny-size);
+      color: var(--muted);
+      padding: 4px 0;
+      border-left: 2px solid var(--faint);
+      padding-left: 8px;
+    }
+    .tuneup-gap-sev { font-weight: 600; }
+    .tuneup-gap-sev.high { color: var(--danger); }
+    .tuneup-gap-sev.med { color: var(--warn); }
+    .tuneup-gap-sev.low { color: var(--dim); }
+    .tuneup-gap-text { color: var(--ink); }
+    .tuneup-gap-file { color: var(--muted); }
+    .tuneup-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+    .tuneup-actions button {
+      appearance: none;
+      border: 1px solid var(--tile-border);
+      background: rgba(255,255,255,0.02);
+      color: var(--ink);
+      border-radius: 7px;
+      padding: 5px 10px;
+      cursor: pointer;
+      font: inherit;
+      font-family: var(--mono);
+      font-size: var(--tiny-size);
+    }
+    .tuneup-actions button:hover { border-color: rgba(138,180,255,0.42); color: var(--accent); }
+    .tuneup-actions button.primary {
+      border-color: rgba(138,180,255,0.32);
+      background: rgba(138,180,255,0.08);
+    }
+    .tuneup-actions .sep {
+      width: 1px; height: 18px;
+      background: var(--tile-border);
+      display: inline-block;
+    }
+    .tuneup-placeholder {
+      font-family: var(--mono);
+      font-size: var(--tiny-size);
+      color: var(--dim);
+    }
     .settings-panel-legend {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1098,6 +1222,7 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
   ${renderWritebackScript()}
   ${renderAgentPulseScript()}
   ${renderDecisionToggleScript()}
+  ${renderTuneupScript()}
 </body>
 </html>`;
 }
@@ -1514,6 +1639,30 @@ function renderSettingsPanel(state: QuestState, liveBridge?: SurfaceHtmlOptions[
               <button type="button" data-ui-action="remember-startup-root">Remember this repo</button>
               <button type="button" data-ui-action="forget-startup-root">Forget startup memory</button>
             </div>
+          </div>
+        </div>
+        <div class="tuneup-card" data-tuneup-card>
+          <div class="tuneup-head">
+            <span>Tune this repo</span>
+            <button type="button" data-tuneup-action="generate" class="primary" style="text-transform:none;letter-spacing:0">Analyze</button>
+          </div>
+          <div class="tuneup-meter-wrap" data-tuneup-meter-wrap hidden>
+            <div class="tuneup-meter"><div class="tuneup-meter-fill" data-tuneup-fill style="width:0%"></div></div>
+            <span class="tuneup-score" data-tuneup-score>—/100</span>
+          </div>
+          <div class="tuneup-placeholder" data-tuneup-placeholder>
+            Click <strong>Analyze</strong> to score this repo's RepoLog legibility and generate a fix prompt.
+          </div>
+          <textarea class="tuneup-prompt-area" data-tuneup-prompt readonly aria-label="Tuneup prompt"></textarea>
+          <div class="tuneup-gaps" data-tuneup-gaps aria-label="Gap list"></div>
+          <div class="tuneup-actions" data-tuneup-actions hidden>
+            <button type="button" data-tuneup-action="copy">Copy prompt</button>
+            <button type="button" data-tuneup-action="write-charter">Write CHARTER.md</button>
+            <button type="button" data-tuneup-action="preview-gaps">Preview gaps</button>
+            <span class="sep"></span>
+            <button type="button" data-tuneup-action="send-claude">Send to Claude</button>
+            <button type="button" data-tuneup-action="send-codex">Send to Codex</button>
+            <button type="button" data-tuneup-action="send-gemini">Send to Gemini</button>
           </div>
         </div>
         <div class="settings-panel-legend" aria-label="Data legend">
@@ -2377,4 +2526,152 @@ function isEmptyRepo(state: QuestState): boolean {
 
 function escapeForScriptJson(value: string): string {
   return value.replace(/</g, "\\u003c").replace(/>/g, "\\u003e").replace(/&/g, "\\u0026");
+}
+
+function renderTuneupScript(): string {
+  return `<script>
+    (function () {
+      var vscode = typeof acquireVsCodeApi === "function" ? acquireVsCodeApi() : null;
+      var card = document.querySelector("[data-tuneup-card]");
+      if (!card) return;
+
+      var meterWrap = card.querySelector("[data-tuneup-meter-wrap]");
+      var fill = card.querySelector("[data-tuneup-fill]");
+      var scoreEl = card.querySelector("[data-tuneup-score]");
+      var placeholder = card.querySelector("[data-tuneup-placeholder]");
+      var promptArea = card.querySelector("[data-tuneup-prompt]");
+      var gapsEl = card.querySelector("[data-tuneup-gaps]");
+      var actionsEl = card.querySelector("[data-tuneup-actions]");
+
+      var tuneupData = null;
+
+      function meterColor(score) {
+        if (score >= 80) return "var(--accent)";
+        if (score >= 50) return "var(--warn)";
+        return "var(--danger)";
+      }
+
+      function renderGap(gap) {
+        var sevClass = gap.severity === "high" ? "high" : gap.severity === "med" ? "med" : "low";
+        return '<div class="tuneup-gap-row">'
+          + '<span class="tuneup-gap-sev ' + sevClass + '">' + gap.severity + '</span>'
+          + '<span><span class="tuneup-gap-text">' + escHtml(gap.id) + '</span> '
+          + '<span class="tuneup-gap-file">(' + escHtml(gap.file) + ')</span> — '
+          + escHtml(gap.fix) + '</span>'
+          + '</div>';
+      }
+
+      function escHtml(s) {
+        return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+      }
+
+      function applyResult(data) {
+        tuneupData = data;
+        if (placeholder) placeholder.hidden = true;
+        if (meterWrap) meterWrap.hidden = false;
+        if (fill) {
+          fill.style.width = Math.max(0, Math.min(100, data.score)) + "%";
+          fill.style.background = meterColor(data.score);
+        }
+        if (scoreEl) scoreEl.textContent = data.score + "/100";
+        if (promptArea) {
+          promptArea.value = data.prompt || "";
+          promptArea.setAttribute("data-visible", "true");
+        }
+        if (actionsEl) actionsEl.hidden = false;
+        if (gapsEl && data.gaps && data.gaps.length > 0) {
+          gapsEl.innerHTML = data.gaps.map(renderGap).join("");
+        } else if (gapsEl) {
+          gapsEl.innerHTML = '<div class="tuneup-placeholder">No gaps — this repo is at 100%.</div>';
+        }
+      }
+
+      window.addEventListener("message", function (event) {
+        var msg = event.data;
+        if (!msg || msg.type !== "repolog:tuneup") return;
+        applyResult(msg.data);
+      });
+
+      card.addEventListener("click", function (event) {
+        var btn = event.target.closest && event.target.closest("[data-tuneup-action]");
+        if (!btn) return;
+        var action = btn.getAttribute("data-tuneup-action");
+
+        if (action === "generate") {
+          btn.disabled = true;
+          btn.textContent = "Analyzing…";
+          if (window.repologDesktop && typeof window.repologDesktop.runTuneup === "function") {
+            Promise.resolve(window.repologDesktop.runTuneup()).then(function (data) {
+              applyResult(data);
+              btn.disabled = false;
+              btn.textContent = "Re-analyze";
+            }).catch(function (err) {
+              if (window.__rqlToast) window.__rqlToast("tuneup failed: " + String(err));
+              btn.disabled = false;
+              btn.textContent = "Analyze";
+            });
+          } else if (vscode) {
+            vscode.postMessage({ type: "runTuneup" });
+            btn.disabled = false;
+            btn.textContent = "Re-analyze";
+          } else {
+            if (window.__rqlToast) window.__rqlToast("tuneup requires the desktop or VS Code shell");
+            btn.disabled = false;
+            btn.textContent = "Analyze";
+          }
+          return;
+        }
+
+        if (!tuneupData) return;
+
+        if (action === "copy") {
+          var text = tuneupData.prompt || "";
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(function () {
+              if (window.__rqlToast) window.__rqlToast("tuneup prompt copied");
+            }).catch(function () {});
+          } else if (window.repologDesktop && typeof window.repologDesktop.copyText === "function") {
+            window.repologDesktop.copyText(text);
+            if (window.__rqlToast) window.__rqlToast("tuneup prompt copied");
+          }
+          return;
+        }
+
+        if (action === "write-charter") {
+          if (window.repologDesktop && typeof window.repologDesktop.writeTuneupCharter === "function") {
+            Promise.resolve(window.repologDesktop.writeTuneupCharter(tuneupData.charter)).then(function () {
+              if (window.__rqlToast) window.__rqlToast("CHARTER.md written");
+            }).catch(function () {
+              if (window.__rqlToast) window.__rqlToast("failed to write CHARTER.md");
+            });
+          } else if (vscode) {
+            vscode.postMessage({ type: "writeTuneupCharter", charter: tuneupData.charter });
+          } else {
+            if (window.__rqlToast) window.__rqlToast("write CHARTER.md requires the desktop or VS Code shell");
+          }
+          return;
+        }
+
+        if (action === "preview-gaps") {
+          if (!gapsEl) return;
+          var visible = gapsEl.getAttribute("data-visible") === "true";
+          gapsEl.setAttribute("data-visible", visible ? "false" : "true");
+          btn.textContent = visible ? "Preview gaps" : "Hide gaps";
+          return;
+        }
+
+        var agentMap = { "send-claude": "claude", "send-codex": "codex", "send-gemini": "gemini" };
+        var agentId = agentMap[action];
+        if (agentId) {
+          var agentPrompt = (tuneupData.perAgent && tuneupData.perAgent[agentId]) || tuneupData.prompt;
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(agentPrompt).then(function () {
+              if (window.__rqlToast) window.__rqlToast("tuneup prompt for " + agentId + " copied");
+            }).catch(function () {});
+          }
+          return;
+        }
+      });
+    })();
+  </script>`;
 }

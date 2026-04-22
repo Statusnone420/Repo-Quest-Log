@@ -34,6 +34,12 @@ contextBridge.exposeInMainWorld("repologDesktop", {
   runDoctor() {
     return ipcRenderer.invoke("repolog:run-doctor");
   },
+  runTuneup() {
+    return ipcRenderer.invoke("repolog:run-tuneup");
+  },
+  writeTuneupCharter(charter) {
+    return ipcRenderer.invoke("repolog:write-tuneup-charter", charter);
+  },
   copyStandup() {
     return ipcRenderer.invoke("repolog:copy-standup");
   },

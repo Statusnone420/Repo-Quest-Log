@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 
 import { HEADING_PATTERNS } from "./fileset.js";
 import { scanRepo } from "./scan.js";
+import { buildTuneup, type TuneupResult } from "./tuneup.js";
 import type { QuestState } from "./types.js";
 
 export type DoctorSeverity = "ok" | "info" | "warn";
@@ -22,6 +23,7 @@ export interface DoctorReport {
   counts: { now: number; next: number; blocked: number; agents: number; decisions: number };
   findings: DoctorFinding[];
   state: QuestState;
+  tuneup: Pick<TuneupResult, "score" | "gaps">;
 }
 
 const EXPECTED_DOCS = ["PLAN.md", "STATE.md", "README.md"] as const;
@@ -124,7 +126,7 @@ export async function runDoctor(rootDir: string): Promise<DoctorReport> {
     });
   }
 
-  return {
+  const partialReport = {
     rootDir: absolute,
     scannedFiles: state.scannedFiles,
     expectedDocs,
@@ -138,7 +140,13 @@ export async function runDoctor(rootDir: string): Promise<DoctorReport> {
     },
     findings,
     state,
+    tuneup: { score: 0, gaps: [] as TuneupResult["gaps"] },
   };
+
+  const { score, gaps } = buildTuneup(state, partialReport as DoctorReport);
+  partialReport.tuneup = { score, gaps };
+
+  return partialReport as DoctorReport;
 }
 
 async function probeConfig(rootDir: string, findings: DoctorFinding[]): Promise<"missing" | "ok" | "invalid"> {

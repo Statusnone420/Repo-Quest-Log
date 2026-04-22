@@ -64,6 +64,16 @@
         "portable"
       ]
     },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "allowElevation": true,
+      "license": "LICENSE",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Repo Quest Log",
+      "deleteAppDataOnUninstall": false
+    },
     "files": [
       "dist/**/*",
       "apps/desktop/**/*",

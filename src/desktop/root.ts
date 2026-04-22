@@ -7,6 +7,7 @@ export interface DesktopRootOptions {
   argv: readonly string[];
   cwd: string;
   execPath: string;
+  lastRoot?: string | null;
 }
 
 export function resolveDesktopRepoRoot(options: DesktopRootOptions): string {
@@ -21,6 +22,20 @@ export function resolveDesktopRepoRoot(options: DesktopRootOptions): string {
     if (hasRepoMarkers(candidateDir)) {
       return candidateDir;
     }
+
+    const ancestor = findMarkedAncestor(candidate);
+    if (ancestor) {
+      return ancestor;
+    }
+
+    // No markers anywhere up the tree — accept a bare directory the user explicitly passed.
+    if (existsSync(candidate)) {
+      return candidate;
+    }
+  }
+
+  if (options.lastRoot && existsSync(options.lastRoot)) {
+    return resolve(options.lastRoot);
   }
 
   return (

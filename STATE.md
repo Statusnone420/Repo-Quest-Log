@@ -11,12 +11,14 @@ v0.1 close-out: keep the desktop / VS Code / TUI surfaces aligned to one shared 
 - Prompt externalization landed: `loadPromptPresets` in `src/engine/prompts.ts` merges built-ins with `~/.repolog/prompts/*.md` (user) and `<repo>/.repolog/prompts/*.md` (repo-wins). Markdown frontmatter + `{{var}}` template rendering.
 - `RepoConfig` expanded: now parses `writeback: boolean` and `prompts.dir?: string` from `.repolog.json` (still back-compat with plain excludes files).
 - New CLI surfaces: `repolog status --short`, `repolog prompt list`, `repolog prompt <id> [--copy]` (clipboard via `clip`/`pbcopy`/`xclip`).
-- `npm run build`, `npm run lint`, `npm test` all green (20 tests, 10 files).
+- Desktop shell: **Ctrl+O / File → Open Repo…** folder picker + persistent `last-root.txt` in Electron userData, so the exe is now a real portable HUD you can aim at any repo. Title bar reflects the active repo basename.
+- `resolveDesktopRepoRoot` now accepts an optional `lastRoot`, falls back to it when cwd/exec paths have no markers, and accepts a bare user-picked directory when no marker ancestor exists.
+- `npm run build`, `npm run lint`, `npm test` all green (22 tests, 10 files).
 
 ## Resume Note
-> Prompt loader + `repolog prompt` / `repolog status --short` shipped. Next slice: wire the TUI and desktop Ctrl+K palettes to `loadPromptPresets` so external overrides show up in-app, then start `repolog doctor`.
+> Prompt loader, `repolog prompt` / `repolog status --short`, and the desktop Open-Repo picker all shipped. Next slice: wire the TUI and desktop Ctrl+K palettes to `loadPromptPresets` so external overrides show up in-app, then start `repolog doctor`.
 
-Last touched: `src/engine/prompts.ts`
+Last touched: `apps/desktop/main.cjs`
 
 ## Recent Decisions
 - TypeScript over Rust for v0.1 (faster iteration, Ink for TUI)

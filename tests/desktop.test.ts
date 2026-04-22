@@ -63,6 +63,40 @@ describe("resolveDesktopRepoRoot", () => {
     }
   });
 
+  it("prefers a persisted lastRoot when cwd has no markers", async () => {
+    const lastRoot = join(tmpdir(), `repo-quest-log-last-${Date.now()}`);
+    const elsewhere = join(tmpdir(), `repo-quest-log-elsewhere-${Date.now()}`);
+    await mkdir(lastRoot, { recursive: true });
+    await mkdir(elsewhere, { recursive: true });
+    try {
+      const resolved = resolveDesktopRepoRoot({
+        argv: [],
+        cwd: elsewhere,
+        execPath: join(elsewhere, "Repo Quest Log.exe"),
+        lastRoot,
+      });
+      expect(resolved).toBe(lastRoot);
+    } finally {
+      await rm(lastRoot, { recursive: true, force: true });
+      await rm(elsewhere, { recursive: true, force: true });
+    }
+  });
+
+  it("accepts an explicit argv directory even without repo markers", async () => {
+    const dir = join(tmpdir(), `repo-quest-log-explicit-${Date.now()}`);
+    await mkdir(dir, { recursive: true });
+    try {
+      const resolved = resolveDesktopRepoRoot({
+        argv: [dir],
+        cwd: tmpdir(),
+        execPath: join(dir, "Repo Quest Log.exe"),
+      });
+      expect(resolved).toBe(dir);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
   it("ignores an argv path that points at the release folder", async () => {
     const root = join(tmpdir(), `repo-quest-log-root-${Date.now()}`);
     const releaseDir = join(root, "release");

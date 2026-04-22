@@ -193,12 +193,12 @@ function escapeHtml(value) {
     .replace(/'/g, "&#39;");
 }
 
-async function start() {
-  await app.whenReady();
-  createWindow();
-  await refresh();
-
+async function startWatcherForTarget() {
   const { startWatcher } = await loadModules();
+  if (watcherHandle) {
+    await watcherHandle.close();
+    watcherHandle = null;
+  }
   watcherHandle = await startWatcher({
     cwd: targetRoot,
     onRefresh: (changes) => {
@@ -209,6 +209,76 @@ async function start() {
       void pushHtml(renderErrorHtml(message));
     },
   });
+}
+
+async function openRepoPicker() {
+  if (!win || win.isDestroyed()) return;
+  const result = await dialog.showOpenDialog(win, {
+    title: "Open a repo folder",
+    properties: ["openDirectory"],
+    defaultPath: targetRoot,
+  });
+  if (result.canceled || !result.filePaths[0]) return;
+  await switchRoot(result.filePaths[0]);
+}
+
+async function switchRoot(newRoot) {
+  targetRoot = path.resolve(newRoot);
+  liveHtmlPath = path.join(targetRoot, ".repolog", "desktop-live.html");
+  recentChanges = [];
+  writeLastRoot(targetRoot);
+  if (win && !win.isDestroyed()) {
+    win.setTitle(`Repo Quest Log — ${path.basename(targetRoot)}`);
+  }
+  await refresh();
+  await startWatcherForTarget();
+}
+
+function buildMenu() {
+  const template = [
+    {
+      label: "File",
+      submenu: [
+        {
+          label: "Open Repo…",
+          accelerator: "CmdOrCtrl+O",
+          click: () => {
+            void openRepoPicker();
+          },
+        },
+        {
+          label: "Refresh",
+          accelerator: "CmdOrCtrl+R",
+          click: () => {
+            void refresh();
+          },
+        },
+        { type: "separator" },
+        { role: "quit" },
+      ],
+    },
+    {
+      label: "View",
+      submenu: [
+        { role: "reload" },
+        { role: "toggleDevTools" },
+        { type: "separator" },
+        { role: "togglefullscreen" },
+      ],
+    },
+  ];
+  Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+}
+
+async function start() {
+  await app.whenReady();
+  buildMenu();
+  createWindow();
+  if (win) {
+    win.setTitle(`Repo Quest Log — ${path.basename(targetRoot)}`);
+  }
+  await refresh();
+  await startWatcherForTarget();
 }
 
 ipcMain.on("repolog:refresh", () => {

@@ -10,12 +10,12 @@ The most important implication is this: the next pass should not try to make the
 
 ## Execution tracker
 
-Overall progress: **45%**
+Overall progress: **50%**
 
 | Workstream | Progress | What is actually left |
 |---|---:|---|
 | Foundation pass | 100% | Shared helpers (`prompts.ts`, `changes.ts`, `time.ts`, `editor.ts`) landed; TUI visual parity done; PLAN.md reconciled with source. |
-| Workflow tooling pass | 55% | `loadPromptPresets` + `.repolog/prompts` + `~/.repolog/prompts` overrides landed. `repolog prompt list/<id>/--copy` and `repolog status --short` landed. Remaining: wire TUI+desktop Ctrl+K to the shared loader, add `repolog doctor`, and VS Code command-palette entrypoints. |
+| Workflow tooling pass | 65% | `loadPromptPresets` + `.repolog/prompts` + `~/.repolog/prompts` overrides landed. `repolog prompt list/<id>/--copy` and `repolog status --short` landed. Desktop shell now has Ctrl+O Open-Repo picker + persisted `last-root.txt`, so the packaged exe can retarget any repo without CLI args. Remaining: wire TUI+desktop Ctrl+K to the shared loader, add `repolog doctor`, and VS Code command-palette entrypoints. |
 | Context enrichment pass | 0% | Schema v2 compat, `gitContext`, `agentActivity`, and minimal git/activity rendering. |
 | Safe write-back pass | 0% | Opt-in checkbox-only write-back, banner, and adversarial tests. Config now parses `writeback: true`, but no writer module yet. |
 

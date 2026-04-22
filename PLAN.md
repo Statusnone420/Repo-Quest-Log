@@ -12,15 +12,17 @@ v0.3 Slice 1 complete. CLI, TUI, desktop, and VS Code stay pinned to one shared 
 **Objective Sync Rule:** When PLAN.md's `## Objective` changes, review and update all agent objectives (CLAUDE.md, GEMINI.md, AGENTS.md) to align with the new direction. Each agent's objective should support the repo objective from their specific angle (e.g., Claude = execution, Gemini = architecture).
 
 ## Now
-- [ ] Finalize v0.3 release: verify all tests pass, update CHANGELOG, tag release
-- [ ] Begin v0.4 planning: `gh` integration (open PRs, assigned issues)
-- [ ] Audit test coverage and performance under load
+- [ ] **Co-Pilot Phase 1 (Codex)**: provider abstraction (Anthropic, OpenAI, Google, Ollama) + token discovery + prompt engineering
+- [ ] **Co-Pilot Phase 1 (Codex)**: CLI auth commands (`repolog auth discover/use/status`)
+- [ ] Verify Phase 1: build/lint/test gate passes, fixtures validate token discovery
 
 ## Next
-- [ ] `gh` integration: open PRs on current branch + assigned issues (if gh installed)
-- [ ] macOS host decision and prototyping
-- [ ] Optional LLM "summarize this week" feature exploration
-- [ ] Publish binary to npm via GitHub releases
+- [ ] **Co-Pilot Phase 2 (Codex)**: CLI chat mode (`repolog copilot`) + Electron Co-Pilot panel
+- [ ] **Co-Pilot Phase 3 (Codex)**: `repolog fix --llm` + Electron "Fix Repo" button
+- [ ] **Co-Pilot Phase 4 (Codex)**: docs + release (v0.4-copilot)
+- [ ] `gh` integration (deferred): open PRs on current branch + assigned issues
+- [ ] macOS host decision and prototyping (deferred)
+- [ ] Publish binary to npm via GitHub releases (deferred)
 
 ## v0.1 (completed)
 - [x] Define supported file names and heading patterns — `src/engine/fileset.ts`

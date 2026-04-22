@@ -43,6 +43,24 @@ describe("web renderers", () => {
     expect(html).toContain("change-spark");
     expect(html).toContain("@media (max-width: 480px)");
   });
+
+  it("renders the first-run empty state when no markdown files match", () => {
+    const html = renderDesktopHtml({
+      ...sampleState(),
+      scannedFiles: [],
+      mission: "",
+      now: [],
+      next: [],
+      blocked: [],
+      recentChanges: [],
+    });
+
+    expect(html).toContain('class="empty-state"');
+    expect(html).toContain("PLAN.md");
+    expect(html).toContain("STATE.md");
+    expect(html).toContain("AGENTS.md");
+    expect(html).toContain("CLAUDE.md");
+  });
 });
 
 function sampleState(): QuestState {

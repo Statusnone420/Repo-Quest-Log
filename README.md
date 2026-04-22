@@ -2,6 +2,22 @@
 
 Local-first repo HUD for markdown-driven coding-agent workflows.
 
+## Install
+
+```text
+Windows exe download template
+https://github.com/<OWNER>/<REPO>/releases/download/v0.0.2/Repo%20Quest%20Log%20Setup%200.0.2.exe
+```
+
+```bash
+code --install-extension repo-quest-log-0.0.2.vsix
+```
+
+```text
+npm
+Coming when @repo-quest/core publishes. Do not use npm for 0.0.2 distribution.
+```
+
 ## Current Surfaces
 
 - CLI JSON scan: `repolog scan .`
@@ -9,6 +25,7 @@ Local-first repo HUD for markdown-driven coding-agent workflows.
 - Desktop snapshot: `repolog desktop .`
 - Desktop dev shell: `npm run desktop:app`
 - Packaged Windows app: download the latest installer from GitHub Releases
+- VS Code extension package: `npm run pack:vscode` → `release/repo-quest-log-0.0.2.vsix`
 - Windows package build: `npm run desktop:build`
 - VS Code extension shell: open `extensions/vscode/` as an extension-development folder and run the extension host
 

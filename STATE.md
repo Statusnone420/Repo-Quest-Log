@@ -3,7 +3,7 @@
 Live "where we are." Update this as work progresses. The normalizer reads this to build the Resume Note.
 
 ## Current Focus
-v0.2 wedge is mostly landed in code: shared `QuestState` now carries `gitContext`, `agentActivity`, and `config.writeback`, and the desktop shell shows the git strip, agent feed, and safe checkbox write-back. Standup export is landed; the remaining open close-out slice is ship/shareability.
+v0.2 is closed. Shared `QuestState` now carries `gitContext`, `agentActivity`, and `config.writeback`; standup export is shipped; 0.0.2 ship/shareability polish is landed; and the next session should start the v0.3 kickoff.
 
 ## Last Session
 - Standup export landed across CLI, shared engine formatting, TUI, desktop, and VS Code webview. New CLI: `repolog standup [--since=today|yesterday|7d] [--copy] [--json]`. Standup copy hotkey is now `Ctrl+Shift+C` in the shared renderer, with the prompt-palette toast styling and a 2s timeout.
@@ -21,9 +21,11 @@ v0.2 wedge is mostly landed in code: shared `QuestState` now carries `gitContext
 - `npm run build`, `npm run lint`, `npm test` all green (30 tests, 13 files).
 
 ## Resume Note
-> Standup export is now wired through the shared engine formatter and available from CLI (`repolog standup` with `--since`, `--copy`, `--json`) plus TUI, desktop, and VS Code via `Ctrl+Shift+C`. Shared `clip` / `pbcopy` / `xclip` clipboard helper deduped into `src/engine/clipboard.ts`. Next slice: 0.0.2 ship/shareability polish.
+> v0.2 is closed. Standup export shipped via CLI/TUI/desktop/VS Code, `release/repo-quest-log-0.0.2.vsix` now packages from `npm run pack:vscode`, and README/CHANGELOG/version docs are synced to 0.0.2. Next session: v0.3 kickoff.
 
-Last touched: `src/engine/standup.ts`
+Last touched: `CHANGELOG.md`
+
+> Session N: v0.2 closed. Standup export + 0.0.2 ship polish. VSIX packaged. Commits 553f02e…HEAD. Next session: v0.3 kickoff.
 
 ## Recent Decisions
 - 2026-04-21 — `repolog doctor` is the trust layer for messy repos: it explains *why* state looks sparse and which exact heading to add. The CLI exits 1 when any warn-level finding fires, so CI can gate on it.

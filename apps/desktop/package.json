@@ -1,0 +1,7 @@
+{
+  "name": "repo-quest-log-desktop",
+  "private": true,
+  "version": "0.0.2",
+  "productName": "Repo Quest Log",
+  "main": "main.cjs"
+}

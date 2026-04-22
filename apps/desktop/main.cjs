@@ -8,7 +8,7 @@ const { app, BrowserWindow, Menu, dialog, ipcMain, shell, screen, clipboard } = 
 const { resolveDesktopRepoRoot } = require(path.join(__dirname, "..", "..", "dist", "desktop", "root.js"));
 
 const repoRoot = path.resolve(__dirname, "..", "..");
-const { version: appVersion } = require(path.join(repoRoot, "package.json"));
+const { version: appVersion } = require(path.join(__dirname, "package.json"));
 
 function appIconPath() {
   const bundled = path.join(process.resourcesPath, "build", "icon.png");

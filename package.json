@@ -1,6 +1,6 @@
 {
   "name": "repo-quest-log",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Local-first companion that makes repo intent legible at a glance.",
   "type": "module",
   "bin": {
@@ -16,8 +16,9 @@
     "lint": "tsc --noEmit",
     "desktop:preview": "node dist/cli/index.js desktop",
     "desktop:app": "npm run build && electron apps/desktop/main.cjs",
-    "vscode:build": "node scripts/package-vscode.cjs",
-    "desktop:build": "npm run build && npm run vscode:build && electron-builder --win --x64"
+    "pack:vscode": "node scripts/package-vscode.cjs",
+    "vscode:build": "npm run pack:vscode",
+    "desktop:build": "npm run build && npm run pack:vscode && electron-builder --win --x64"
   },
   "dependencies": {
     "chokidar": "^3.6.0",

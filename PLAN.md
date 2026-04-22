@@ -7,7 +7,7 @@ One sentence: **what this repo is trying to become.**
 Close v0.1 with a fit-to-window desktop, a TUI that visually matches it, and clean panel labels — then ship the v0.2 agent-integration wedge (resume-prompt palette, git panel, agent activity feed, standup export, opt-in write-back).
 
 ## Current Focus
-All surfaces stay pinned to one shared `QuestState` pipeline and one renderer. Standup export is now landed; the remaining open close-out slice is ship/shareability.
+v0.2 is closed. CLI, TUI, desktop, and VS Code stay pinned to one shared `QuestState` pipeline and one renderer. Next session should start the v0.3 kickoff.
 Detailed completion estimates now live in `plan_implementation.md`.
 
 ## Now — v0.1 close-out

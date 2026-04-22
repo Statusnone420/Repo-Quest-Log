@@ -10,10 +10,10 @@ import type { QuestState } from "../src/engine/types.js";
 
 describe("renderDesktopHtml", () => {
   it("renders the desktop HUD shell from QuestState", () => {
-    const html = renderDesktopHtml(sampleState(), { appVersion: "0.0.1" });
+    const html = renderDesktopHtml(sampleState(), { appVersion: "0.0.2" });
 
     expect(html).toContain("repo quest log");
-    expect(html).toContain("v0.0.1");
+    expect(html).toContain("v0.0.2");
     expect(html).toContain("Ship v0.1");
     expect(html).toContain("Current focus");
     expect(html).toContain("Why this matters");
@@ -54,6 +54,7 @@ describe("desktop shell sizing", () => {
     expect(source).toContain('spawn("code", ["-g"');
     expect(source).toContain("About Repo Quest Log");
     expect(source).toContain("setAppUserModelId");
+    expect(source).toContain('require(path.join(__dirname, "package.json"))');
     expect(packageJson.build?.win?.target).toEqual(["nsis", "portable"]);
     expect(packageJson.build?.extraResources).toEqual([{ from: "build/icon.png", to: "build/icon.png" }]);
   });

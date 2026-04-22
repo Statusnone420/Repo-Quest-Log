@@ -156,7 +156,7 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     /* ---- SETTINGS RACK ---- */
     .settings-rack {
       display: grid;
-      grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr) minmax(0, 1fr);
+      grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.9fr);
       gap: var(--tile-gap);
       padding: var(--pad-y) var(--pad-x) 0;
       min-width: 0;
@@ -164,8 +164,8 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     .settings-card {
       display: flex;
       flex-direction: column;
-      gap: 8px;
-      padding: 10px 12px;
+      gap: 6px;
+      padding: 8px 10px;
       min-width: 0;
       border-radius: 10px;
       border: 1px solid var(--tile-border);
@@ -195,13 +195,13 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       font-family: var(--mono);
       font-size: var(--small-size);
       color: var(--muted);
-      line-height: 1.35;
+      line-height: 1.28;
     }
     .settings-copy strong { color: var(--ink); font-weight: 600; }
     .settings-actions {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
+      gap: 6px;
       align-items: center;
     }
     .settings-actions button {
@@ -244,6 +244,23 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       border: 1px solid var(--tile-border);
       border-radius: 3px;
       background: rgba(255,255,255,0.04);
+      color: var(--ink);
+    }
+    .settings-chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      font-family: var(--mono);
+      font-size: var(--tiny-size);
+      color: var(--dim);
+    }
+    .settings-chip-row .chiplet {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: var(--faint);
       color: var(--ink);
     }
 
@@ -375,8 +392,20 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       border-top: 1px solid var(--tile-border);
       padding-top: 10px;
     }
+    .settings-panel-legend {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px 14px;
+      padding: 12px 0 2px;
+      font-family: var(--mono);
+      font-size: var(--small-size);
+      color: var(--muted);
+      line-height: 1.4;
+    }
+    .settings-panel-legend strong { color: var(--ink); font-weight: 600; }
     @media (max-width: 980px) {
       .settings-panel-grid { grid-template-columns: 1fr; overflow-y: auto; }
+      .settings-panel-legend { grid-template-columns: 1fr; }
     }
 
     /* ---- HEADER STRIP (mission + objective + resume in ONE row) ---- */
@@ -593,7 +622,7 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     /* ---- TASK ROWS (cockpit-style, not Word-doc) ---- */
     .item {
       display: grid;
-      grid-template-columns: 3px 14px 20px minmax(0, 1fr) auto;
+      grid-template-columns: 3px 16px 20px 20px minmax(0, 1fr) auto;
       gap: 8px; align-items: start;
       padding: 6px 0 6px 6px;
       border-radius: 4px;
@@ -618,6 +647,31 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       pointer-events: none;
     }
     .item .bar { width: 3px; align-self: stretch; border-radius: 2px; }
+    .task-toggle {
+      appearance: none;
+      border: 1px solid var(--tile-border);
+      background: rgba(255,255,255,0.02);
+      color: var(--ink);
+      border-radius: 5px;
+      width: 16px;
+      height: 16px;
+      padding: 0;
+      line-height: 14px;
+      font-family: var(--mono);
+      font-size: 10px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 1px;
+      cursor: pointer;
+    }
+    .task-toggle.enabled:hover { border-color: rgba(138,180,255,0.42); color: var(--accent); }
+    .task-toggle.disabled {
+      cursor: not-allowed;
+      color: var(--dim);
+      border-color: var(--tile-border);
+      opacity: 0.7;
+    }
     .item.p-now .bar { background: var(--accent); }
     .item.p-next .bar { background: var(--muted); opacity: 0.5; }
     .item.p-blocked .bar { background: var(--warn); }
@@ -970,11 +1024,11 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
 
       <section class="board">
       <div class="col">
-        ${renderTaskTile("now", "Now", state.now.length, state.now, true)}
-        ${renderBlockedTile(state.blocked)}
+        ${renderTaskTile("now", "Now", state.now.length, state.now, true, !!state.config?.writeback, options.liveBridge)}
+        ${renderBlockedTile(state.blocked, !!state.config?.writeback, options.liveBridge)}
       </div>
       <div class="col">
-        ${renderTaskTile("next", "Next", state.next.length, state.next, false)}
+        ${renderTaskTile("next", "Next", state.next.length, state.next, false, !!state.config?.writeback, options.liveBridge)}
         ${renderChangesTile(state.recentChanges)}
       </div>
       <div class="col">
@@ -1006,6 +1060,7 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
   ${renderSettingsScript()}
   ${renderPaletteScript()}
   ${renderTaskNavScript()}
+  ${renderWritebackScript()}
   ${renderAgentPulseScript()}
   ${renderDecisionToggleScript()}
 </body>
@@ -1178,7 +1233,15 @@ export function renderVSCodeHtml(state: QuestState, options: SurfaceHtmlOptions 
 </html>`;
 }
 
-function renderTaskTile(area: string, title: string, count: number, tasks: Task[], hot: boolean): string {
+function renderTaskTile(
+  area: string,
+  title: string,
+  count: number,
+  tasks: Task[],
+  hot: boolean,
+  writebackEnabled: boolean,
+  liveBridge?: SurfaceHtmlOptions["liveBridge"],
+): string {
   const priorityClass = area === "now" ? "p-now" : "p-next";
   return `<section class="tile ${hot ? "hot" : ""}" data-area="${area}">
     <div class="tile-header">
@@ -1187,8 +1250,8 @@ function renderTaskTile(area: string, title: string, count: number, tasks: Task[
     </div>
     <div class="tile-body">
       ${tasks.length === 0
-        ? `<div class="item"><span class="bar"></span><span class="sigil"></span><span class="item-num">·</span><span class="item-text">No items yet</span><span class="item-aside"></span></div>`
-        : tasks.map((task, index) => renderItemRow(task, index, priorityClass, area === "now")).join("")}
+        ? `<div class="item"><span class="bar"></span><span class="task-toggle disabled" aria-hidden="true">◌</span><span class="sigil"></span><span class="item-num">·</span><span class="item-text">No items yet</span><span class="item-aside"></span></div>`
+        : tasks.map((task, index) => renderItemRow(task, index, priorityClass, area === "now", writebackEnabled, liveBridge)).join("")}
     </div>
   </section>`;
 }
@@ -1207,22 +1270,46 @@ function renderConfidenceSigil(confidence: number | undefined): string {
   return `<span class="sigil" title="heuristic confidence: ${c.toFixed(2)}">${dots.join("")}</span>`;
 }
 
-  function renderItemRow(task: Task, index: number, priorityClass: string, showAgent: boolean): string {
+  function renderItemRow(
+    task: Task,
+    index: number,
+    priorityClass: string,
+    showAgent: boolean,
+    writebackEnabled: boolean,
+    liveBridge?: SurfaceHtmlOptions["liveBridge"],
+  ): string {
     const clickable = task.doc ? "clickable" : "";
     const openAttrs = task.doc ? ` data-open-doc="${escapeHtml(task.doc)}" data-line="${task.line ?? 1}" role="button" tabindex="0"` : "";
     const agentChip = showAgent && task.agent ? renderAgentChip(task.agent) : "";
     const docChip = task.doc ? `<span class="chip doc">${escapeHtml(task.doc)}</span>` : "";
+    const toggle = renderTaskToggle(task, writebackEnabled, liveBridge);
     const note = task.thought && task.thought.trim() && task.thought.trim() !== task.text.trim()
       ? `<div class="task-note">${escapeHtml(task.thought)}</div>`
       : "";
     return `<div class="item ${priorityClass} ${clickable}"${openAttrs} title="${escapeHtml(task.text)}">
       <span class="bar"></span>
+      ${toggle}
       ${renderConfidenceSigil(task.confidence)}
       <span class="item-num">${String(index + 1).padStart(2, "0")}</span>
       <span class="item-text">${escapeHtml(task.text)}</span>
       <span class="item-aside">${agentChip}${docChip}</span>
     </div>${note}`;
   }
+
+function renderTaskToggle(
+  task: Task,
+  writebackEnabled: boolean,
+  liveBridge?: SurfaceHtmlOptions["liveBridge"],
+): string {
+  const checked = (task as Task & { checked?: boolean }).checked === true;
+  const canToggle = writebackEnabled && liveBridge === "desktop" && !!task.doc && typeof task.line === "number" && task.line > 0;
+  const title = canToggle
+    ? checked ? "Mark incomplete" : "Toggle checkbox"
+    : writebackEnabled
+      ? "Checkbox line unavailable"
+      : "Write-back disabled";
+  return `<button type="button" class="task-toggle ${canToggle ? "enabled" : "disabled"}" data-writeback-toggle data-doc="${escapeHtml(task.doc ?? "")}" data-line="${task.line ?? 1}" data-text="${escapeHtml(task.text)}" data-checked="${checked ? "true" : "false"}" aria-label="${escapeHtml(title)}" title="${escapeHtml(title)}"${canToggle ? "" : " disabled"}>${canToggle ? (checked ? "☑" : "☐") : "◌"}</button>`;
+}
 
 function renderAgentChip(agent: string): string {
   const key = agent.toLowerCase();
@@ -1232,7 +1319,7 @@ function renderAgentChip(agent: string): string {
   return `<span class="chip ${cls}">${escapeHtml(label)}</span>`;
 }
 
-function renderBlockedTile(tasks: BlockedTask[]): string {
+function renderBlockedTile(tasks: BlockedTask[], writebackEnabled: boolean, liveBridge?: SurfaceHtmlOptions["liveBridge"]): string {
   return `<section class="tile tight" data-area="blocked">
     <div class="tile-header">
       <h3 class="tile-title blocked"><span class="accent-bar"></span>Blocked</h3>
@@ -1240,10 +1327,11 @@ function renderBlockedTile(tasks: BlockedTask[]): string {
     </div>
     <div class="tile-body">
         ${tasks.length === 0
-          ? `<div class="item"><span class="bar"></span><span class="sigil"></span><span class="item-num">·</span><span class="item-text">No blockers right now</span><span class="item-aside"></span></div>`
+          ? `<div class="item"><span class="bar"></span><span class="task-toggle disabled" aria-hidden="true">◌</span><span class="sigil"></span><span class="item-num">·</span><span class="item-text">No blockers right now</span><span class="item-aside"></span></div>`
           : tasks.map((task, index) => `
-            <div class="item p-blocked" title="${escapeHtml(task.text)}">
+            <div class="item p-blocked clickable"${task.doc ? ` data-open-doc="${escapeHtml(task.doc)}" data-line="${task.line ?? 1}" role="button" tabindex="0"` : ""} title="${escapeHtml(task.text)}">
               <span class="bar"></span>
+              ${renderTaskToggle(task, writebackEnabled, liveBridge)}
               ${renderConfidenceSigil(task.confidence)}
               <span class="item-num">${String(index + 1).padStart(2, "0")}</span>
               <span class="item-text">${escapeHtml(task.text)}</span>
@@ -1312,36 +1400,33 @@ function renderBlockedTile(tasks: BlockedTask[]): string {
     return `<section class="git-strip" aria-label="Git context">${chips}${commit}</section>`;
   }
 
-  function renderSettingsRack(state: QuestState, liveBridge?: SurfaceHtmlOptions["liveBridge"]): string {
-    const writeback = state.config?.writeback ? "on" : "off";
-    const writebackCopy = state.config?.writeback
-      ? "Enabled in .repolog.json. Checkbox toggles can write back exact task lines."
-      : "Off by default. Add <strong>\"writeback\": true</strong> to <strong>.repolog.json</strong> to enable checkbox-only edits.";
-    const openRepoButton = liveBridge === "desktop"
-      ? `<button type="button" class="primary" data-ui-action="open-repo" title="Open a repo folder (Ctrl+O)">Open Repo <span class="kbd-inline"><kbd>Ctrl</kbd><kbd>O</kbd></span></button>`
-      : "";
-    return `<section class="settings-rack" aria-label="Settings and shortcuts">
+function renderSettingsRack(state: QuestState, liveBridge?: SurfaceHtmlOptions["liveBridge"]): string {
+  const writeback = state.config?.writeback ? "on" : "off";
+  const openRepoButton = liveBridge === "desktop"
+    ? `<button type="button" class="primary" data-ui-action="open-repo" title="Open a repo folder (Ctrl+O)">Open Repo <span class="kbd-inline"><kbd>Ctrl</kbd><kbd>O</kbd></span></button>`
+    : "";
+  return `<section class="settings-rack" aria-label="Settings and shortcuts">
       <div class="settings-card">
         <div class="settings-head">Settings <span class="pill">${writeback}</span></div>
-        <div class="settings-copy">Repo picker and keyboard shortcuts live here so the desktop shell is discoverable without hunting menus.</div>
+        <div class="settings-copy">Repo picker and shortcuts live here so the desktop shell stays discoverable without taking over the page.</div>
         <div class="settings-actions">
           <button type="button" data-ui-action="open-settings" title="Open the settings panel">Open Settings</button>
           ${openRepoButton}
           <button type="button" data-ui-action="refresh" title="Refresh desktop (Ctrl+R)">Refresh <span class="kbd-inline"><kbd>Ctrl</kbd><kbd>R</kbd></span></button>
         </div>
+        <div class="settings-chip-row" aria-label="Shortcut reminders">
+          <span class="chiplet"><strong>Ctrl+K</strong> prompt</span>
+          <span class="chiplet"><strong>Ctrl+O</strong> repo</span>
+          <span class="chiplet"><strong>Ctrl+R</strong> refresh</span>
+        </div>
       </div>
       <div class="settings-card">
-        <div class="settings-head">Shortcuts</div>
-        <div class="settings-copy"><strong>Ctrl+K</strong> copy a resume prompt</div>
-        <div class="settings-copy"><strong>Ctrl+O</strong> open a repo folder</div>
-        <div class="settings-copy"><strong>Ctrl+R</strong> refresh the scan</div>
-      </div>
-      <div class="settings-card">
-        <div class="settings-head">Write-back</div>
-        <div class="settings-copy">${writebackCopy}</div>
+        <div class="settings-head">Write-back <span class="pill">${writeback}</span></div>
+        <div class="settings-copy">${state.config?.writeback ? "Checkbox toggles are live in the task rows." : "Off by default. Add <strong>\"writeback\": true</strong> to <strong>.repolog.json</strong> to enable checkbox-only edits."}</div>
+        <div class="settings-copy">Only checklist items in <strong>Now</strong>, <strong>Next</strong>, and <strong>Blocked</strong> can be edited.</div>
       </div>
     </section>`;
-  }
+}
 
   function renderSettingsPanel(state: QuestState, liveBridge?: SurfaceHtmlOptions["liveBridge"]): string {
     const writeback = state.config?.writeback ? "enabled" : "off by default";
@@ -1364,6 +1449,7 @@ function renderBlockedTile(tasks: BlockedTask[]): string {
             <div class="head">Write-back <span class="pill">${writeback}</span></div>
             <div class="value">Checkbox toggles only.</div>
             <div class="detail">${state.config?.writeback ? "Write-back is currently enabled in .repolog.json." : "Write-back is disabled until .repolog.json sets \"writeback\": true."}</div>
+            <div class="detail">Editable: checkbox state in <strong>Now</strong>, <strong>Next</strong>, and <strong>Blocked</strong> only. Mission, objective, agents, decisions, and recent changes are read-only.</div>
             <div class="actions">
               ${configButton}
             </div>
@@ -1379,12 +1465,22 @@ function renderBlockedTile(tasks: BlockedTask[]): string {
           <div class="settings-panel-card">
             <div class="head">Startup behavior</div>
             <div class="value">Remembers your last repo.</div>
-            <div class="detail">${escapeHtml(startup)} Use the buttons below to save or clear that memory.</div>
+            <div class="detail">${escapeHtml(startup)} Use the buttons below to save or clear that memory. This only stores the repo path in Electron userData.</div>
             <div class="actions">
               <button type="button" data-ui-action="remember-startup-root">Remember this repo</button>
               <button type="button" data-ui-action="forget-startup-root">Forget startup memory</button>
             </div>
           </div>
+        </div>
+        <div class="settings-panel-legend" aria-label="Data legend">
+          <div><strong>Mission</strong> comes from <strong>PLAN.md</strong> or <strong>README.md</strong>.</div>
+          <div><strong>Objective</strong> comes from the current objective section in <strong>PLAN.md</strong>.</div>
+          <div><strong>Current focus</strong> comes from <strong>STATE.md</strong> and the resume note.</div>
+          <div><strong>Agents</strong> are heuristic: agent files plus recent file mtimes and owned areas.</div>
+          <div><strong>Decisions</strong> come from the decisions block in <strong>STATE.md</strong>.</div>
+          <div><strong>Recent changes</strong> come from the file watcher and git diff summaries.</div>
+          <div><strong>Write-back</strong> edits only checkbox state in <strong>Now</strong>, <strong>Next</strong>, and <strong>Blocked</strong>.</div>
+          <div><strong>Read-only</strong> surfaces include mission, objective, agents, decisions, and recent changes.</div>
         </div>
         <div class="settings-panel-footer">
           <span><strong>Ctrl+O</strong> open repo</span>
@@ -1669,6 +1765,9 @@ function renderSettingsScript(): string {
           closeSettings();
           return;
         }
+        if (target.closest && target.closest("[data-writeback-toggle]")) {
+          return;
+        }
         var openRow = target.closest("[data-open-doc]");
         if (openRow && window.repologDesktop && typeof window.repologDesktop.openDoc === "function") {
           var doc = openRow.getAttribute("data-open-doc");
@@ -1754,6 +1853,52 @@ function renderSettingsScript(): string {
       });
       apply();
       window.addEventListener("resize", apply);
+    })();
+  </script>`;
+}
+
+function renderWritebackScript(): string {
+  return `<script>
+    (function () {
+      function showToast(message) {
+        if (window.__rqlToast) window.__rqlToast(message);
+      }
+
+      document.addEventListener("click", function (event) {
+        var button = event.target.closest && event.target.closest("[data-writeback-toggle]");
+        if (!button) return;
+        if (!window.repologDesktop || typeof window.repologDesktop.toggleChecklist !== "function") {
+          showToast("write-back is only available in the desktop shell");
+          return;
+        }
+        if (button.disabled) {
+          showToast("write-back is off");
+          return;
+        }
+        event.preventDefault();
+        event.stopPropagation();
+
+        var doc = button.getAttribute("data-doc") || "";
+        var line = parseInt(button.getAttribute("data-line") || "0", 10);
+        var text = button.getAttribute("data-text") || "";
+        var checked = button.getAttribute("data-checked") === "true";
+        button.disabled = true;
+
+        Promise.resolve(window.repologDesktop.toggleChecklist(doc, line, text, !checked))
+          .then(function (result) {
+            if (result && result.ok && result.changed) {
+              showToast(result.checked ? "task marked complete" : "task reopened");
+              return;
+            }
+            showToast((result && result.reason) ? result.reason : "write-back skipped");
+          })
+          .catch(function () {
+            showToast("write-back failed");
+          })
+          .finally(function () {
+            button.disabled = false;
+          });
+      });
     })();
   </script>`;
 }

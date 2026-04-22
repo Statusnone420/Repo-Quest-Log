@@ -80,6 +80,7 @@ let win = null;
 let initialLoadComplete = false;
 let watcherHandle = null;
 let recentChanges = [];
+let currentState = null;
 let modulesPromise = null;
 let revealTimer = null;
 let liveHtmlPath = path.join(targetRoot, ".repolog", "desktop-live.html");
@@ -87,17 +88,21 @@ let liveHtmlPath = path.join(targetRoot, ".repolog", "desktop-live.html");
 async function loadModules() {
   if (!modulesPromise) {
     modulesPromise = Promise.all([
+      importModule("dist/engine/config.js"),
       importModule("dist/engine/changes.js"),
       importModule("dist/engine/editor.js"),
       importModule("dist/engine/scan.js"),
       importModule("dist/engine/watcher.js"),
+      importModule("dist/engine/writeback.js"),
       importModule("dist/web/render.js"),
       importModule("dist/engine/prompts.js"),
-    ]).then(([changes, editor, scan, watcher, web, prompts]) => ({
+    ]).then(([config, changes, editor, scan, watcher, writeback, web, prompts]) => ({
+      readRepoConfig: config.readRepoConfig,
       mergeChanges: changes.mergeChanges,
       formatCodeOpenTarget: editor.formatCodeOpenTarget,
       scanRepo: scan.scanRepo,
       startWatcher: watcher.startWatcher,
+      toggleChecklistItem: writeback.toggleChecklistItem,
       renderDesktopHtml: web.renderDesktopHtml,
       loadPromptPresets: prompts.loadPromptPresets,
     }));
@@ -172,12 +177,12 @@ async function refresh(changes = []) {
   recentChanges = mergeChanges(changes, recentChanges);
 
   try {
-    const state = await scanRepo(targetRoot, {
+    currentState = await scanRepo(targetRoot, {
       recentChanges,
       lastTouchedFile: recentChanges[0] && recentChanges[0].file,
     });
-    const presets = await loadPromptPresets(state, { rootDir: targetRoot });
-    const html = renderDesktopHtml(state, { liveBridge: "desktop", presets });
+    const presets = await loadPromptPresets(currentState, { rootDir: targetRoot });
+    const html = renderDesktopHtml(currentState, { liveBridge: "desktop", presets });
     await pushHtml(html);
   } catch (error) {
     const message = error instanceof Error ? error.stack || error.message : String(error);
@@ -332,6 +337,36 @@ ipcMain.on("repolog:open-repo", () => {
 
 ipcMain.on("repolog:open-config", () => {
   void openRepoConfig();
+});
+
+ipcMain.handle("repolog:toggle-checklist", async (_event, payload = {}) => {
+  const { readRepoConfig, toggleChecklistItem } = await loadModules();
+  const doc = typeof payload.doc === "string" ? payload.doc : "";
+  const text = typeof payload.text === "string" ? payload.text : "";
+  const line = Number.isInteger(payload.line) ? payload.line : undefined;
+  const checked = typeof payload.checked === "boolean" ? payload.checked : undefined;
+
+  if (!doc || !text || !line) {
+    return { ok: false, changed: false, reason: "missing task reference" };
+  }
+
+  const config = await readRepoConfig(targetRoot);
+  if (!config.writeback) {
+    return { ok: false, changed: false, reason: "writeback disabled" };
+  }
+
+  const filePath = path.resolve(targetRoot, doc);
+  const rootPrefix = `${targetRoot}${path.sep}`;
+  if (!(filePath === targetRoot || filePath.startsWith(rootPrefix)) || !fs.existsSync(filePath)) {
+    return { ok: false, changed: false, reason: "missing doc" };
+  }
+
+  const result = await toggleChecklistItem(filePath, line, text, checked);
+  if (result.ok && result.changed) {
+    await refresh();
+  }
+
+  return result;
 });
 
 ipcMain.on("repolog:remember-startup-root", () => {

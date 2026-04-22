@@ -23,6 +23,7 @@ describe("renderDesktopHtml", () => {
     expect(html).toContain("Startup behavior");
     expect(html).toContain("Remember this repo");
     expect(html).toContain("Forget startup memory");
+    expect(html).toContain("data-writeback-toggle");
     expect(html).toContain("source: STATE.md resume note");
     expect(html).toContain("desktop-preview.html");
     expect(html).toContain("data-copy-context=");

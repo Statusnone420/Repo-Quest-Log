@@ -14,6 +14,7 @@ describe("web renderers", () => {
     expect(html).toContain("Ctrl+O");
     expect(html).toContain("Prompt dir");
     expect(html).toContain("Startup behavior");
+    expect(html).toContain("data-writeback-toggle");
     expect(html).toContain("heuristic feed");
     expect(html).toContain("source: STATE.md resume note");
     expect(html).toContain("source: PLAN.md");

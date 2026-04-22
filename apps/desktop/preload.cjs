@@ -28,6 +28,9 @@ contextBridge.exposeInMainWorld("repologDesktop", {
   openDoc(doc, line) {
     ipcRenderer.send("repolog:open-doc", { doc, line });
   },
+  toggleChecklist(doc, line, text, checked) {
+    return ipcRenderer.invoke("repolog:toggle-checklist", { doc, line, text, checked });
+  },
   windowAction(action) {
     ipcRenderer.send("repolog:window-action", action);
   },

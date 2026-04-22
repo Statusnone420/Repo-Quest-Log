@@ -1,4 +1,5 @@
 export type AgentId = string;
+export type CopilotProviderId = "anthropic" | "openai" | "google" | "local-ollama";
 
 export interface ParsedChecklistItem {
   text: string;
@@ -102,6 +103,10 @@ export interface RepoConfigSnapshot {
   prompts?: { dir?: string };
   charterPresent?: boolean;
   hasFrontmatter?: boolean;
+  llm?: {
+    provider?: CopilotProviderId;
+    discovered?: boolean;
+  };
 }
 
 export interface QuestState {

@@ -51,6 +51,56 @@ class RepoQuestViewProvider {
           return;
         }
 
+        if (message.type === "repobotStatus") {
+          const status = await this.getRepoBotStatus();
+          await this.view.webview.postMessage({ type: "repolog:repobot-status", status });
+          return;
+        }
+
+        if (message.type === "repobotSetProvider") {
+          try {
+            const modules = await this.loadModules();
+            if (!this.rootDir || !message.provider) {
+              return;
+            }
+            await modules.setRepoLlmSelection(this.rootDir, message.provider);
+            const status = await this.getRepoBotStatus();
+            await this.view.webview.postMessage({ type: "repolog:repobot-status", status });
+          } catch (e) {
+            const errorText = e instanceof Error ? e.message : String(e);
+            await this.view.webview.postMessage({
+              type: "repolog:toast",
+              message: `RepoBot provider update failed: ${errorText}`,
+            });
+          }
+          return;
+        }
+
+        if (message.type === "repobotAsk") {
+          try {
+            const modules = await this.loadModules();
+            if (!this.rootDir || !message.prompt) {
+              return;
+            }
+            const result = await modules.runCopilotQuery(this.rootDir, message.prompt);
+            await this.view.webview.postMessage({
+              type: "repolog:repobot-result",
+              result: {
+                ok: true,
+                result,
+                text: modules.formatRepoBotResult(result),
+              },
+            });
+          } catch (e) {
+            const errorText = e instanceof Error ? e.message : String(e);
+            await this.view.webview.postMessage({
+              type: "repolog:repobot-result",
+              result: { ok: false, reason: errorText },
+            });
+          }
+          return;
+        }
+
         if (message.type === "copyStandup") {
           try {
             const modules = await this.loadModules();
@@ -163,7 +213,10 @@ class RepoQuestViewProvider {
   async loadModules() {
     if (!this.modulesPromise) {
       this.modulesPromise = Promise.all([
+        import(pathToFileURL(path.join(repoRoot, "dist", "engine", "config.js")).href),
         import(pathToFileURL(path.join(repoRoot, "dist", "engine", "changes.js")).href),
+        import(pathToFileURL(path.join(repoRoot, "dist", "engine", "copilot.js")).href),
+        import(pathToFileURL(path.join(repoRoot, "dist", "engine", "llm-providers.js")).href),
         import(pathToFileURL(path.join(repoRoot, "dist", "engine", "scan.js")).href),
         import(pathToFileURL(path.join(repoRoot, "dist", "engine", "watcher.js")).href),
         import(pathToFileURL(path.join(repoRoot, "dist", "web", "render.js")).href),
@@ -171,8 +224,13 @@ class RepoQuestViewProvider {
         import(pathToFileURL(path.join(repoRoot, "dist", "engine", "standup.js")).href),
         import(pathToFileURL(path.join(repoRoot, "dist", "engine", "doctor.js")).href),
         import(pathToFileURL(path.join(repoRoot, "dist", "engine", "tuneup.js")).href),
-      ]).then(([changes, scan, watcher, web, prompts, standup, doctor, tuneup]) => ({
+      ]).then(([config, changes, copilot, llmProviders, scan, watcher, web, prompts, standup, doctor, tuneup]) => ({
+        readRepoConfig: config.readRepoConfig,
+        setRepoLlmSelection: config.setRepoLlmSelection,
         mergeChanges: changes.mergeChanges,
+        runCopilotQuery: copilot.runCopilotQuery,
+        formatRepoBotResult: copilot.formatCopilotResponse,
+        discoverProviders: llmProviders.discoverProviders,
         scanRepo: scan.scanRepo,
         startWatcher: watcher.startWatcher,
         renderVSCodeHtml: web.renderVSCodeHtml,
@@ -184,6 +242,18 @@ class RepoQuestViewProvider {
     }
 
     return this.modulesPromise;
+  }
+
+  async getRepoBotStatus() {
+    if (!this.rootDir) {
+      return { selectedProvider: null, providers: [] };
+    }
+    const modules = await this.loadModules();
+    const config = await modules.readRepoConfig(this.rootDir);
+    return {
+      selectedProvider: config.llm && config.llm.provider ? config.llm.provider : null,
+      providers: modules.discoverProviders(),
+    };
   }
 }
 

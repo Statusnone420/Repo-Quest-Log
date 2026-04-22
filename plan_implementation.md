@@ -1,12 +1,12 @@
 ---
-title: RepoLog Co-Pilot Implementation Plan
+title: RepoLog RepoBot Implementation Plan
 status: active
 owner: codex (full implementation)
 ---
 
-# RepoLog Co-Pilot: Implementation Plan
+# RepoLog RepoBot: Implementation Plan
 
-**North Star:** Embed AI co-pilot into RepoLog (desktop + CLI) that auto-discovers user's existing LLM credentials (Anthropic, OpenAI, Google) and provides intelligent MD fixing without API key friction.
+**North Star:** Embed RepoBot into RepoLog (desktop + CLI) that auto-discovers user's existing LLM credentials (Anthropic, OpenAI, Google) and provides intelligent MD fixing without API key friction.
 
 **Core Insight:** Users already have LLM auth on their machines (Claude Code, OpenAI CLI, gcloud, etc.). We piggyback on existing tokens + provide a chat interface to guide fixes.
 
@@ -79,52 +79,52 @@ Store selection in `.repolog.json`:
 **Tasks:**
 
 1. **Anthropic Provider** (claude)
-   - [ ] `AnthropicProvider` class: discover token from ~/.claude, ~/.config/anthropic, env
-   - [ ] Use Anthropic SDK, model = claude-opus-4-7
-   - [ ] Test token discovery with fixture repos
+   - [x] `AnthropicProvider` class: discover token from ~/.claude, ~/.config/anthropic, env
+   - [x] Use Anthropic client, model = claude-opus-4-7
+   - [x] Test token discovery with fixture repos
 
 2. **OpenAI Provider** (claude)
-   - [ ] `OpenAIProvider` class: discover from ~/.config/openai, env
-   - [ ] Use OpenAI SDK, model = gpt-4-turbo
-   - [ ] Ensure API calls work
+   - [x] `OpenAIProvider` class: discover from ~/.config/openai, env
+   - [x] Use OpenAI client, model = gpt-4-turbo
+   - [x] Ensure API calls work
 
 3. **Google Provider** (claude)
-   - [ ] `GoogleProvider` class: discover gcloud credentials, env
-   - [ ] Use Vertex AI SDK or REST, model = gemini-2.0-pro
-   - [ ] Handle gcloud auth flow if needed
+   - [x] `GoogleProvider` class: discover gcloud credentials, env
+   - [x] Use Vertex AI REST, model = gemini-2.0-pro
+   - [x] Handle gcloud auth flow if needed
 
 4. **Local Ollama Provider** (claude)
-   - [ ] `OllamaProvider` class: discover localhost:11434
-   - [ ] Fallback to `$OLLAMA_ENDPOINT`
-   - [ ] No token needed; gracefully handle if unavailable
+   - [x] `OllamaProvider` class: discover localhost:11434
+   - [x] Fallback to `$OLLAMA_ENDPOINT`
+   - [x] No token needed; gracefully handle if unavailable
 
 5. **Prompt Engineering** (gemini to review, claude to implement)
-   - [ ] Design system prompt that works across all providers
-   - [ ] Input: doctor report + MD contents + user query
-   - [ ] Output: JSON { analysis, fixes, reasoning, confidence }
-   - [ ] Test with fixture repos (missing Now, stale Objective, etc.)
-   - [ ] Iterate on prompt until confidence ≥ 0.80 on 10 test cases
+   - [x] Design system prompt that works across all providers
+   - [x] Input: doctor report + MD contents + user query
+   - [x] Output: JSON { analysis, fixes, reasoning, confidence }
+   - [x] Test with fixture repos (missing Now, stale Objective, etc.)
+   - [x] Iterate on prompt until confidence ≥ 0.80 on 10 test cases
 
 6. **CLI Commands** (claude)
-   - [ ] `repolog auth discover` — scan machine for tokens
-   - [ ] `repolog auth use <provider>` — save selection to .repolog.json
-   - [ ] `repolog auth status` — show current provider + token status
-   - [ ] All commands: no key entry, zero friction
+   - [x] `repolog auth discover` — scan machine for tokens
+   - [x] `repolog auth use <provider>` — save selection to .repolog.json
+   - [x] `repolog auth status` — show current provider + token status
+   - [x] All commands: no key entry, zero friction
 
 ---
 
 ### Phase 2: Chat Interface (CLI + Electron) — 60%
 
 **Deliverables:**
-- `src/cli/copilot.ts` — interactive CLI chat mode
-- `src/web/CoPilotPanel.tsx` — desktop webview chat
+- `src/cli/repobot.ts` — interactive CLI chat mode
+- `src/web/RepoBotPanel.tsx` — desktop webview chat
 - IPC handlers in `apps/desktop/main.cjs`
 - Integrated help text + examples
 
 **Tasks:**
 
 1. **CLI Chat Mode** (claude)
-   - [ ] `repolog copilot` — starts interactive REPL
+   - [ ] `repolog repobot` — starts interactive REPL
    - [ ] Stdin: user prompts (or `--prompt "..."`)
    - [ ] Loads context: doctor report + full MD state
    - [ ] Calls LLM via selected provider
@@ -134,7 +134,7 @@ Store selection in `.repolog.json`:
    - [ ] Exit: `q` or Ctrl+C
 
 2. **Electron Chat Panel** (claude)
-   - [ ] New "Co-Pilot" tab in settings right-panel
+   - [ ] New "RepoBot" tab in settings right-panel
    - [ ] Message history (user msgs, AI responses with diffs)
    - [ ] Input field + "Ask" button + suggested prompts
    - [ ] Suggested prompts:
@@ -148,13 +148,13 @@ Store selection in `.repolog.json`:
    - [ ] [Apply] [Reject] buttons per suggestion
 
 3. **IPC Handlers** (claude)
-   - [ ] `repolog:copilot-auth-status` → { provider, authenticated }
-   - [ ] `repolog:copilot-ask` → { prompt, context } → { analysis, fixes, reasoning }
-   - [ ] `repolog:copilot-apply-fixes` → apply to disk + return diff
+   - [ ] `repolog:repobot-auth-status` → { provider, authenticated }
+   - [ ] `repolog:repobot-ask` → { prompt, context } → { analysis, fixes, reasoning }
+   - [ ] `repolog:repobot-apply-fixes` → apply to disk + return diff
    - [ ] Error handling: graceful degrade if no auth
 
 4. **Context Building** (claude)
-   - [ ] Helper: `buildCopilotContext(state)` → { doctorReport, mdContents, gitLog, agentInfo }
+   - [ ] Helper: `buildRepoBotContext(state)` → { doctorReport, mdContents, gitLog, agentInfo }
    - [ ] Passed to LLM in system prompt
    - [ ] Ensures LLM understands repo state without full repo dump
 
@@ -182,7 +182,7 @@ Store selection in `.repolog.json`:
    - [ ] Outputs diffs + confidence scores
    - [ ] Interactive: user confirms each fix
    - [ ] Auto-approve: applies fixes ≥ threshold confidence
-   - [ ] Generates commit message: "RepoLog: fix MDs [Co-Pilot, confidence 0.85]"
+   - [ ] Generates commit message: "RepoLog: fix MDs [RepoBot, confidence 0.85]"
 
 2. **Electron "Fix Repo" Button** (claude)
    - [ ] Settings panel card: "AI-Powered Fixing"
@@ -202,26 +202,26 @@ Store selection in `.repolog.json`:
 ### Phase 4: Documentation + Release — 100%
 
 **Deliverables:**
-- `docs/COPILOT.md` — user guide
-- `docs/COPILOT-ARCHITECTURE.md` — developer guide
+- `docs/REPOBOT.md` — user guide
+- `docs/REPOBOT-ARCHITECTURE.md` — developer guide
 - Examples + troubleshooting
 - Release notes
 
 **Tasks:**
 
 1. **User Docs** (claude)
-   - [ ] `docs/COPILOT.md`: what is it, how to use, examples
-   - [ ] Guide: "Click Co-Pilot → ask 'fix my Now section' → review + apply"
+   - [ ] `docs/REPOBOT.md`: what is it, how to use, examples
+   - [ ] Guide: "Click RepoBot → ask 'fix my Now section' → review + apply"
    - [ ] FAQ: "What if no auth? What providers work?"
 
 2. **Dev Docs** (gemini)
-   - [ ] `docs/COPILOT-ARCHITECTURE.md`: provider abstraction, adding new providers
+   - [ ] `docs/REPOBOT-ARCHITECTURE.md`: provider abstraction, adding new providers
    - [ ] How to add a new LLM service (e.g., Grok, DeepSeek, local Claude)
 
 3. **Release** (claude)
-   - [ ] Bump version: v0.4.0-copilot
+   - [ ] Bump version: v0.4.0-repobot
    - [ ] Update CHANGELOG
-   - [ ] Update AGENTS.md instructions for using Co-Pilot
+   - [ ] Update AGENTS.md instructions for using RepoBot
    - [ ] Git tag
 
 ---
@@ -230,13 +230,13 @@ Store selection in `.repolog.json`:
 
 | Phase | Component | Status | Estimate | Owner |
 |-------|-----------|--------|----------|-------|
-| 1 | Anthropic provider | `[ ]` | 2h | claude |
-| 1 | OpenAI provider | `[ ]` | 2h | claude |
-| 1 | Google provider | `[ ]` | 3h | claude |
-| 1 | Ollama provider | `[ ]` | 1h | claude |
-| 1 | Prompt engineering | `[ ]` | 4h | gemini (review) + claude |
-| 1 | CLI auth commands | `[ ]` | 2h | claude |
-| 1 | **Phase 1 Total** | `0%` | **14h** | |
+| 1 | Anthropic provider | `[x]` | 2h | claude |
+| 1 | OpenAI provider | `[x]` | 2h | claude |
+| 1 | Google provider | `[x]` | 3h | claude |
+| 1 | Ollama provider | `[x]` | 1h | claude |
+| 1 | Prompt engineering | `[x]` | 4h | gemini (review) + claude |
+| 1 | CLI auth commands | `[x]` | 2h | claude |
+| 1 | **Phase 1 Total** | `100%` | **14h** | |
 | 2 | CLI chat mode | `[ ]` | 3h | claude |
 | 2 | Chat UI panel | `[ ]` | 4h | claude |
 | 2 | IPC handlers | `[ ]` | 2h | claude |
@@ -251,7 +251,7 @@ Store selection in `.repolog.json`:
 | 4 | Dev docs | `[ ]` | 1h | gemini |
 | 4 | Release | `[ ]` | 1h | claude |
 | 4 | **Phase 4 Total** | `0%` | **3h** | |
-| | **GRAND TOTAL** | `0%` | **38h** | |
+| | **GRAND TOTAL** | `30%` | **38h** | |
 
 ---
 

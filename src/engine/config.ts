@@ -1,11 +1,18 @@
 import { readFile } from "node:fs/promises";
-import { resolve } from "node:path";
+import { mkdir, writeFile } from "node:fs/promises";
+import { dirname, resolve } from "node:path";
+
+import type { CopilotProviderId } from "./types.js";
 
 export interface RepoConfig {
   excludes: string[];
   writeback: boolean;
   prompts: {
     dir?: string;
+  };
+  llm?: {
+    provider?: CopilotProviderId;
+    discovered?: boolean;
   };
 }
 
@@ -23,6 +30,7 @@ export async function readRepoConfig(rootDir: string): Promise<RepoConfig> {
       ignored?: unknown;
       writeback?: unknown;
       prompts?: unknown;
+      llm?: unknown;
     };
 
     return {
@@ -35,6 +43,7 @@ export async function readRepoConfig(rootDir: string): Promise<RepoConfig> {
       ]),
       writeback: parsed.writeback === true,
       prompts: readPromptsConfig(parsed.prompts),
+      llm: readLlmConfig(parsed.llm),
     };
   } catch {
     return { excludes: [...DEFAULT_EXCLUDES], writeback: false, prompts: {} };
@@ -45,6 +54,57 @@ function readPromptsConfig(value: unknown): { dir?: string } {
   if (!value || typeof value !== "object") return {};
   const dir = (value as { dir?: unknown }).dir;
   return typeof dir === "string" && dir.trim() ? { dir: dir.trim() } : {};
+}
+
+function readLlmConfig(value: unknown): RepoConfig["llm"] {
+  if (!value || typeof value !== "object") {
+    return undefined;
+  }
+
+  const provider = (value as { provider?: unknown }).provider;
+  const discovered = (value as { discovered?: unknown }).discovered;
+
+  if (typeof provider !== "string" || !isCopilotProviderId(provider)) {
+    return undefined;
+  }
+
+  return {
+    provider,
+    discovered: discovered === true,
+  };
+}
+
+export async function setRepoLlmSelection(
+  rootDir: string,
+  provider: CopilotProviderId,
+): Promise<void> {
+  const configPath = resolve(rootDir, ".repolog.json");
+  let current: Record<string, unknown> = {};
+
+  try {
+    const raw = await readFile(configPath, "utf8");
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      current = parsed as Record<string, unknown>;
+    }
+  } catch {
+    current = {};
+  }
+
+  current.llm = {
+    ...(current.llm && typeof current.llm === "object" && !Array.isArray(current.llm)
+      ? (current.llm as Record<string, unknown>)
+      : {}),
+    provider,
+    discovered: true,
+  };
+
+  await mkdir(dirname(configPath), { recursive: true });
+  await writeFile(configPath, `${JSON.stringify(current, null, 2)}\n`, "utf8");
+}
+
+export function isCopilotProviderId(value: string): value is CopilotProviderId {
+  return value === "anthropic" || value === "openai" || value === "google" || value === "local-ollama";
 }
 
 export function isExcludedPath(relativePath: string, config: Pick<RepoConfig, "excludes">): boolean {

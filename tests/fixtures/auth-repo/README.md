@@ -1,0 +1,1 @@
+# RepoLog auth fixture

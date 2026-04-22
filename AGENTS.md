@@ -36,7 +36,7 @@ Instructions for any coding agent working in this repo (Codex, generic agents, C
 - Prefer standard-library solutions over dependencies
 
 ## Objective
-Implement Co-Pilot v0.4 (Phases 1–4): multi-provider LLM integration with zero-friction auth discovery, chat interfaces (CLI + Electron), and automated MD fixing. Execute `plan_implementation.md` top-to-bottom. Nail the provider abstraction and prompt engineering so all LLM services work seamlessly.
+Implement RepoBot v0.4 (Phases 1–4): multi-provider LLM integration with zero-friction auth discovery, chat interfaces (CLI + Electron), and automated MD fixing. Execute `plan_implementation.md` top-to-bottom. Nail the provider abstraction and prompt engineering so all LLM services work seamlessly.
 
 ## Last Task
-v0.3 complete: tuneup engine + settings panel redesign + charter generation. Now: Co-Pilot foundation (provider abstraction + token discovery) — see `plan_implementation.md` for full breakdown.
+RepoBot Phase 2 underway: provider abstraction, auth discovery, prompt engineering, CLI chat mode, and desktop/webview RepoBot surfaces are in place. Next: finish the remaining RepoBot fix/apply polish. See `plan_implementation.md` for the live tracker.

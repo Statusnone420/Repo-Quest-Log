@@ -7,19 +7,19 @@ One sentence: **what this repo is trying to become.**
 Ship v0.3 release. Begin v0.4 planning: gh integration (PRs, issues), macOS prototyping, and optional LLM summarization. "Tool any dev needs" remains north star.
 
 ## Current Focus
-v0.3 Slice 1 complete. CLI, TUI, desktop, and VS Code stay pinned to one shared `QuestState` pipeline and one renderer. Next phase: ship v0.3 final release and begin v0.4 prep.
+RepoBot Phase 2 underway. Provider abstraction, auth discovery, prompt engineering, CLI chat mode, and desktop/webview RepoBot surfaces are in place. Next step: finish the remaining RepoBot fix/apply polish.
 
 **Objective Sync Rule:** When PLAN.md's `## Objective` changes, review and update all agent objectives (CLAUDE.md, GEMINI.md, AGENTS.md) to align with the new direction. Each agent's objective should support the repo objective from their specific angle (e.g., Claude = execution, Gemini = architecture).
 
 ## Now
-- [ ] **Co-Pilot Phase 1 (Codex)**: provider abstraction (Anthropic, OpenAI, Google, Ollama) + token discovery + prompt engineering
-- [ ] **Co-Pilot Phase 1 (Codex)**: CLI auth commands (`repolog auth discover/use/status`)
-- [ ] Verify Phase 1: build/lint/test gate passes, fixtures validate token discovery
+- [ ] **RepoBot Phase 2 (Codex)**: CLI chat mode (`repolog repobot`) + interactive provider selection
+- [ ] **RepoBot Phase 2 (Codex)**: Electron RepoBot panel + message history
+- [ ] **RepoBot Phase 2 (Codex)**: IPC handlers and repo-context builder
+- [ ] Verify Phase 2: build/lint/test gate passes, chat fixtures validate prompt/response flow
 
 ## Next
-- [ ] **Co-Pilot Phase 2 (Codex)**: CLI chat mode (`repolog copilot`) + Electron Co-Pilot panel
-- [ ] **Co-Pilot Phase 3 (Codex)**: `repolog fix --llm` + Electron "Fix Repo" button
-- [ ] **Co-Pilot Phase 4 (Codex)**: docs + release (v0.4-copilot)
+- [ ] **RepoBot Phase 3 (Codex)**: `repolog fix --llm` + Electron "Fix Repo" button
+- [ ] **RepoBot Phase 4 (Codex)**: docs + release (v0.4-repobot)
 - [ ] `gh` integration (deferred): open PRs on current branch + assigned issues
 - [ ] macOS host decision and prototyping (deferred)
 - [ ] Publish binary to npm via GitHub releases (deferred)

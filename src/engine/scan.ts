@@ -41,7 +41,13 @@ export async function scanRepo(rootDir: string, options: ScanOptions = {}): Prom
     lastTouchedAt: options.lastTouchedAt,
     gitContext,
     agentActivity,
-    config: { writeback: config.writeback, prompts: config.prompts, charterPresent, hasFrontmatter },
+    config: {
+      writeback: config.writeback,
+      prompts: config.prompts,
+      charterPresent,
+      hasFrontmatter,
+      llm: config.llm,
+    },
   });
 }
 

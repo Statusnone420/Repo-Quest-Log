@@ -9,7 +9,7 @@
     "dir": "~/.repolog/prompts"
   },
   "llm": {
-    "provider": "local-ollama",
+    "provider": "anthropic",
     "discovered": true
   }
 }

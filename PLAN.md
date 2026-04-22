@@ -7,13 +7,13 @@ One sentence: **what this repo is trying to become.**
 Ship v0.3 release. Begin v0.4 planning: gh integration (PRs, issues), macOS prototyping, and optional LLM summarization. "Tool any dev needs" remains north star.
 
 ## Current Focus
-RepoBot Phase 2 underway. Provider abstraction, auth discovery, prompt engineering, CLI chat mode, and a collapsible RepoBot dock in the main desktop UX are in place. Next step: finish the remaining RepoBot fix/apply polish.
+RepoBot Phase 2 underway. Provider abstraction, auth discovery, prompt engineering, CLI chat mode, and desktop/webview RepoBot surfaces are in place. Next step: finish the remaining RepoBot fix/apply polish.
 
 **Objective Sync Rule:** When PLAN.md's `## Objective` changes, review and update all agent objectives (CLAUDE.md, GEMINI.md, AGENTS.md) to align with the new direction. Each agent's objective should support the repo objective from their specific angle (e.g., Claude = execution, Gemini = architecture).
 
 ## Now
 - [ ] **RepoBot Phase 2 (Codex)**: CLI chat mode (`repolog repobot`) + interactive provider selection
-- [ ] **RepoBot Phase 2 (Codex)**: Electron RepoBot dock + message history in the main UX
+- [ ] **RepoBot Phase 2 (Codex)**: Electron RepoBot panel + message history
 - [ ] **RepoBot Phase 2 (Codex)**: IPC handlers and repo-context builder
 - [ ] Verify Phase 2: build/lint/test gate passes, chat fixtures validate prompt/response flow
 

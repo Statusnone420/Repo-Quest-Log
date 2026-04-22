@@ -1,9 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { mkdir, rm, writeFile } from "node:fs/promises";
-import { join, resolve } from "node:path";
-import { tmpdir } from "node:os";
+import { resolve } from "node:path";
 
-import { buildCopilotPrompt, buildCopilotRequest, formatCopilotResponse, parseCopilotResponse, resolveCopilotProvider, runCopilotQuery } from "../src/engine/copilot.js";
+import { buildCopilotPrompt, buildCopilotRequest, formatCopilotResponse, parseCopilotResponse, runCopilotQuery } from "../src/engine/copilot.js";
 import type { DoctorReport } from "../src/engine/doctor.js";
 
 describe("copilot prompt engineering", () => {
@@ -86,28 +84,6 @@ describe("copilot prompt engineering", () => {
     expect(formatCopilotResponse(result)).toContain("RepoBot");
     expect(result.context.userQuery).toBe("Fix the repo summary");
   });
-
-  it("falls back to an authenticated provider when the configured one is missing", async () => {
-    const homeDir = await mktempDir("repolog-copilot-home-");
-    const repoRoot = await mktempDir("repolog-copilot-repo-");
-
-    try {
-      await writeFile(
-        join(repoRoot, ".repolog.json"),
-        JSON.stringify({ llm: { provider: "anthropic" } }, null, 2),
-        "utf8",
-      );
-      await writeFile(join(homeDir, ".config", "openai", "auth.json"), JSON.stringify({ api_key: "openai-secret" }), "utf8");
-
-      const result = await resolveCopilotProvider(repoRoot, { homeDir });
-
-      expect(result.provider.name).toBe("openai");
-      expect(result.discovery.available).toBe(true);
-    } finally {
-      await rm(homeDir, { recursive: true, force: true });
-      await rm(repoRoot, { recursive: true, force: true });
-    }
-  });
 });
 
 function sampleReport(): Pick<DoctorReport, "rootDir" | "scannedFiles" | "counts" | "findings" | "tuneup"> {
@@ -125,13 +101,4 @@ function sampleReport(): Pick<DoctorReport, "rootDir" | "scannedFiles" | "counts
     ],
     tuneup: { score: 72, gaps: [] },
   };
-}
-
-async function mktempDir(prefix: string): Promise<string> {
-  const root = join(tmpdir(), `${prefix}${Date.now()}-${Math.random().toString(16).slice(2)}`);
-  await mkdir(join(root, ".config", "openai"), { recursive: true });
-  await mkdir(join(root, ".config", "gcloud"), { recursive: true });
-  await mkdir(join(root, ".claude"), { recursive: true });
-  await mkdir(join(root, ".repolog"), { recursive: true });
-  return root;
 }

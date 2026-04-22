@@ -161,217 +161,6 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     .surface-controls .label { color: var(--muted); letter-spacing: 0.8px; text-transform: uppercase; margin-left: 4px; }
     .dot { width: 6px; height: 6px; border-radius: 999px; background: var(--ok); display: inline-block; }
 
-    /* ---- REPOBOT DOCK ---- */
-    .repobot-dock {
-      margin: var(--pad-y) var(--pad-x) 0;
-      border: 1px solid var(--tile-border-hot);
-      border-radius: 14px;
-      background: rgba(15,18,24,0.92);
-      box-shadow: 0 16px 40px -24px rgba(0,0,0,0.45);
-      overflow: hidden;
-    }
-    .repobot-dock[data-open="false"] .repobot-dock-body {
-      display: none;
-    }
-    .repobot-dock-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 10px 12px;
-      border-bottom: 1px solid var(--tile-border);
-    }
-    .repobot-dock-head .head {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-family: var(--mono);
-      font-size: var(--tiny-size);
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      color: var(--muted);
-    }
-    .repobot-dock-head .pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      padding: 1px 7px;
-      border-radius: 999px;
-      background: var(--faint);
-      color: var(--ink);
-      letter-spacing: 0.5px;
-    }
-    .repobot-dock-head .actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      align-items: center;
-      font-family: var(--mono);
-      font-size: var(--tiny-size);
-    }
-    .repobot-dock-head button,
-    .repobot-dock-body button,
-    .repobot-dock-body select,
-    .repobot-dock-body textarea {
-      font: inherit;
-    }
-    .repobot-dock-head button {
-      appearance: none;
-      border: 1px solid var(--tile-border);
-      background: rgba(255,255,255,0.02);
-      color: var(--ink);
-      border-radius: 7px;
-      padding: 4px 8px;
-      cursor: pointer;
-    }
-    .repobot-dock-head button:hover {
-      border-color: rgba(138,180,255,0.42);
-      color: var(--accent);
-    }
-    .repobot-dock-body {
-      display: grid;
-      grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
-      gap: var(--tile-gap);
-      padding: 12px;
-      min-width: 0;
-    }
-    .repobot-compose,
-    .repobot-feed {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      min-width: 0;
-    }
-    .repobot-compose {
-      padding-right: 8px;
-      border-right: 1px solid var(--tile-border);
-    }
-    .repobot-provider-row {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      flex-wrap: wrap;
-      font-family: var(--mono);
-      font-size: var(--tiny-size);
-      color: var(--muted);
-    }
-    .repobot-provider-row select {
-      flex: 1;
-      min-width: 180px;
-      appearance: none;
-      border: 1px solid var(--tile-border);
-      background: rgba(255,255,255,0.03);
-      color: var(--ink);
-      border-radius: 6px;
-      padding: 4px 8px;
-    }
-    .repobot-status {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      font-family: var(--mono);
-      font-size: var(--tiny-size);
-      color: var(--muted);
-    }
-    .repobot-status .chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      padding: 2px 7px;
-      border-radius: 999px;
-      background: var(--faint);
-      color: var(--ink);
-    }
-    .repobot-status .chip.available {
-      border: 1px solid rgba(138,214,168,0.24);
-      background: rgba(138,214,168,0.08);
-    }
-    .repobot-status .chip.missing {
-      border: 1px solid rgba(244,132,113,0.22);
-      background: rgba(244,132,113,0.07);
-    }
-    .repobot-status .chip.selected {
-      border: 1px solid rgba(138,180,255,0.32);
-      background: rgba(138,180,255,0.08);
-    }
-    .repobot-input {
-      min-height: 96px;
-      width: 100%;
-      resize: vertical;
-      border: 1px solid var(--tile-border);
-      background: rgba(0,0,0,0.22);
-      color: var(--ink);
-      border-radius: 8px;
-      padding: 10px 12px;
-      font-family: var(--mono);
-      font-size: var(--tiny-size);
-      line-height: 1.45;
-    }
-    .repobot-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      align-items: center;
-    }
-    .repobot-actions button {
-      appearance: none;
-      border: 1px solid var(--tile-border);
-      background: rgba(255,255,255,0.02);
-      color: var(--ink);
-      border-radius: 7px;
-      padding: 5px 10px;
-      cursor: pointer;
-      font-family: var(--mono);
-      font-size: var(--tiny-size);
-    }
-    .repobot-actions button:hover {
-      border-color: rgba(138,180,255,0.42);
-      color: var(--accent);
-    }
-    .repobot-actions button.primary {
-      border-color: rgba(138,180,255,0.32);
-      background: rgba(138,180,255,0.08);
-    }
-    .repobot-response {
-      min-height: 112px;
-      padding: 10px 12px;
-      border-radius: 8px;
-      border: 1px solid var(--tile-border);
-      background: rgba(255,255,255,0.02);
-      white-space: pre-wrap;
-      overflow-wrap: anywhere;
-      font-family: var(--mono);
-      font-size: var(--tiny-size);
-      line-height: 1.45;
-      color: var(--muted);
-    }
-    .repobot-history {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      max-height: 160px;
-      overflow-y: auto;
-      padding-right: 2px;
-      font-family: var(--mono);
-      font-size: var(--tiny-size);
-    }
-    .repobot-history-item {
-      border: 1px solid var(--tile-border);
-      background: rgba(255,255,255,0.02);
-      border-radius: 8px;
-      padding: 8px 10px;
-      white-space: pre-wrap;
-      overflow-wrap: anywhere;
-    }
-    .repobot-history-item .role {
-      display: block;
-      margin-bottom: 4px;
-      color: var(--dim);
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      font-size: 9px;
-    }
-
     /* ---- SETTINGS RACK ---- */
     .settings-rack {
       display: grid;
@@ -1429,9 +1218,6 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
         <span>${state.scannedFiles.length} files</span>
         <span style="color: var(--dim)">· ${escapeHtml(state.lastScan)}</span>
       </div>
-      <button type="button" class="kbd-hint" data-ui-action="open-repobot" title="Open or collapse the RepoBot dock">
-        <kbd>RepoBot</kbd><span>chat</span>
-      </button>
       <div class="surface-controls" aria-label="Display controls">
         <button type="button" data-ui-action="refresh" aria-label="Refresh desktop" title="Refresh desktop">↻</button>
         <span class="label">Size</span>
@@ -1450,7 +1236,6 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       </div>
     </header>
     ${renderSettingsRack(state, options.liveBridge)}
-    ${renderRepoBotDock(state, options.liveBridge)}
     ${renderSettingsPanel(state, options.liveBridge)}
     ${isEmptyRepo(state) ? renderEmptyState(state) : `
     <section class="header-strip">
@@ -1675,19 +1460,20 @@ export function renderVSCodeHtml(state: QuestState, options: SurfaceHtmlOptions 
       <span class="branch">${escapeHtml(state.branch)}</span>
     </div>
 
-      <div class="resume">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 4px;">
-          <div class="resume-label" style="margin-bottom:0;">Resume</div>
-          <div style="display:flex; align-items:center; gap: 8px;">
-            <button type="button" class="copy-context-btn" data-copy-context="${escapeHtml(buildContextPrompt(state))}" aria-label="Copy context for agent" title="Copy context for agent" style="background:transparent; border:none; color:var(--muted); cursor:pointer; padding:0; display:flex; align-items:center;">
+    <div class="resume">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 4px;">
+        <div class="resume-label" style="margin-bottom:0;">Resume</div>
+        <div style="display:flex; align-items:center; gap: 8px;">
+          <button type="button" class="copy-context-btn" data-copy-context="${escapeHtml(buildContextPrompt(state))}" aria-label="Copy context for agent" title="Copy context for agent" style="background:transparent; border:none; color:var(--muted); cursor:pointer; padding:0; display:flex; align-items:center;">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
           </button>
         </div>
       </div>
-        <div class="resume-task">${escapeHtml(state.resumeNote.task)}</div>
-        <div class="resume-thought">&ldquo;${escapeHtml(state.resumeNote.thought ?? "")}&rdquo;</div>
-      </div>
-      <div class="scroll">
+      <div class="resume-task">${escapeHtml(state.resumeNote.task)}</div>
+      <div class="resume-thought">&ldquo;${escapeHtml(state.resumeNote.thought ?? "")}&rdquo;</div>
+    </div>
+
+    <div class="scroll">
       ${renderVSCodeSection("Now", state.now.length, "#0e639c", state.now.map((task) => renderVSCodeTaskRow(task, "◆", "#4ec9b0")))}
       ${renderVSCodeSection("Next", state.next.length, undefined, state.next.map((task) => renderVSCodeTaskRow(task, "○")))}
       ${renderVSCodeSection("Blocked", state.blocked.length, "#a1260d", state.blocked.map((task) => renderVSCodeBlockedRow(task)))}
@@ -1904,54 +1690,10 @@ function renderSettingsRack(state: QuestState, liveBridge?: SurfaceHtmlOptions["
     </section>`;
 }
 
-function renderRepoBotDock(state: QuestState, liveBridge?: SurfaceHtmlOptions["liveBridge"]): string {
-  const providers = state.config?.llm?.provider ? `selected: ${escapeHtml(state.config.llm.provider)}` : "auto-select";
-  const openButton = liveBridge === "desktop"
-    ? `<button type="button" data-ui-action="open-repobot" class="primary">Open RepoBot</button>`
-    : "";
-
-  return `<section class="repobot-dock" data-repobot-dock data-open="true" aria-label="RepoBot chat">
-    <div class="repobot-dock-head">
-      <div class="head">RepoBot <span class="pill">${providers}</span></div>
-      <div class="actions">
-        ${openButton}
-        <button type="button" data-repobot-action="toggle-dock" aria-expanded="true">Collapse</button>
-      </div>
-    </div>
-    <div class="repobot-dock-body">
-      <div class="repobot-compose">
-        <div class="repobot-provider-row">
-          <span>Provider</span>
-          <select data-repobot-provider>
-            <option value="">Auto select</option>
-          </select>
-        </div>
-        <div class="repobot-status" data-repobot-status>
-          <span class="chip">Loading provider status…</span>
-        </div>
-        <textarea class="repobot-input" data-repobot-prompt rows="4" placeholder="Ask RepoBot about this repo"></textarea>
-        <div class="repobot-actions">
-          <button type="button" data-repobot-action="ask" class="primary">Ask RepoBot</button>
-          <button type="button" data-repobot-action="clear">Clear</button>
-          <button type="button" data-repobot-action="copy-response">Copy response</button>
-        </div>
-        <div class="repobot-response" data-repobot-response>Questions and answers will appear here.</div>
-      </div>
-      <div class="repobot-feed">
-        <div class="settings-copy">History stays local to this shell so the dock can be collapsed without losing context.</div>
-        <div class="repobot-history" data-repobot-history></div>
-      </div>
-    </div>
-  </section>`;
-}
-
 function renderSettingsPanel(state: QuestState, liveBridge?: SurfaceHtmlOptions["liveBridge"]): string {
   const wbStatus = state.config?.writeback ? "on" : "off";
   const promptDir = state.config?.prompts?.dir?.trim() || "~/.repolog/prompts";
   const repobotStatus = state.config?.llm?.provider ? `selected: ${escapeHtml(state.config.llm.provider)}` : "auto-select";
-  const repobotButton = liveBridge === "desktop"
-    ? `<button type="button" data-ui-action="open-repobot" class="primary">Open RepoBot</button>`
-    : "";
   const configButton = liveBridge === "desktop"
     ? `<button type="button" data-ui-action="open-config">Open .repolog.json</button>`
     : "";
@@ -1999,10 +1741,22 @@ function renderSettingsPanel(state: QuestState, liveBridge?: SurfaceHtmlOptions[
         <div class="settings-panel-grid">
           <div class="settings-panel-card repobot-card">
             <div class="head">RepoBot <span class="pill">${repobotStatus}</span></div>
-            <div class="detail">RepoBot now lives in the main shell dock. Use the top-bar chat button to open or collapse it.</div>
-            <div class="actions">
-              ${repobotButton}
+            <div class="detail">Ask RepoBot to inspect the repo state, explain what is off, and draft targeted markdown fixes.</div>
+            <div class="repobot-setup">
+              <label class="repobot-label">
+                <span>Provider</span>
+                <select data-repobot-provider>
+                  <option value="">Auto select</option>
+                </select>
+              </label>
             </div>
+            <textarea class="repobot-input" data-repobot-prompt rows="4" placeholder="Ask RepoBot about this repo"></textarea>
+            <div class="actions">
+              <button type="button" data-repobot-action="ask" class="primary">Ask RepoBot</button>
+              <button type="button" data-repobot-action="clear">Clear</button>
+            </div>
+            <div class="repobot-response" data-repobot-response>Questions and answers will appear here.</div>
+            <div class="repobot-history" data-repobot-history></div>
           </div>
           <div class="settings-panel-card">
             <div class="head">Write-back <span class="pill">${wbStatus}</span></div>
@@ -2358,13 +2112,6 @@ function renderSettingsScript(): string {
           }
           if (action === "open-settings") {
             openSettings();
-            return;
-          }
-          if (action === "open-repobot") {
-            if (window.__rqlToggleRepoBotDock) {
-              window.__rqlToggleRepoBotDock(true);
-            }
-            closeSettings();
             return;
           }
           if (action === "close-settings") {
@@ -2890,48 +2637,16 @@ function renderRepoBotScript(): string {
   return `<script>
     (function () {
       var vscode = typeof acquireVsCodeApi === "function" ? acquireVsCodeApi() : null;
-      var dock = document.querySelector("[data-repobot-dock]");
       var promptInput = document.querySelector("[data-repobot-prompt]");
       var providerSelect = document.querySelector("[data-repobot-provider]");
-      var statusEl = document.querySelector("[data-repobot-status]");
       var responseEl = document.querySelector("[data-repobot-response]");
       var historyEl = document.querySelector("[data-repobot-history]");
-      if (!dock || !promptInput || !providerSelect || !statusEl || !responseEl || !historyEl) return;
+      if (!promptInput || !providerSelect || !responseEl || !historyEl) return;
 
       var historyKey = "repolog-repobot-history";
-      var dockKey = "repolog-repobot-dock-open";
       var state = { providers: [], selectedProvider: "" };
       var history = [];
       try { history = JSON.parse(localStorage.getItem(historyKey) || "[]"); } catch (_) { history = []; }
-
-      function isDockOpen() {
-        try {
-          var stored = localStorage.getItem(dockKey);
-          if (stored === null) return true;
-          return stored !== "false";
-        } catch (_) {
-          return true;
-        }
-      }
-
-      function setDockOpen(open) {
-        var next = Boolean(open);
-        dock.setAttribute("data-open", next ? "true" : "false");
-        try { localStorage.setItem(dockKey, next ? "true" : "false"); } catch (_) {}
-        var buttons = document.querySelectorAll('[data-repobot-action="toggle-dock"]');
-        for (var i = 0; i < buttons.length; i += 1) {
-          buttons[i].textContent = next ? "Collapse" : "Expand";
-          buttons[i].setAttribute("aria-expanded", next ? "true" : "false");
-        }
-      }
-
-      window.__rqlToggleRepoBotDock = function (forceOpen) {
-        if (typeof forceOpen === "boolean") {
-          setDockOpen(forceOpen);
-          return;
-        }
-        setDockOpen(!(dock.getAttribute("data-open") === "true"));
-      };
 
       function saveHistory() {
         try { localStorage.setItem(historyKey, JSON.stringify(history.slice(0, 12))); } catch (_) {}
@@ -2958,22 +2673,9 @@ function renderRepoBotScript(): string {
         }).join("");
       }
 
-      function renderStatusChip(provider) {
-        var notes = Array.isArray(provider.notes) ? provider.notes : [];
-        var available = provider.available ? "available" : "missing";
-        var selected = state.selectedProvider && state.selectedProvider === provider.name ? " selected" : "";
-        var note = notes.length > 0 ? " · " + esc(notes[0]) : "";
-        return '<span class="chip ' + available + selected + '">' +
-          esc(provider.label || provider.name) +
-          ': ' + esc(available) +
-          note +
-          '</span>';
-      }
-
       function applyStatus(data) {
         state = data || state;
         var providers = Array.isArray(state.providers) ? state.providers : [];
-        var selected = state.selectedProvider ? state.selectedProvider : "";
         providerSelect.innerHTML = '<option value="">Auto select</option>' + providers.map(function (provider) {
           var selected = state.selectedProvider && state.selectedProvider === provider.name ? ' selected' : '';
           var label = provider.label || provider.name;
@@ -2983,8 +2685,6 @@ function renderRepoBotScript(): string {
         if (state.selectedProvider) {
           providerSelect.value = state.selectedProvider;
         }
-        statusEl.innerHTML = (selected ? '<span class="chip selected">selected: ' + esc(selected) + '</span>' : '<span class="chip">auto select</span>')
-          + (providers.length > 0 ? providers.map(renderStatusChip).join("") : '<span class="chip missing">No providers detected</span>');
       }
 
       function pushHistory(role, text) {
@@ -3042,7 +2742,6 @@ function renderRepoBotScript(): string {
       function setProvider() {
         var provider = providerSelect.value;
         if (!provider) {
-          requestStatus();
           return;
         }
         if (window.repologDesktop && typeof window.repologDesktop.setRepoBotProvider === "function") {
@@ -3058,10 +2757,6 @@ function renderRepoBotScript(): string {
         var button = event.target.closest && event.target.closest("[data-repobot-action]");
         if (!button) return;
         var action = button.getAttribute("data-repobot-action");
-        if (action === "toggle-dock") {
-          window.__rqlToggleRepoBotDock();
-          return;
-        }
         if (action === "ask") {
           ask();
         }
@@ -3072,7 +2767,6 @@ function renderRepoBotScript(): string {
       });
 
       providerSelect.addEventListener("change", setProvider);
-      setDockOpen(isDockOpen());
 
       window.addEventListener("message", function (event) {
         var msg = event.data;

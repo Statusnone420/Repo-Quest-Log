@@ -39,4 +39,4 @@ Instructions for any coding agent working in this repo (Codex, generic agents, C
 Implement RepoBot v0.4 (Phases 1–4): multi-provider LLM integration with zero-friction auth discovery, chat interfaces (CLI + Electron), and automated MD fixing. Execute `plan_implementation.md` top-to-bottom. Nail the provider abstraction and prompt engineering so all LLM services work seamlessly.
 
 ## Last Task
-RepoBot Phase 2 underway: provider abstraction, auth discovery, prompt engineering, CLI chat mode, and a collapsible RepoBot dock in the main desktop UX are in place. Next: finish the remaining RepoBot fix/apply polish. See `plan_implementation.md` for the live tracker.
+RepoBot Phase 2 underway: provider abstraction, auth discovery, prompt engineering, CLI chat mode, and desktop/webview RepoBot surfaces are in place. Next: finish the remaining RepoBot fix/apply polish. See `plan_implementation.md` for the live tracker.

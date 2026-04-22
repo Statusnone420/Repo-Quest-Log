@@ -12,7 +12,7 @@ describe("web renderers", () => {
     expect(html).toContain("Why this matters");
     expect(html).toContain("Settings");
     expect(html).toContain("Ctrl+O");
-    expect(html).toContain("Ctrl+Shift+S");
+    expect(html).toContain("Ctrl+Shift+C");
     expect(html).toContain("Prompt dir");
     expect(html).toContain("Startup behavior");
     expect(html).toContain("data-writeback-toggle");
@@ -47,12 +47,18 @@ describe("web renderers", () => {
 
 function sampleState(): QuestState {
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     name: "Repo Quest Log",
     branch: "main",
     lastScan: "2026-04-21T17:19:15.779Z",
     scannedFiles: ["PLAN.md", "STATE.md"],
     mission: "A local-first CLI + TUI that makes repo intent legible at a glance.",
+    objective: {
+      title: "Ship v0.1",
+      doc: "PLAN.md",
+      line: 6,
+      progress: { done: 1, total: 7 },
+    },
     activeQuest: {
       title: "Ship v0.1",
       doc: "PLAN.md",
@@ -90,5 +96,6 @@ function sampleState(): QuestState {
     ],
     recentChanges: [{ file: "PLAN.md", at: "1m", diff: "+3 -1" }],
     decisions: [],
+    config: { writeback: false, prompts: { dir: "~/.repolog/prompts" } },
   };
 }

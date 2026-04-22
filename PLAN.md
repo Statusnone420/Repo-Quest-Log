@@ -7,7 +7,7 @@ One sentence: **what this repo is trying to become.**
 Close v0.1 with a fit-to-window desktop, a TUI that visually matches it, and clean panel labels — then ship the v0.2 agent-integration wedge (resume-prompt palette, git panel, agent activity feed, standup export, opt-in write-back).
 
 ## Current Focus
-All surfaces stay pinned to one shared `QuestState` pipeline and one renderer. The v0.2 wedge is now mostly in code; the remaining open slices are standup export and ship/shareability.
+All surfaces stay pinned to one shared `QuestState` pipeline and one renderer. Standup export is now landed; the remaining open close-out slice is ship/shareability.
 Detailed completion estimates now live in `plan_implementation.md`.
 
 ## Now — v0.1 close-out
@@ -27,7 +27,7 @@ Detailed completion estimates now live in `plan_implementation.md`.
 ## Next — v0.2 (agent-integration wedge)
 - [x] Live git panel — branch, ahead/behind, dirty count, last commit subject + relative time
 - [x] Agent activity feed — infer agent × file from mtimes × owned-areas in AGENTS.md / CLAUDE.md / GEMINI.md
-- [ ] Standup export — one-keypress markdown of today's done + currently-active to clipboard
+- [x] Standup export — one-keypress markdown of today's done + currently-active to clipboard
 - [x] Opt-in write-back for checkbox toggles only, gated by `.repolog.json` → `"writeback": true`, with persistent on-screen banner
 - [x] Schema v2 — rename `activeQuest` → `objective`, add `gitContext`, `agentActivity`, `config.writeback`; ship compat shim for v1
 

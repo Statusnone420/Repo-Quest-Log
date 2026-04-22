@@ -1440,7 +1440,7 @@ function renderSettingsRack(state: QuestState, liveBridge?: SurfaceHtmlOptions["
   const openRepoButton = liveBridge === "desktop"
     ? `<button type="button" class="primary" data-ui-action="open-repo" title="Open a repo folder (Ctrl+O)">Open Repo <span class="kbd-inline"><kbd>Ctrl</kbd><kbd>O</kbd></span></button>`
     : "";
-  const standupButton = `<button type="button" data-ui-action="standup-export" title="Copy today's standup export (Ctrl+Shift+S)">Standup <span class="kbd-inline"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>S</kbd></span></button>`;
+  const standupButton = `<button type="button" data-ui-action="standup-export" title="Copy today's standup export (Ctrl+Shift+C)">Standup <span class="kbd-inline"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>C</kbd></span></button>`;
   return `<section class="settings-rack" aria-label="Settings and shortcuts">
       <div class="settings-card">
         <div class="settings-head">Settings <span class="pill">${writeback}</span></div>
@@ -1454,7 +1454,7 @@ function renderSettingsRack(state: QuestState, liveBridge?: SurfaceHtmlOptions["
         <div class="settings-chip-row" aria-label="Shortcut reminders">
           <span class="chiplet"><strong>Ctrl+K</strong> prompt</span>
           <span class="chiplet"><strong>Ctrl+O</strong> repo</span>
-          <span class="chiplet"><strong>Ctrl+Shift+S</strong> standup</span>
+          <span class="chiplet"><strong>Ctrl+Shift+C</strong> standup</span>
           <span class="chiplet"><strong>Ctrl+R</strong> refresh</span>
         </div>
       </div>
@@ -1529,7 +1529,7 @@ function renderSettingsPanel(state: QuestState, liveBridge?: SurfaceHtmlOptions[
         <div class="settings-panel-footer">
           <span><strong>Ctrl+O</strong> open repo</span>
           <span><strong>Ctrl+K</strong> copy prompt</span>
-          <span><strong>Ctrl+Shift+S</strong> standup export</span>
+          <span><strong>Ctrl+Shift+C</strong> standup export</span>
           <span><strong>Ctrl+R</strong> refresh scan</span>
         </div>
         <pre class="settings-panel-report" data-doctor-report hidden></pre>
@@ -1931,7 +1931,7 @@ function renderSettingsScript(): string {
       });
       document.addEventListener("keydown", function (event) {
         var prefs = read();
-        if ((event.metaKey || event.ctrlKey) && event.shiftKey && (event.key === "s" || event.key === "S")) {
+        if ((event.metaKey || event.ctrlKey) && event.shiftKey && (event.key === "c" || event.key === "C")) {
           event.preventDefault();
           copyStandup();
           return;
@@ -2068,7 +2068,7 @@ function renderPaletteScript(): string {
         toast.textContent = msg;
         toast.setAttribute("data-visible", "true");
         clearTimeout(showToast._t);
-        showToast._t = setTimeout(function () { toast.setAttribute("data-visible", "false"); }, 1800);
+        showToast._t = setTimeout(function () { toast.setAttribute("data-visible", "false"); }, 2000);
       }
       window.__rqlToast = showToast;
       function escapeHtml(v) {

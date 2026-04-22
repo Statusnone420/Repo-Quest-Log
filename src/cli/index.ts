@@ -4,12 +4,11 @@ import { dirname, resolve } from "node:path";
 import React from "react";
 import { render } from "ink";
 
-import { spawn } from "node:child_process";
-
 import { renderDesktopHtml } from "../desktop/render.js";
+import { copyTextToClipboard } from "../engine/clipboard.js";
 import { formatDoctorReport, runDoctor } from "../engine/doctor.js";
 import { loadPromptPresets } from "../engine/prompts.js";
-import { buildStandupMarkdown } from "../engine/standup.js";
+import { buildStandupForRepo, type StandupSince } from "../engine/standup.js";
 import { scanRepo } from "../engine/scan.js";
 import { formatStaticFrame, WatchApp } from "../tui/App.js";
 
@@ -60,7 +59,11 @@ async function main(): Promise<void> {
       process.exit(1);
     }
     if (command.copy) {
-      await copyToClipboard(match.body);
+      const copied = await copyTextToClipboard(match.body);
+      if (!copied) {
+        process.stderr.write("clipboard unavailable\n");
+        process.exit(1);
+      }
       process.stderr.write(`copied ${match.id} to clipboard\n`);
       return;
     }
@@ -70,13 +73,17 @@ async function main(): Promise<void> {
 
   if (command.mode === "standup") {
     const state = await scanRepo(command.rootDir);
-    const body = await buildStandupMarkdown(command.rootDir, state);
+    const result = await buildStandupForRepo(command.rootDir, state, { since: command.since });
     if (command.copy) {
-      await copyToClipboard(body);
+      const copied = await copyTextToClipboard(result.markdown);
+      if (!copied) {
+        process.stderr.write("clipboard unavailable\n");
+        process.exit(1);
+      }
       process.stderr.write("copied standup export to clipboard\n");
       return;
     }
-    process.stdout.write(`${body}\n`);
+    process.stdout.write(command.json ? `${JSON.stringify(result.json, null, 2)}\n` : `${result.markdown}\n`);
     return;
   }
 
@@ -104,7 +111,7 @@ type Command =
   | { mode: "desktop"; rootDir: string; outputFile: string }
   | { mode: "prompt"; rootDir: string; action: "list" }
   | { mode: "prompt"; rootDir: string; action: "render"; id: string; copy: boolean }
-  | { mode: "standup"; rootDir: string; copy: boolean };
+  | { mode: "standup"; rootDir: string; copy: boolean; json: boolean; since: StandupSince };
 
 function readCommand(args: string[]): Command {
   if (args.includes("--help") || args.includes("-h")) {
@@ -150,8 +157,14 @@ function readCommand(args: string[]): Command {
     return { mode: "desktop", rootDir, outputFile };
   }
   if (first === "standup") {
-    const rootDir = resolve(second ?? ".");
-    return { mode: "standup", rootDir, copy: args.includes("--copy") };
+    const pathArg = args.slice(1).find((arg) => !arg.startsWith("-"));
+    return {
+      mode: "standup",
+      rootDir: resolve(pathArg ?? "."),
+      copy: args.includes("--copy"),
+      json: args.includes("--json"),
+      since: readStandupSince(args),
+    };
   }
   if (first === "watch") {
     return { mode: "watch", rootDir: resolve(second ?? ".") };
@@ -161,18 +174,6 @@ function readCommand(args: string[]): Command {
     mode: "watch",
     rootDir: resolve(first ?? "."),
   };
-}
-
-async function copyToClipboard(text: string): Promise<void> {
-  const { platform } = process;
-  const cmd = platform === "win32" ? "clip" : platform === "darwin" ? "pbcopy" : "xclip";
-  const args = platform === "linux" ? ["-selection", "clipboard"] : [];
-  await new Promise<void>((resolvePromise, rejectPromise) => {
-    const child = spawn(cmd, args, { stdio: ["pipe", "ignore", "ignore"] });
-    child.on("error", rejectPromise);
-    child.on("exit", (code) => (code === 0 ? resolvePromise() : rejectPromise(new Error(`${cmd} exited ${code}`))));
-    child.stdin.end(text);
-  });
 }
 
 function printHelp(): void {
@@ -190,7 +191,7 @@ function printHelp(): void {
       "  repolog doctor [path] [--json]  Explain what was scanned and why state looks empty",
       "  repolog prompt list             List available prompt presets",
       "  repolog prompt <id> [--copy]    Render a prompt; --copy sends to clipboard",
-      "  repolog standup [path] [--copy] Render today's standup export; --copy sends to clipboard",
+      "  repolog standup [path] [--since=today|yesterday|7d] [--copy] [--json]",
       "",
       "Keys in watch mode:",
       "  q quit",
@@ -198,6 +199,15 @@ function printHelp(): void {
       "",
     ].join("\n"),
   );
+}
+
+function readStandupSince(args: string[]): StandupSince {
+  const value = args.find((arg) => arg.startsWith("--since="))?.slice("--since=".length) ?? "today";
+  if (value === "today" || value === "yesterday" || value === "7d") {
+    return value;
+  }
+  process.stderr.write(`invalid --since value: ${value}\n`);
+  process.exit(1);
 }
 
 void main().catch((error: unknown) => {

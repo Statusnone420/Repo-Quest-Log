@@ -1,8 +1,7 @@
-import { spawn } from "node:child_process";
-
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Box, Text, useApp, useInput, useStdin } from "ink";
 
+import { copyTextToClipboard } from "../engine/clipboard.js";
 import { mergeChanges } from "../engine/changes.js";
 import { buildPromptPresets, loadPromptPresets, type PromptPreset } from "../engine/prompts.js";
 import { buildStandupMarkdown } from "../engine/standup.js";
@@ -251,7 +250,7 @@ export function WatchApp({ rootDir }: WatchAppProps) {
         }
         setPaletteOpen(false);
         setPaletteQuery("");
-        void copyToClipboard(preset.body).then((copied) => {
+        void copyTextToClipboard(preset.body).then((copied) => {
           setStatusLine(copied ? `${preset.label} copied` : "Clipboard unavailable");
         });
         return;
@@ -285,7 +284,7 @@ export function WatchApp({ rootDir }: WatchAppProps) {
       void (async () => {
         try {
           const markdown = await buildStandupMarkdown(rootDir, state);
-          const copied = await copyToClipboard(markdown);
+          const copied = await copyTextToClipboard(markdown);
           setStatusLine(copied ? "Standup export copied" : "Clipboard unavailable");
         } catch (error) {
           setStatusLine(error instanceof Error ? error.message : String(error));
@@ -854,32 +853,6 @@ function formatAgentGlyph(agent?: string): string {
 
 function isPrintable(input: string): boolean {
   return /^[\x20-\x7e]$/.test(input);
-}
-
-async function copyToClipboard(text: string): Promise<boolean> {
-  if (process.platform === "win32") {
-    return writeToClipboardCommand("clip", [], text);
-  }
-
-  if (process.platform === "darwin") {
-    return writeToClipboardCommand("pbcopy", [], text);
-  }
-
-  if (await writeToClipboardCommand("xclip", ["-selection", "clipboard"], text)) {
-    return true;
-  }
-  return writeToClipboardCommand("xsel", ["--clipboard", "--input"], text);
-}
-
-function writeToClipboardCommand(command: string, args: string[], text: string): Promise<boolean> {
-  return new Promise((resolve) => {
-    const child = spawn(command, args, { stdio: ["pipe", "ignore", "ignore"] });
-    child.on("error", () => resolve(false));
-    child.on("close", (code) => resolve(code === 0));
-    child.stdin.write(text, "utf8", () => {
-      child.stdin.end();
-    });
-  });
 }
 
 function Spacer() {

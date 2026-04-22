@@ -3,9 +3,10 @@
 Live "where we are." Update this as work progresses. The normalizer reads this to build the Resume Note.
 
 ## Current Focus
-v0.2 wedge is mostly landed in code: shared `QuestState` now carries `gitContext`, `agentActivity`, and `config.writeback`, and the desktop shell shows the git strip, agent feed, and safe checkbox write-back. The remaining open slices are standup export and ship/shareability.
+v0.2 wedge is mostly landed in code: shared `QuestState` now carries `gitContext`, `agentActivity`, and `config.writeback`, and the desktop shell shows the git strip, agent feed, and safe checkbox write-back. Standup export is landed; the remaining open close-out slice is ship/shareability.
 
 ## Last Session
+- Standup export landed across CLI, shared engine formatting, TUI, desktop, and VS Code webview. New CLI: `repolog standup [--since=today|yesterday|7d] [--copy] [--json]`. Standup copy hotkey is now `Ctrl+Shift+C` in the shared renderer, with the prompt-palette toast styling and a 2s timeout.
 - CLAUDE.md role unlocked: Claude now plans AND implements (build/lint/test gate still required).
 - Foundation pass closed: TUI visual parity confirmed landed in `src/tui/App.tsx`, PLAN.md reconciled to source, tracker bumped to 100% for that pass.
 - Prompt externalization landed: `loadPromptPresets` in `src/engine/prompts.ts` merges built-ins with `~/.repolog/prompts/*.md` (user) and `<repo>/.repolog/prompts/*.md` (repo-wins). Markdown frontmatter + `{{var}}` template rendering.
@@ -20,9 +21,9 @@ v0.2 wedge is mostly landed in code: shared `QuestState` now carries `gitContext
 - `npm run build`, `npm run lint`, `npm test` all green (30 tests, 13 files).
 
 ## Resume Note
-> Ctrl+K palettes in TUI, desktop (Electron), and VS Code webview now read from `loadPromptPresets` — external `~/.repolog/prompts/*.md` + `<repo>/.repolog/prompts/*.md` overrides show up in-app. Added `presets?: PromptPreset[]` passthrough to `SurfaceHtmlOptions`. Next slice: standup export, then ship/shareability polish.
+> Standup export is now wired through the shared engine formatter and available from CLI (`repolog standup` with `--since`, `--copy`, `--json`) plus TUI, desktop, and VS Code via `Ctrl+Shift+C`. Shared `clip` / `pbcopy` / `xclip` clipboard helper deduped into `src/engine/clipboard.ts`. Next slice: 0.0.2 ship/shareability polish.
 
-Last touched: `src/tui/App.tsx`
+Last touched: `src/engine/standup.ts`
 
 ## Recent Decisions
 - 2026-04-21 — `repolog doctor` is the trust layer for messy repos: it explains *why* state looks sparse and which exact heading to add. The CLI exits 1 when any warn-level finding fires, so CI can gate on it.

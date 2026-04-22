@@ -1,52 +1,119 @@
-import { parseRepo } from "./parse.js";
 import { HEADING_PATTERNS } from "./fileset.js";
-import type { ParsedDoc, ParsedSection, QuestState, Task } from "./types.js";
+import { parseRepo } from "./parse.js";
+import type { FileChange, ParsedDoc, ParsedSection, QuestState, Task } from "./types.js";
 
-export interface StandupEntry {
+export type StandupSince = "today" | "yesterday" | "7d";
+
+export interface StandupCompletedItem {
   text: string;
   doc: string;
   line?: number;
-  checked: boolean;
-  at: number;
+  completedAt: string;
 }
 
-export async function buildStandupMarkdown(rootDir: string, state: QuestState): Promise<string> {
-  const docs = await parseRepo(rootDir);
-  const doneToday = collectDoneToday(docs);
-  return formatStandupMarkdown(state, doneToday);
+export interface StandupJson {
+  date: string;
+  since: StandupSince;
+  done: Array<{ text: string; doc: string }>;
+  workingOn: Array<{ text: string; doc: string }>;
+  changed: Array<{ file: string; diff: string }>;
 }
 
-export function formatStandupMarkdown(
+export interface StandupResult {
+  markdown: string;
+  json: StandupJson;
+}
+
+export interface BuildStandupOptions {
+  since?: StandupSince;
+  now?: Date;
+  completedItems?: readonly StandupCompletedItem[];
+}
+
+export async function buildStandupForRepo(
+  rootDir: string,
   state: QuestState,
-  doneToday: readonly StandupEntry[] = [],
-): string {
-  const completed = [...doneToday].sort((left, right) => {
-    if (left.at !== right.at) {
-      return right.at - left.at;
-    }
-    return left.text.localeCompare(right.text);
+  options: BuildStandupOptions = {},
+): Promise<StandupResult> {
+  const now = options.now ?? new Date();
+  const completedItems = options.completedItems ?? await extractCompletedStandupItems(rootDir, {
+    since: options.since ?? "today",
+    now,
   });
-  const nowItems = state.now.slice(0, 3);
-
-  return [
-    `# Standup - ${state.name}`,
-    "",
-    `- Branch: ${state.branch}`,
-    `- Objective: ${state.activeQuest.title} (${state.activeQuest.progress.done}/${state.activeQuest.progress.total})`,
-    `- Resume: ${state.resumeNote.task}`,
-    "",
-    "## Done Today",
-    ...(completed.length > 0 ? completed.map((item) => formatEntry(item, "x")) : ["- none"]),
-    "",
-    "## Now",
-    ...(nowItems.length > 0 ? nowItems.map((task) => formatTask(task, " ")) : ["- none"]),
-    "",
-  ].join("\n");
+  return buildStandup(state, {
+    ...options,
+    now,
+    completedItems,
+  });
 }
 
-function collectDoneToday(docs: readonly ParsedDoc[]): StandupEntry[] {
-  const threshold = startOfToday();
-  const results: StandupEntry[] = [];
+export async function buildStandupMarkdown(
+  rootDir: string,
+  state: QuestState,
+  options: BuildStandupOptions = {},
+): Promise<string> {
+  const result = await buildStandupForRepo(rootDir, state, options);
+  return result.markdown;
+}
+
+export function buildStandup(
+  state: QuestState,
+  options: BuildStandupOptions = {},
+): StandupResult {
+  const now = options.now ?? new Date();
+  const since = options.since ?? "today";
+  const date = formatDate(now);
+  const done = dedupeCompletedItems(options.completedItems ?? []).map((item) => ({
+    text: item.text,
+    doc: item.doc,
+  }));
+  const workingOn = state.now.slice(0, 3).map((task) => ({
+    text: task.text,
+    doc: task.doc,
+  }));
+  const changed = filterRecentChanges(state.recentChanges, since, now).map((change) => ({
+    file: change.file,
+    diff: change.diff ?? "no diff",
+  }));
+
+  const json: StandupJson = {
+    date,
+    since,
+    done,
+    workingOn,
+    changed,
+  };
+
+  const markdown = [
+    `## Standup — ${date}`,
+    "**Done**",
+    ...(json.done.length > 0 ? json.done.map((item) => `- ${item.text} (${item.doc})`) : ["- none"]),
+    "**Working on**",
+    ...(json.workingOn.length > 0 ? json.workingOn.map((item) => `- ${item.text} (${item.doc})`) : ["- none"]),
+    "**Changed**",
+    ...(json.changed.length > 0 ? json.changed.map((item) => `- ${item.file} (${item.diff})`) : ["- none"]),
+  ].join("\n");
+
+  return { markdown, json };
+}
+
+export async function extractCompletedStandupItems(
+  rootDir: string,
+  options: { since?: StandupSince; now?: Date } = {},
+): Promise<StandupCompletedItem[]> {
+  const docs = await parseRepo(rootDir);
+  return collectCompletedStandupItems(docs, {
+    since: options.since ?? "today",
+    now: options.now ?? new Date(),
+  });
+}
+
+export function collectCompletedStandupItems(
+  docs: readonly ParsedDoc[],
+  options: { since: StandupSince; now: Date },
+): StandupCompletedItem[] {
+  const threshold = getSinceThreshold(options.since, options.now);
+  const results: StandupCompletedItem[] = [];
 
   for (const doc of docs) {
     const modifiedAt = Date.parse(doc.modifiedAt ?? "");
@@ -59,7 +126,7 @@ function collectDoneToday(docs: readonly ParsedDoc[]): StandupEntry[] {
         continue;
       }
 
-      for (const item of collectChecklistItems(section.section)) {
+      for (const item of section.section.checklistItems) {
         if (!item.checked) {
           continue;
         }
@@ -68,14 +135,24 @@ function collectDoneToday(docs: readonly ParsedDoc[]): StandupEntry[] {
           text: item.text,
           doc: doc.file,
           line: item.line,
-          checked: true,
-          at: modifiedAt,
+          completedAt: new Date(modifiedAt).toISOString(),
         });
       }
     }
   }
 
-  return dedupeStandupEntries(results);
+  return dedupeCompletedItems(results);
+}
+
+function filterRecentChanges(changes: readonly FileChange[], since: StandupSince, now: Date): FileChange[] {
+  const maxMinutes = sinceToMaxMinutes(since, now);
+  return changes.filter((change) => {
+    const age = relativeTextToMinutes(change.at);
+    if (age === undefined) {
+      return since === "7d";
+    }
+    return age <= maxMinutes;
+  });
 }
 
 function isTrackedChecklistSection(heading: string): boolean {
@@ -104,15 +181,11 @@ function walkSections(sections: readonly ParsedSection[]): Array<{ section: Pars
   return result;
 }
 
-function collectChecklistItems(section: ParsedSection): ParsedSection["checklistItems"] {
-  return [...section.checklistItems];
-}
-
-function dedupeStandupEntries(entries: readonly StandupEntry[]): StandupEntry[] {
+function dedupeCompletedItems(entries: readonly StandupCompletedItem[]): StandupCompletedItem[] {
   const seen = new Set<string>();
-  const unique: StandupEntry[] = [];
+  const unique: StandupCompletedItem[] = [];
 
-  for (const entry of entries) {
+  for (const entry of [...entries].sort((left, right) => right.completedAt.localeCompare(left.completedAt))) {
     const key = `${entry.doc}:${entry.line ?? 0}:${entry.text}`;
     if (seen.has(key)) {
       continue;
@@ -124,25 +197,66 @@ function dedupeStandupEntries(entries: readonly StandupEntry[]): StandupEntry[] 
   return unique;
 }
 
-function formatEntry(entry: StandupEntry, marker: "x" | " "): string {
-  return `- [${marker}] ${entry.text}${entry.doc ? ` (${entry.doc}${entry.line ? `:${entry.line}` : ""})` : ""}`;
+function formatDate(value: Date): string {
+  return value.toISOString().slice(0, 10);
 }
 
-function formatTask(task: Task, marker: "x" | " "): string {
-  return formatEntry(
-    {
-      text: task.text,
-      doc: task.doc,
-      line: task.line,
-      checked: marker === "x",
-      at: 0,
-    },
-    marker,
-  );
+function getSinceThreshold(since: StandupSince, now: Date): number {
+  const value = new Date(now);
+  value.setHours(0, 0, 0, 0);
+  if (since === "today") {
+    return value.getTime();
+  }
+  if (since === "yesterday") {
+    value.setDate(value.getDate() - 1);
+    return value.getTime();
+  }
+  value.setDate(value.getDate() - 7);
+  return value.getTime();
 }
 
-function startOfToday(): number {
-  const now = new Date();
-  now.setHours(0, 0, 0, 0);
-  return now.getTime();
+function sinceToMaxMinutes(since: StandupSince, now: Date): number {
+  if (since === "7d") {
+    return 7 * 24 * 60;
+  }
+
+  const anchor = new Date(now);
+  anchor.setHours(0, 0, 0, 0);
+  if (since === "yesterday") {
+    anchor.setDate(anchor.getDate() - 1);
+  }
+
+  return Math.max(0, Math.ceil((now.getTime() - anchor.getTime()) / 60000));
+}
+
+function relativeTextToMinutes(value: string): number | undefined {
+  const text = value.trim().toLowerCase();
+  if (!text) {
+    return undefined;
+  }
+  if (text === "just now" || text === "now") {
+    return 0;
+  }
+
+  const short = /^(\d+)\s*([smhd])$/.exec(text);
+  if (short) {
+    const amount = Number(short[1]);
+    const unit = short[2] ?? "";
+    if (unit === "s") return 0;
+    if (unit === "m") return amount;
+    if (unit === "h") return amount * 60;
+    if (unit === "d") return amount * 24 * 60;
+  }
+
+  const long = /^(\d+)\s*(sec|secs|second|seconds|min|mins|minute|minutes|hr|hrs|hour|hours|day|days)\b/.exec(text);
+  if (!long) {
+    return undefined;
+  }
+
+  const amount = Number(long[1]);
+  const unit = long[2] ?? "";
+  if (unit.startsWith("sec")) return 0;
+  if (unit.startsWith("min")) return amount;
+  if (unit.startsWith("h")) return amount * 60;
+  return amount * 24 * 60;
 }

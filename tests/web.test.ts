@@ -22,7 +22,7 @@ describe("web renderers", () => {
     expect(html).toContain('data-config-field="excludes"');
     expect(html).toContain("Startup");
     expect(html).toContain("data-writeback-toggle");
-    expect(html).toContain("Run doctor");
+    expect(html).toContain("Theme");
     expect(html).toContain("likely working");
     expect(html).toContain("heuristic feed");
     expect(html).toContain("source: STATE.md resume note");

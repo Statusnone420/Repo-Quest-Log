@@ -28,7 +28,7 @@ describe("renderDesktopHtml", () => {
     expect(html).toContain("Remember");
     expect(html).toContain("Forget");
     expect(html).toContain("data-writeback-toggle");
-    expect(html).toContain("Run doctor");
+    expect(html).toContain("Theme");
     expect(html).toContain("likely working");
     expect(html).toContain("source: STATE.md resume note");
     expect(html).toContain("desktop-preview.html");
@@ -46,8 +46,8 @@ describe("desktop shell sizing", () => {
       build?: { win?: { target?: string | string[] } };
     };
 
-    expect(source).toContain("width: workArea.width");
-    expect(source).toContain("height: workArea.height");
+    expect(source).toContain("defaultWidth");
+    expect(source).toContain("defaultHeight");
     expect(source).toContain("minWidth: 700");
     expect(source).toContain("minHeight: 560");
     expect(source).toContain("icon: appIconPath()");

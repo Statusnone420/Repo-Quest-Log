@@ -59,6 +59,23 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       --mono: "JetBrains Mono", "SF Mono", ui-monospace, Menlo, Consolas, monospace;
       --sans: Inter, "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
     }
+    [data-theme="slate"] {
+      --bg: #0d1117;
+      --bg-grid: rgba(100,130,180,0.03);
+      --tile: rgba(22,27,34,0.85);
+      --tile-border: rgba(80,110,150,0.18);
+      --accent: #79c0ff;
+      --accent-soft: rgba(121,192,255,0.13);
+    }
+    [data-theme="dim"] {
+      --bg: #12110f;
+      --bg-grid: rgba(180,150,100,0.03);
+      --tile: rgba(26,22,18,0.85);
+      --tile-border: rgba(150,120,80,0.16);
+      --accent: #d2a679;
+      --accent-soft: rgba(210,166,121,0.13);
+      --warn: #c9a85c;
+    }
 
     * { box-sizing: border-box; }
     html, body { margin: 0; width: 100%; height: 100%; background: var(--bg); color: var(--ink); overflow: hidden; }
@@ -270,6 +287,18 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       border-radius: 999px;
       background: var(--faint);
       color: var(--ink);
+    }
+    .theme-swatch {
+      display: inline-block;
+      width: 10px; height: 10px;
+      border-radius: 3px;
+      border: 1px solid transparent;
+      flex-shrink: 0;
+    }
+    .theme-picker button[aria-pressed="true"] {
+      background: rgba(138,180,255,0.14);
+      border-color: rgba(138,180,255,0.5);
+      color: var(--accent);
     }
 
     /* ---- SETTINGS PANEL OVERLAY ---- */
@@ -803,7 +832,7 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       flex: 1.72 1 0;
     }
     .col:nth-child(2) .tile.tight[data-area="changes"] {
-      flex: 0.48 1 0;
+      flex: 0.72 1 0;
     }
 
     .tile {
@@ -1192,20 +1221,11 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
         <span style="color: var(--dim)">· ${escapeHtml(state.lastScan)}</span>
       </div>
       <div class="surface-controls" aria-label="Display controls">
-        <button type="button" data-ui-action="refresh" aria-label="Refresh desktop" title="Refresh desktop">↻</button>
         <span class="label">Size</span>
         <button type="button" data-ui-action="smaller" aria-label="Smaller">A-</button>
         <span data-ui-scale-label>100%</span>
         <button type="button" data-ui-action="larger" aria-label="Larger">A+</button>
-        <span class="label">Density</span>
-        <button type="button" data-ui-density="cozy">Cozy</button>
-        <button type="button" data-ui-density="wide">Wide</button>
-        <button type="button" data-ui-density="compact">Compact</button>
-        <div class="window-controls" aria-label="Window controls">
-          <button type="button" data-window-action="minimize" aria-label="Minimize window" title="Minimize">_</button>
-          <button type="button" data-window-action="maximize" aria-label="Toggle maximize" title="Maximize or restore">□</button>
-          <button type="button" data-window-action="close" aria-label="Close window" title="Close">×</button>
-        </div>
+        <button type="button" data-ui-action="refresh" aria-label="Refresh" title="Refresh (Ctrl+R)">↻</button>
       </div>
     </header>
     ${renderSettingsRack(state, options.liveBridge)}
@@ -1636,22 +1656,12 @@ function renderSettingsRack(state: QuestState, liveBridge?: SurfaceHtmlOptions["
   const openRepoButton = liveBridge === "desktop"
     ? `<button type="button" class="primary" data-ui-action="open-repo" title="Open a repo folder (Ctrl+O)">Open Repo <span class="kbd-inline"><kbd>Ctrl</kbd><kbd>O</kbd></span></button>`
     : "";
-  const standupButton = `<button type="button" data-ui-action="standup-export" title="Copy today's standup export (Ctrl+Shift+C)">Standup <span class="kbd-inline"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>C</kbd></span></button>`;
   return `<section class="settings-rack" aria-label="Settings and shortcuts">
       <div class="settings-card">
         <div class="settings-head">Settings <span class="pill">${writeback}</span></div>
-        <div class="settings-copy">Repo picker and shortcuts live here so the desktop shell stays discoverable without taking over the page.</div>
         <div class="settings-actions">
           <button type="button" data-ui-action="open-settings" title="Open the settings panel">Open Settings</button>
           ${openRepoButton}
-          ${standupButton}
-          <button type="button" data-ui-action="refresh" title="Refresh desktop (Ctrl+R)">Refresh <span class="kbd-inline"><kbd>Ctrl</kbd><kbd>R</kbd></span></button>
-        </div>
-        <div class="settings-chip-row" aria-label="Shortcut reminders">
-          <span class="chiplet"><strong>Ctrl+K</strong> prompt</span>
-          <span class="chiplet"><strong>Ctrl+O</strong> repo</span>
-          <span class="chiplet"><strong>Ctrl+Shift+C</strong> standup</span>
-          <span class="chiplet"><strong>Ctrl+R</strong> refresh</span>
         </div>
       </div>
       <div class="settings-card">
@@ -1671,13 +1681,9 @@ function renderSettingsPanel(state: QuestState, liveBridge?: SurfaceHtmlOptions[
   const configButton = liveBridge === "desktop"
     ? `<button type="button" data-ui-action="open-config">Open .repolog.json</button>`
     : "";
-  const doctorButton = liveBridge === "desktop"
-    ? `<button type="button" data-ui-action="run-doctor">Run doctor</button>`
-    : "";
   const repoButton = liveBridge === "desktop"
     ? `<button type="button" data-ui-action="open-repo">Open Repo</button>`
     : "";
-  const standupButton = `<button type="button" data-ui-action="standup-export">Copy standup</button>`;
 
   return `<div class="settings-overlay" data-settings-panel data-open="false" role="dialog" aria-label="Settings panel">
     <section class="settings-panel">
@@ -1756,8 +1762,13 @@ function renderSettingsPanel(state: QuestState, liveBridge?: SurfaceHtmlOptions[
           <div class="settings-panel-card">
             <div class="head">Write-back <span class="pill">${wbStatus}</span></div>
             <div class="detail">${state.config?.writeback ? "Checkbox toggles are live." : "Add <strong>\"writeback\": true</strong> to <strong>.repolog.json</strong> to enable."}</div>
+            <div class="actions">${configButton}</div>
+          </div>
+          <div class="settings-panel-card">
+            <div class="head">Standup</div>
+            <div class="detail">Copy today's standup export to clipboard.</div>
             <div class="actions">
-              ${configButton}${doctorButton}${standupButton}
+              <button type="button" data-ui-action="standup-export">Copy standup <span class="kbd-inline"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>C</kbd></span></button>
             </div>
           </div>
           <div class="settings-panel-card">
@@ -1773,8 +1784,25 @@ function renderSettingsPanel(state: QuestState, liveBridge?: SurfaceHtmlOptions[
               <button type="button" data-ui-action="forget-startup-root">Forget</button>
             </div>
           </div>
+          <div class="settings-panel-card">
+            <div class="head">Theme</div>
+            <div class="detail">Choose a color scheme for the HUD.</div>
+            <div class="actions theme-picker">
+              <button type="button" data-ui-theme="dark" aria-pressed="false" title="Dark (default)"><span class="theme-swatch" style="background:#0b0d10;border-color:#8ab4ff"></span>Dark</button>
+              <button type="button" data-ui-theme="slate" aria-pressed="false" title="Slate"><span class="theme-swatch" style="background:#0d1117;border-color:#79c0ff"></span>Slate</button>
+              <button type="button" data-ui-theme="dim" aria-pressed="false" title="Dim"><span class="theme-swatch" style="background:#12110f;border-color:#d2a679"></span>Dim</button>
+            </div>
+          </div>
+          <div class="settings-panel-card">
+            <div class="head">Density</div>
+            <div class="detail">Adjust spacing and padding.</div>
+            <div class="actions">
+              <button type="button" data-ui-density="cozy" aria-pressed="false">Cozy</button>
+              <button type="button" data-ui-density="wide" aria-pressed="false">Wide</button>
+              <button type="button" data-ui-density="compact" aria-pressed="false">Compact</button>
+            </div>
+          </div>
         </div>
-        <pre class="settings-panel-report" data-doctor-report hidden></pre>
       </div>
       <div class="settings-panel-footer">
         <span><strong>Ctrl+O</strong> open repo</span>
@@ -1985,9 +2013,8 @@ function renderSettingsScript(): string {
   return `<script>
     (function () {
       var KEY = "repolog-surface-settings";
-      var defaults = { scale: 1.08, density: "cozy" };
+      var defaults = { scale: 1.08, density: "cozy", theme: "dark" };
       var settingsOverlay = document.querySelector("[data-settings-panel]");
-      var doctorReport = document.querySelector("[data-doctor-report]");
       var vscode = typeof acquireVsCodeApi === "function" ? acquireVsCodeApi() : null;
 
       function clamp(value, min, max) { return Math.min(max, Math.max(min, value)); }
@@ -1995,6 +2022,11 @@ function renderSettingsScript(): string {
         if (value === "wide" || value === "spacious") return "wide";
         if (value === "cozy") return "cozy";
         return "compact";
+      }
+      function normalizeTheme(value) {
+        if (value === "slate") return "slate";
+        if (value === "dim") return "dim";
+        return "dark";
       }
       function densityMultiplier(value) {
         if (value === "wide") return 1.1;
@@ -2012,28 +2044,35 @@ function renderSettingsScript(): string {
         try {
           var parsed = JSON.parse(localStorage.getItem(KEY) || "{}");
           var scale = typeof parsed.scale === "number" ? parsed.scale : defaults.scale;
-          return { scale: clamp(scale, 0.92, 1.24), density: normalizeDensity(parsed.density || defaults.density) };
+          return { scale: clamp(scale, 0.92, 1.5), density: normalizeDensity(parsed.density || defaults.density), theme: normalizeTheme(parsed.theme) };
         } catch (_) { return defaults; }
       }
       function save(next) { localStorage.setItem(KEY, JSON.stringify(next)); }
       function apply() {
         var prefs = read();
-        var density = clamp(densityMultiplier(prefs.density) * prefs.scale * viewportMultiplier(), 0.9, 1.28);
+        var density = clamp(densityMultiplier(prefs.density) * prefs.scale * viewportMultiplier(), 0.9, 1.32);
         document.documentElement.dataset.density = prefs.density;
         document.documentElement.style.setProperty("--rql-density", density.toFixed(3));
+        document.documentElement.dataset.theme = prefs.theme || "dark";
         var scaleLabel = document.querySelector("[data-ui-scale-label]");
         if (scaleLabel) scaleLabel.textContent = Math.round(prefs.scale * 100) + "%";
         var densityButtons = document.querySelectorAll("[data-ui-density]");
         for (var i = 0; i < densityButtons.length; i += 1) {
-          var button = densityButtons[i];
-          button.setAttribute("aria-pressed", button.getAttribute("data-ui-density") === prefs.density ? "true" : "false");
+          var btn = densityButtons[i];
+          btn.setAttribute("aria-pressed", btn.getAttribute("data-ui-density") === prefs.density ? "true" : "false");
+        }
+        var themeButtons = document.querySelectorAll("[data-ui-theme]");
+        for (var j = 0; j < themeButtons.length; j += 1) {
+          var tbtn = themeButtons[j];
+          tbtn.setAttribute("aria-pressed", tbtn.getAttribute("data-ui-theme") === (prefs.theme || "dark") ? "true" : "false");
         }
       }
       function update(patch) {
         var current = read();
         var next = {
-          scale: typeof patch.scale === "number" ? clamp(patch.scale, 0.92, 1.24) : current.scale,
+          scale: typeof patch.scale === "number" ? clamp(patch.scale, 0.92, 1.5) : current.scale,
           density: patch.density ? normalizeDensity(patch.density) : current.density,
+          theme: patch.theme ? normalizeTheme(patch.theme) : (current.theme || "dark"),
         };
         save(next);
         apply();
@@ -2204,24 +2243,6 @@ function renderSettingsScript(): string {
               }
               return;
             }
-            if (action === "run-doctor") {
-              if (window.repologDesktop && typeof window.repologDesktop.runDoctor === "function") {
-                window.repologDesktop.runDoctor().then(function (report) {
-                  if (!doctorReport) return;
-                  doctorReport.hidden = false;
-                  doctorReport.setAttribute("data-visible", "true");
-                  doctorReport.textContent = report && report.text ? report.text : "repolog doctor returned no output";
-                  if (window.__rqlToast) {
-                    window.__rqlToast(report && report.hasWarn ? "doctor found warnings" : "doctor is clean");
-                  }
-                }).catch(function () {
-                  if (window.__rqlToast) window.__rqlToast("doctor failed");
-                });
-              } else if (window.__rqlToast) {
-                window.__rqlToast("doctor is only available in the desktop shell");
-              }
-              return;
-            }
             if (action === "standup-export") {
               copyStandup();
               return;
@@ -2272,7 +2293,10 @@ function renderSettingsScript(): string {
             if (action === "larger") update({ scale: prefs.scale + 0.08 });
           }
           if (button.hasAttribute("data-ui-density")) {
-            update({ density: button.getAttribute("data-ui-density") || "wide" });
+            update({ density: button.getAttribute("data-ui-density") || "cozy" });
+          }
+          if (button.hasAttribute("data-ui-theme")) {
+            update({ theme: button.getAttribute("data-ui-theme") || "dark" });
           }
         } catch (error) {
           if (window.__rqlToast) window.__rqlToast("Click handler error: " + String(error).slice(0, 50));

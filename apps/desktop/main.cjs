@@ -52,6 +52,34 @@ function clearLastRoot() {
   }
 }
 
+function windowBoundsFile() {
+  try {
+    return path.join(app.getPath("userData"), "window-bounds.json");
+  } catch {
+    return path.join(repoRoot, ".repolog", "window-bounds.json");
+  }
+}
+
+function readWindowBounds() {
+  try {
+    const raw = fs.readFileSync(windowBoundsFile(), "utf8");
+    const b = JSON.parse(raw);
+    if (b && typeof b.width === "number" && typeof b.height === "number") return b;
+  } catch {
+    // fall through
+  }
+  return null;
+}
+
+function saveWindowBounds(win) {
+  try {
+    const b = win.getBounds();
+    fs.writeFileSync(windowBoundsFile(), JSON.stringify(b), "utf8");
+  } catch {
+    // best-effort only
+  }
+}
+
 function firstRunStateFile() {
   try {
     return path.join(app.getPath("userData"), "first-run-state.json");
@@ -164,9 +192,15 @@ async function importModule(relativePath) {
 
 function createWindow() {
   const workArea = screen.getPrimaryDisplay().workAreaSize;
+  const saved = readWindowBounds();
+  const defaultWidth = Math.min(1280, workArea.width);
+  const defaultHeight = Math.min(800, workArea.height);
+  const bounds = saved
+    ? { width: saved.width, height: saved.height, x: saved.x, y: saved.y }
+    : { width: defaultWidth, height: defaultHeight };
+
   win = new BrowserWindow({
-    width: workArea.width,
-    height: workArea.height,
+    ...bounds,
     minWidth: 700,
     minHeight: 560,
     icon: appIconPath(),
@@ -182,6 +216,9 @@ function createWindow() {
       nodeIntegration: false,
     },
   });
+
+  win.on("resize", () => saveWindowBounds(win));
+  win.on("move", () => saveWindowBounds(win));
 
   win.on("closed", () => {
     if (revealTimer) {

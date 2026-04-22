@@ -9,7 +9,17 @@ owner: claude
 Live "where we are." Update this as work progresses. The normalizer reads this to build the Resume Note.
 
 ## Current Focus
-v0.4 init/config/wizard handlers are back with guarded click handling. The shared renderer now wraps the new init-plan/init-state/init-config, dismiss-wizard, and save-config paths in try/catch, and the build/lint/test/desktop-build gates are green. Remaining v0.4 work can continue from the live tracker.
+UI polish pass complete. Settings rack decluttered, window controls removed from HTML, density/theme controls moved to settings panel, startup size fixed to 1280×800 with bounds persistence. Build/lint/test green (52 tests).
+
+## Last Session — UI polish pass (2026-04-22)
+- **Settings rack**: Removed filler description copy and Ctrl+ chip row; removed Standup button and extra Refresh from the rack. Rack now shows only Open Settings + Open Repo.
+- **Settings panel**: Removed "Run doctor" button (superseded by Tune this repo). Added Standup card, Theme picker (Dark/Slate/Dim), and Density card inside the panel grid.
+- **Topbar**: Removed HTML window controls (minimize/maximize/close) — OS provides them. Removed duplicate ↻ refresh; kept single ↻ at topbar right.
+- **Scale**: Raised cap from 124% to 150%. Density clamp bumped to 1.32.
+- **Theme system**: `[data-theme="slate"]` and `[data-theme="dim"]` CSS overrides on `<html>`. JS reads/saves/applies theme alongside scale+density in `localStorage`.
+- **Recent Changes tile**: flex bumped from 0.48 → 0.72 so it gets more vertical space in the Next column.
+- **Startup window**: `apps/desktop/main.cjs` now defaults to 1280×800 (capped at workArea). Saves/restores `window-bounds.json` in Electron userData on resize/move.
+- **Tests**: Updated 3 stale assertions (`Run doctor` → `Theme`, `workArea.width` → `defaultWidth`). All 52 pass.
 
 ## Last Session — v0.4 handler regression fix & re-handoff (2026-04-22)
 - **Fix completed**: Re-implemented the wizard/config handlers in `src/web/render.ts` with explicit try/catch protection around the new branches and an outer click-listener safety net.

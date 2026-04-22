@@ -1,0 +1,139 @@
+# v0.3 Slice 1 — "Tune this repo" (Doctor++ / Charter mode)
+
+Provide a way for `repolog` to generate exact prompts and templates that agents can use to fix a repository's markdown structure, bringing its legibility to 100%. This is the "Repolog-aware" mode that acts as self-onboarding for a new or messy repo.
+
+## User Review Required
+
+> [!NOTE]
+> Review the coverage meter's weighting and the proposed prompt template structure. Make sure the output formats match your expectations for AI agents (Claude, Codex, Gemini).
+
+## Open Questions
+
+> [!IMPORTANT]
+> 1. In `src/tui/App.tsx`, should the `t` hotkey render the `tuneup` prompt in an entirely new fullscreen `ink` component, or just a dismissible overlay?
+> 2. For the VS Code extension, are we utilizing standard `vscode.window.showInformationMessage` prompts for the 3 action buttons, or should we pass the prompt directly to the webview UI?
+
+## Proposed Changes
+
+---
+
+### Engine
+
+The core logic that computes the "Tuneup" score, identifies gaps, and generates tailored prompts for agents and the repo's charter.
+
+#### [NEW] [tuneup.ts](file:///d:/Repo%20Quest%20Log/src/engine/tuneup.ts)
+Implement the `buildTuneup` pure function.
+- **Signature:** `buildTuneup(state: QuestState, doctorReport: DoctorReport): TuneupResult`
+- **Output Types:**
+  - `TuneupResult`: `{ score: number, gaps: Gap[], prompt: string, charter: string, perAgent: Record<string, string> }`
+  - `Gap`: `{ id: string, severity: 'high'|'med'|'low', file: string, heading: string, fix: string, suggestedMarkdown: string }`
+- **Score Weights:**
+  - `mission`: 15
+  - `objective`: 15
+  - `now-heading`: 15
+  - `agents-owned-areas`: 10 per agent file (max 10)
+  - `state-resume`: 10
+  - `plan-next`: 10
+  - `charter-present`: 10
+  - `frontmatter`: 5
+- **Prompt Generation:** 
+  - Header: Explains Repolog context.
+  - Body: Lists gaps with `suggestedMarkdown`.
+  - Footer: Instructions to apply changes and update `CHARTER.md`.
+- **Charter Generation:**
+  - Contents of `.repolog/CHARTER.md` based on real file structure and agent list.
+  - Standard sections: "This repo uses Repo Quest Log", "Required headings", "Frontmatter conventions", "How agents should update markdown".
+- **Per-Agent Prompts:**
+  - `perAgent`: Keyed by agent ID, references the agent's owned areas from its existing file.
+
+#### [MODIFY] [doctor.ts](file:///d:/Repo%20Quest%20Log/src/engine/doctor.ts)
+Update to invoke `buildTuneup` and include the score and gap count in its JSON return value when requested by the CLI.
+- Ensure `doctorReport` exposes all necessary findings to construct the `Gap` list.
+
+#### [MODIFY] [scan.ts](file:///d:/Repo%20Quest%20Log/src/engine/scan.ts)
+Update scanning logic to detect `.repolog/CHARTER.md`.
+- If found, set `state.config.charterPresent = true`.
+- Modify agent detection to ensure it reads `.repolog/` alongside the root.
+
+#### [MODIFY] [types.ts](file:///d:/Repo%20Quest%20Log/src/engine/types.ts)
+- Add `charterPresent?: boolean` to `RepoConfigSnapshot` (schema v2 additive field).
+
+---
+
+### CLI
+
+Command-line access to the Tuneup functionality.
+
+#### [MODIFY] [index.ts](file:///d:/Repo%20Quest%20Log/src/cli/index.ts)
+- **New Command:** `repolog tuneup [--write-charter] [--copy] [--agent=claude|codex|gemini]`
+  - Prints prompt to stdout.
+  - `--write-charter`: Writes to `.repolog/CHARTER.md`.
+  - `--copy`: Copies prompt to clipboard using `copyTextToClipboard`.
+  - `--agent`: Filters output to the specific `perAgent` string.
+- **Modify `doctor` Command:**
+  - Update `repolog doctor --json` output to include `tuneup: { score, gapCount }`.
+
+---
+
+### Web / Desktop UI
+
+The visual interface for the Tuneup prompt in the Desktop Shell.
+
+#### [MODIFY] [render.ts](file:///d:/Repo%20Quest%20Log/src/web/render.ts)
+Build out the Settings Panel with the "Tune this repo" section.
+- **Coverage Meter:** Horizontal bar indicating health (Accent: ≥80, Warn: 50-79, Red: <50). Include right-aligned monospaced score.
+- **Tune-Up Prompt Textarea:** Read-only, monospace, max-height 40vh, scrollable text area.
+- **Action Buttons:** 
+  - Copy
+  - Write CHARTER.md
+  - Preview Gaps (expands inline list)
+  - Send to Claude / Send to Codex / Send to Gemini
+- **Behavior:** Wire up button clicks to execute standard toast notifications and copy-to-clipboard functionality.
+
+---
+
+### VS Code Extension
+
+Integration with the VS Code extension shell.
+
+#### [MODIFY] [extension.js](file:///d:/Repo%20Quest%20Log/extensions/vscode/extension.js)
+- **Command Registration:** Register `repolog.tuneup`.
+- **Command Action:** Opens the command palette (or quick pick) with the three action buttons (Copy / Write CHARTER / Preview Gaps) and Agent handoff buttons. Reuses existing webview.
+
+---
+
+### TUI
+
+Terminal User Interface integration.
+
+#### [MODIFY] [App.tsx](file:///d:/Repo%20Quest%20Log/src/tui/App.tsx)
+- **Hotkey:** Add `t` to trigger tuneup.
+- **Render State:** Add an alternate screen buffer or overlay view using Ink components to print the tuneup prompt.
+- **Exit:** `q` returns to the main watcher screen.
+- *(No copy-to-clipboard button required for TUI)*
+
+---
+
+### Tests
+
+Vitest suite to ensure deterministic generation.
+
+#### [NEW] [tuneup.test.ts](file:///d:/Repo%20Quest%20Log/tests/tuneup.test.ts)
+- Test pristine fixture returns score `100`.
+- Test missing `## Objective` returns appropriate gap and `suggestedMarkdown`.
+- Test per-agent prompt generation includes owned areas.
+- Test `CHARTER.md` generation is deterministic.
+
+## Verification Plan
+
+### Automated Tests
+- Run `npm test tests/tuneup.test.ts`
+- Run `npm run lint`
+
+### Manual Verification
+1. Run `repolog doctor --json` and ensure tuneup scores appear.
+2. Run `repolog tuneup` on a broken repo and inspect the printed prompt.
+3. Open the desktop app/settings and view the coverage meter, preview gaps, and copy prompt.
+4. Press `t` in `repolog watch` TUI and verify alternate buffer renders.
+5. In VS Code, run the `repolog.tuneup` command and verify options exist.
+6. Verify `.repolog/CHARTER.md` triggers `charterPresent = true` when scanned.

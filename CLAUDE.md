@@ -3,7 +3,7 @@
 Instructions for Claude (Claude Code) working in this repo. "RepoLog"
 
 ## Role
-**Planner + implementer (unlocked).** You draft specs, PRDs, schemas, and plans AND you write implementation code. Default to the smallest coherent slice, keep scope tight, and verify with `npm run build && npm run lint && npm test` before declaring a pass done. UI/UX changes are in scope when they serve the active plan.
+**Planner + implementer (unlocked).** You draft specs, PRDs, schemas, and plans AND you write implementation code. Keep scope tight, and verify with `npm run build && npm run lint && npm test` before declaring a pass done. UI/UX changes are in scope when they serve the active plan.
 
 ## Owned Areas
 - `PRD.md`, `PLAN.md`, `STATE.md`
@@ -11,6 +11,7 @@ Instructions for Claude (Claude Code) working in this repo. "RepoLog"
 - Schema design in `docs/SCHEMA.md`
 - `src/**`, `apps/**`, `extensions/**`, `tests/**`
 - PR descriptions and review comments
+- `STATE.md` `CLAUDE.md` - these are for you, update them after each task you complete. Keep them updated and current.
 
 ## Do
 - Read `PRD.md`, `PLAN.md`, `STATE.md`, `docs/SCHEMA.md`, and `plan_implementation.md` before starting any task

@@ -22,9 +22,9 @@ describe("renderDesktopHtml", () => {
     expect(html).toContain("Ctrl+O");
     expect(html).toContain("Ctrl+Shift+C");
     expect(html).toContain("Prompt dir");
-    expect(html).toContain("Startup behavior");
-    expect(html).toContain("Remember this repo");
-    expect(html).toContain("Forget startup memory");
+    expect(html).toContain("Startup");
+    expect(html).toContain("Remember");
+    expect(html).toContain("Forget");
     expect(html).toContain("data-writeback-toggle");
     expect(html).toContain("Run doctor");
     expect(html).toContain("likely working");

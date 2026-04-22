@@ -3,9 +3,9 @@
 Live "where we are." Update this as work progresses. The normalizer reads this to build the Resume Note.
 
 ## Current Focus
-v0.3 Slice 1 — "Tune this repo" — is complete. `repolog tuneup` CLI, desktop Settings panel, TUI overlay, VS Code command, and `buildTuneup` engine are all wired and green.
+v0.3 Slice 1 complete + Settings panel redesigned. Scrollable body, fixed head/footer, tuneup card first, compressed settings cards, legend removed. 42 tests green.
 
-## Last Session — v0.3 Tuneup slice (2026-04-22)
+## Last Session — v0.3 Tuneup + Settings redesign (2026-04-22)
 - **`src/engine/tuneup.ts`** (NEW): `buildTuneup(state, doctorReport): TuneupResult`. Score weights: mission(15) + objective(15) + now-heading(15) + agents-owned-areas(10) + state-resume(10) + plan-next(10) + charter-present(15) + frontmatter(10) = 100. Generates per-repo prompt, CHARTER.md contents, and per-agent prompts.
 - **`src/engine/types.ts`**: Added `charterPresent?` and `hasFrontmatter?` to `RepoConfigSnapshot`.
 - **`src/engine/scan.ts`**: Detects `.repolog/CHARTER.md` and parsed doc frontmatter; sets both fields on config snapshot.
@@ -34,7 +34,7 @@ v0.3 Slice 1 — "Tune this repo" — is complete. `repolog tuneup` CLI, desktop
 - `npm run build`, `npm run lint`, `npm test` all green (30 tests, 13 files).
 
 ## Resume Note
-> v0.3 Slice 1 complete. `repolog tuneup` CLI, `buildTuneup` engine (score/gaps/prompt/charter/perAgent), desktop Settings "Tune this repo" card, TUI `t` overlay, VS Code `repoQuestLog.tuneup` command, and full test suite landed. 42 tests green. Next: v0.3 remaining slices or release.
+> v0.3 Slice 1 complete + Settings panel redesigned: scrollable body with fixed head/footer, tuneup card promoted to top, settings cards compressed, legend removed. Test labels updated to match new copy. 42 tests green. Next: v0.3+ items or release.
 
 Last touched: `STATE.md`
 

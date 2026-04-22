@@ -286,24 +286,38 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     }
     .settings-overlay[data-open="true"] { display: flex; }
     .settings-panel {
-      width: min(920px, 96vw);
-      max-height: 84vh;
-      overflow: hidden;
+      width: min(960px, 96vw);
+      max-height: 88vh;
       display: flex;
       flex-direction: column;
-      gap: 14px;
-      padding: 16px;
+      padding: 0;
       border-radius: 16px;
       border: 1px solid var(--tile-border-hot);
       background: rgba(15,18,24,0.98);
       box-shadow: 0 34px 90px -18px rgba(0,0,0,0.72);
+      overflow: hidden;
     }
     .settings-panel-head {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 12px;
+      padding: 13px 16px 11px;
+      border-bottom: 1px solid var(--tile-border);
+      flex-shrink: 0;
     }
+    .settings-panel-body {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .settings-panel-body::-webkit-scrollbar { width: 6px; }
+    .settings-panel-body::-webkit-scrollbar-thumb { background: var(--faint); border-radius: 3px; }
+    .settings-panel-body::-webkit-scrollbar-thumb:hover { background: var(--dim); }
     .settings-panel-title {
       display: flex;
       align-items: baseline;
@@ -335,59 +349,59 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     .settings-panel-grid {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 12px;
-      min-height: 0;
-      overflow: hidden;
+      gap: 8px;
     }
     .settings-panel-card {
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 6px;
       min-width: 0;
-      min-height: 0;
-      padding: 14px;
-      border-radius: 12px;
+      padding: 10px 12px;
+      border-radius: 10px;
       border: 1px solid var(--tile-border);
       background: rgba(255,255,255,0.02);
     }
     .settings-panel-card .head {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      gap: 8px;
+      gap: 7px;
       font-family: var(--mono);
       font-size: var(--tiny-size);
       letter-spacing: 1.2px;
       text-transform: uppercase;
       color: var(--muted);
     }
-    .settings-panel-card .value {
-      font-family: var(--sans);
-      font-size: var(--headline-size);
-      line-height: 1.3;
-      color: var(--ink);
+    .settings-panel-card .head .pill {
+      padding: 0px 6px; border-radius: 999px;
+      background: var(--faint); color: var(--ink);
+      letter-spacing: 0.4px; font-size: 9px; text-transform: none;
     }
     .settings-panel-card .detail {
       font-family: var(--mono);
-      font-size: var(--small-size);
-      line-height: 1.45;
-      color: var(--muted);
+      font-size: var(--tiny-size);
+      line-height: 1.4;
+      color: var(--dim);
+      overflow: hidden; text-overflow: ellipsis;
+      white-space: nowrap;
     }
+    .settings-panel-card .detail strong { color: var(--muted); font-weight: 500; }
     .settings-panel-card .actions {
       display: flex;
       flex-wrap: wrap;
-      gap: 8px;
-      margin-top: auto;
+      gap: 5px;
+      margin-top: 3px;
     }
     .settings-panel-card .actions button {
       appearance: none;
       border: 1px solid var(--tile-border);
       background: rgba(255,255,255,0.02);
-      color: var(--ink);
-      border-radius: 7px;
-      padding: 5px 10px;
+      color: var(--muted);
+      border-radius: 6px;
+      padding: 3px 8px;
       cursor: pointer;
       font: inherit;
+      font-family: var(--mono);
+      font-size: var(--tiny-size);
     }
     .settings-panel-card .actions button:hover { border-color: rgba(138,180,255,0.42); color: var(--accent); }
     .settings-panel-footer {
@@ -398,7 +412,8 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       font-size: var(--tiny-size);
       color: var(--dim);
       border-top: 1px solid var(--tile-border);
-      padding-top: 10px;
+      padding: 10px 16px 12px;
+      flex-shrink: 0;
     }
     .settings-panel-report {
       margin: 0;
@@ -420,14 +435,13 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
 
     /* ---- TUNEUP CARD ---- */
     .tuneup-card {
-      grid-column: 1 / -1;
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 10px;
       padding: 14px;
       border-radius: 12px;
-      border: 1px solid var(--tile-border);
-      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(138,180,255,0.16);
+      background: rgba(138,180,255,0.03);
       min-width: 0;
     }
     .tuneup-head {
@@ -470,17 +484,19 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     .tuneup-prompt-area {
       font-family: var(--mono);
       font-size: var(--tiny-size);
-      line-height: 1.5;
-      color: var(--muted);
-      background: rgba(255,255,255,0.02);
+      line-height: 1.55;
+      color: var(--ink);
+      background: rgba(0,0,0,0.28);
       border: 1px solid var(--tile-border);
       border-radius: 8px;
-      padding: 10px 12px;
-      max-height: 40vh;
+      padding: 12px 14px;
+      height: 28vh;
+      min-height: 140px;
       overflow-y: auto;
       white-space: pre-wrap;
       overflow-wrap: anywhere;
-      resize: none;
+      resize: vertical;
+      width: 100%;
       display: none;
     }
     .tuneup-prompt-area[data-visible="true"] { display: block; }
@@ -1592,9 +1608,8 @@ function renderSettingsRack(state: QuestState, liveBridge?: SurfaceHtmlOptions["
 }
 
 function renderSettingsPanel(state: QuestState, liveBridge?: SurfaceHtmlOptions["liveBridge"]): string {
-  const writeback = state.config?.writeback ? "enabled" : "off by default";
+  const wbStatus = state.config?.writeback ? "on" : "off";
   const promptDir = state.config?.prompts?.dir?.trim() || "~/.repolog/prompts";
-  const startup = "Desktop opens the last repo automatically and keeps the current root in Electron userData.";
   const configButton = liveBridge === "desktop"
     ? `<button type="button" data-ui-action="open-config">Open .repolog.json</button>`
     : "";
@@ -1602,89 +1617,76 @@ function renderSettingsPanel(state: QuestState, liveBridge?: SurfaceHtmlOptions[
     ? `<button type="button" data-ui-action="run-doctor">Run doctor</button>`
     : "";
   const repoButton = liveBridge === "desktop"
-    ? `<button type="button" class="primary" data-ui-action="open-repo">Open Repo</button>`
+    ? `<button type="button" data-ui-action="open-repo">Open Repo</button>`
     : "";
-  const standupButton = `<button type="button" data-ui-action="standup-export">Copy standup export</button>`;
-    return `<div class="settings-overlay" data-settings-panel data-open="false" role="dialog" aria-label="Settings panel">
-      <section class="settings-panel">
-        <div class="settings-panel-head">
-          <div class="settings-panel-title"><strong>Settings</strong><span>write-back, prompt dir, startup</span></div>
-          <button type="button" class="settings-panel-close" data-ui-action="close-settings">Close</button>
-        </div>
-        <div class="settings-panel-grid">
-          <div class="settings-panel-card">
-            <div class="head">Write-back <span class="pill">${writeback}</span></div>
-            <div class="value">Checkbox toggles only.</div>
-            <div class="detail">${state.config?.writeback ? "Write-back is currently enabled in .repolog.json." : "Write-back is disabled until .repolog.json sets \"writeback\": true."}</div>
-            <div class="detail">Editable: checkbox state in <strong>Now</strong>, <strong>Next</strong>, and <strong>Blocked</strong> only. Mission, objective, agents, decisions, and recent changes are read-only.</div>
-            <div class="actions">
-              ${configButton}
-              ${doctorButton}
-              ${standupButton}
-            </div>
-          </div>
-          <div class="settings-panel-card">
-            <div class="head">Prompt dir</div>
-            <div class="value">${escapeHtml(promptDir)}</div>
-            <div class="detail">Prompt precedence is built-ins, then user overrides, then repo overrides in <code>.repolog/prompts</code>.</div>
-            <div class="actions">
-              ${repoButton}
-            </div>
-          </div>
-          <div class="settings-panel-card">
-            <div class="head">Startup behavior</div>
-            <div class="value">Remembers your last repo.</div>
-            <div class="detail">${escapeHtml(startup)} Use the buttons below to save or clear that memory. This only stores the repo path in Electron userData.</div>
-            <div class="actions">
-              <button type="button" data-ui-action="remember-startup-root">Remember this repo</button>
-              <button type="button" data-ui-action="forget-startup-root">Forget startup memory</button>
-            </div>
-          </div>
-        </div>
+  const standupButton = `<button type="button" data-ui-action="standup-export">Copy standup</button>`;
+
+  return `<div class="settings-overlay" data-settings-panel data-open="false" role="dialog" aria-label="Settings panel">
+    <section class="settings-panel">
+      <div class="settings-panel-head">
+        <div class="settings-panel-title"><strong>Settings</strong></div>
+        <button type="button" class="settings-panel-close" data-ui-action="close-settings">Close</button>
+      </div>
+      <div class="settings-panel-body">
         <div class="tuneup-card" data-tuneup-card>
           <div class="tuneup-head">
             <span>Tune this repo</span>
-            <button type="button" data-tuneup-action="generate" class="primary" style="text-transform:none;letter-spacing:0">Analyze</button>
+            <div style="display:flex;align-items:center;gap:10px">
+              <div class="tuneup-meter-wrap" data-tuneup-meter-wrap style="min-width:160px">
+                <div class="tuneup-meter"><div class="tuneup-meter-fill" data-tuneup-fill style="width:0%"></div></div>
+                <span class="tuneup-score" data-tuneup-score>—/100</span>
+              </div>
+              <button type="button" data-tuneup-action="generate" style="appearance:none;border:1px solid rgba(138,180,255,0.32);background:rgba(138,180,255,0.08);color:var(--accent);border-radius:7px;padding:4px 12px;cursor:pointer;font:inherit;font-family:var(--mono);font-size:var(--tiny-size)">Analyze</button>
+            </div>
           </div>
-          <div class="tuneup-meter-wrap" data-tuneup-meter-wrap hidden>
-            <div class="tuneup-meter"><div class="tuneup-meter-fill" data-tuneup-fill style="width:0%"></div></div>
-            <span class="tuneup-score" data-tuneup-score>—/100</span>
+          <div class="tuneup-placeholder" data-tuneup-placeholder style="font-family:var(--mono);font-size:var(--tiny-size);color:var(--dim)">
+            Click <strong style="color:var(--muted)">Analyze</strong> to score this repo's RepoLog legibility and generate a targeted fix prompt for Claude, Codex, or Gemini.
           </div>
-          <div class="tuneup-placeholder" data-tuneup-placeholder>
-            Click <strong>Analyze</strong> to score this repo's RepoLog legibility and generate a fix prompt.
-          </div>
-          <textarea class="tuneup-prompt-area" data-tuneup-prompt readonly aria-label="Tuneup prompt"></textarea>
+          <textarea class="tuneup-prompt-area" data-tuneup-prompt readonly aria-label="Tuneup prompt" spellcheck="false"></textarea>
           <div class="tuneup-gaps" data-tuneup-gaps aria-label="Gap list"></div>
           <div class="tuneup-actions" data-tuneup-actions hidden>
             <button type="button" data-tuneup-action="copy">Copy prompt</button>
             <button type="button" data-tuneup-action="write-charter">Write CHARTER.md</button>
             <button type="button" data-tuneup-action="preview-gaps">Preview gaps</button>
             <span class="sep"></span>
-            <button type="button" data-tuneup-action="send-claude">Send to Claude</button>
-            <button type="button" data-tuneup-action="send-codex">Send to Codex</button>
-            <button type="button" data-tuneup-action="send-gemini">Send to Gemini</button>
+            <button type="button" data-tuneup-action="send-claude">→ Claude</button>
+            <button type="button" data-tuneup-action="send-codex">→ Codex</button>
+            <button type="button" data-tuneup-action="send-gemini">→ Gemini</button>
           </div>
         </div>
-        <div class="settings-panel-legend" aria-label="Data legend">
-          <div><strong>Mission</strong> comes from <strong>PLAN.md</strong> or <strong>README.md</strong>.</div>
-          <div><strong>Objective</strong> comes from the current objective section in <strong>PLAN.md</strong>.</div>
-          <div><strong>Current focus</strong> comes from <strong>STATE.md</strong> and the resume note.</div>
-          <div><strong>Agents</strong> are heuristic: agent files plus recent file mtimes and owned areas.</div>
-          <div><strong>Decisions</strong> come from the decisions block in <strong>STATE.md</strong>.</div>
-          <div><strong>Recent changes</strong> come from the file watcher and git diff summaries.</div>
-          <div><strong>Write-back</strong> edits only checkbox state in <strong>Now</strong>, <strong>Next</strong>, and <strong>Blocked</strong>.</div>
-          <div><strong>Read-only</strong> surfaces include mission, objective, agents, decisions, and recent changes.</div>
-        </div>
-        <div class="settings-panel-footer">
-          <span><strong>Ctrl+O</strong> open repo</span>
-          <span><strong>Ctrl+K</strong> copy prompt</span>
-          <span><strong>Ctrl+Shift+C</strong> standup export</span>
-          <span><strong>Ctrl+R</strong> refresh scan</span>
+        <div class="settings-panel-grid">
+          <div class="settings-panel-card">
+            <div class="head">Write-back <span class="pill">${wbStatus}</span></div>
+            <div class="detail">${state.config?.writeback ? "Checkbox toggles are live." : "Add <strong>\"writeback\": true</strong> to <strong>.repolog.json</strong> to enable."}</div>
+            <div class="actions">
+              ${configButton}${doctorButton}${standupButton}
+            </div>
+          </div>
+          <div class="settings-panel-card">
+            <div class="head">Prompt dir</div>
+            <div class="detail" title="${escapeHtml(promptDir)}">${escapeHtml(promptDir)}</div>
+            <div class="actions">${repoButton}</div>
+          </div>
+          <div class="settings-panel-card">
+            <div class="head">Startup</div>
+            <div class="detail">Remembers last repo in Electron userData.</div>
+            <div class="actions">
+              <button type="button" data-ui-action="remember-startup-root">Remember</button>
+              <button type="button" data-ui-action="forget-startup-root">Forget</button>
+            </div>
+          </div>
         </div>
         <pre class="settings-panel-report" data-doctor-report hidden></pre>
-      </section>
-    </div>`;
-  }
+      </div>
+      <div class="settings-panel-footer">
+        <span><strong>Ctrl+O</strong> open repo</span>
+        <span><strong>Ctrl+K</strong> prompt palette</span>
+        <span><strong>Ctrl+Shift+C</strong> standup</span>
+        <span><strong>Ctrl+R</strong> refresh</span>
+      </div>
+    </section>
+  </div>`;
+}
 
   function renderConfidenceLabel(confidence: number): string {
     const c = Math.max(0, Math.min(1, confidence));

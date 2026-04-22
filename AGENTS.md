@@ -35,8 +35,8 @@ Instructions for any coding agent working in this repo (Codex, generic agents, C
 - Must pass the vitest suite
 - Prefer standard-library solutions over dependencies
 
-## Objective
-Implement Co-Pilot v0.4 (Phases 1–4): multi-provider LLM integration with zero-friction auth discovery, chat interfaces (CLI + Electron), and automated MD fixing. Execute `plan_implementation.md` top-to-bottom. Nail the provider abstraction and prompt engineering so all LLM services work seamlessly.
+## Current Objective
+Keep the CLI, desktop app, and VS Code extension on one shared `QuestState` and one design-faithful renderer.
 
 ## Last Task
-v0.3 complete: tuneup engine + settings panel redesign + charter generation. Now: Co-Pilot foundation (provider abstraction + token discovery) — see `plan_implementation.md` for full breakdown.
+Desktop shell hardening landed: packaged rebuild works, click-to-open works in desktop, archive/exclude filtering is live, and the current push is TUI visual parity plus root-doc sync.

@@ -40,9 +40,9 @@ v0.3 Slice 1 complete + Settings panel redesigned. Scrollable body, fixed head/f
 - `npm run build`, `npm run lint`, `npm test` all green (30 tests, 13 files).
 
 ## Resume Note
-> Handoff complete: Codex now owns Co-Pilot implementation (plan_implementation.md, 38h, 4 phases). Multi-provider LLM abstraction (Anthropic, OpenAI, Google, Ollama) with zero-friction token discovery from user's machine. Chat modes (CLI + Electron). Ownership: AGENTS.md Objective updated. PLAN.md Now/Next scoped to Codex for rest of day. 42 tests green, doctor all-clear.
+> RepoLog tuneup + Objective sync: legibility 65→100. Added active Now/Next to PLAN.md; updated PLAN.md Objective to v0.3/v0.4 reality; renamed CLAUDE.md's "Current Objective" to "Objective"; added Objective to GEMINI.md. Added Objective Sync Rule to PLAN.md: agent objectives must align with repo objective. 42 tests green, doctor all-clear. HUD now reflects current state.
 
-Last touched: `plan_implementation.md`, `PLAN.md`, `AGENTS.md`, `STATE.md`
+Last touched: `STATE.md`
 
 ## Recent Decisions
 - 2026-04-21 — `repolog doctor` is the trust layer for messy repos: it explains *why* state looks sparse and which exact heading to add. The CLI exits 1 when any warn-level finding fires, so CI can gate on it.

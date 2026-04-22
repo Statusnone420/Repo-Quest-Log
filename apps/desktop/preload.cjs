@@ -31,6 +31,9 @@ contextBridge.exposeInMainWorld("repologDesktop", {
   toggleChecklist(doc, line, text, checked) {
     return ipcRenderer.invoke("repolog:toggle-checklist", { doc, line, text, checked });
   },
+  runDoctor() {
+    return ipcRenderer.invoke("repolog:run-doctor");
+  },
   windowAction(action) {
     ipcRenderer.send("repolog:window-action", action);
   },

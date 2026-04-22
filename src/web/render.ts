@@ -392,6 +392,23 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       border-top: 1px solid var(--tile-border);
       padding-top: 10px;
     }
+    .settings-panel-report {
+      margin: 0;
+      display: none;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      font-family: var(--mono);
+      font-size: var(--tiny-size);
+      line-height: 1.45;
+      color: var(--muted);
+      max-height: 18vh;
+      overflow: auto;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--tile-border);
+      background: rgba(255,255,255,0.02);
+    }
+    .settings-panel-report[data-visible="true"] { display: block; }
     .settings-panel-legend {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -575,6 +592,12 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     .col {
       display: flex; flex-direction: column; gap: var(--tile-gap);
       min-height: 0; min-width: 0;
+    }
+    .col:nth-child(2) .tile[data-area="next"] {
+      flex: 1.4 1 0;
+    }
+    .col:nth-child(2) .tile.tight[data-area="changes"] {
+      flex: 0.68 1 0;
     }
 
     .tile {
@@ -1364,7 +1387,7 @@ function renderBlockedTile(tasks: BlockedTask[], writebackEnabled: boolean, live
               ${renderAgentChip(agent.id)}
               <span class="agent-name">${escapeHtml(agent.name)}</span>
               <span class="agent-role">${escapeHtml(agent.role)}</span>
-              <span class="agent-status ${escapeHtml(status)}" data-pulse="${pulse ? "true" : "false"}" data-agent-id="${escapeHtml(agent.id)}" data-last-task="${escapeHtml(lastTask)}"><span class="dot"></span>${escapeHtml(status)}</span>
+              <span class="agent-status ${escapeHtml(status)}" title="Heuristic status from file activity, not live presence" data-pulse="${pulse ? "true" : "false"}" data-agent-id="${escapeHtml(agent.id)}" data-last-task="${escapeHtml(lastTask)}"><span class="dot"></span>${escapeHtml(renderAgentStatusLabel(status))}</span>
             </div>
             <div class="agent-objective">${escapeHtml(agent.objective)}</div>
             <div class="agent-meta">${escapeHtml(agent.file)} · ${escapeHtml(agent.area)}</div>
@@ -1428,16 +1451,19 @@ function renderSettingsRack(state: QuestState, liveBridge?: SurfaceHtmlOptions["
     </section>`;
 }
 
-  function renderSettingsPanel(state: QuestState, liveBridge?: SurfaceHtmlOptions["liveBridge"]): string {
-    const writeback = state.config?.writeback ? "enabled" : "off by default";
-    const promptDir = state.config?.prompts?.dir?.trim() || "~/.repolog/prompts";
-    const startup = "Desktop opens the last repo automatically and keeps the current root in Electron userData.";
-    const configButton = liveBridge === "desktop"
-      ? `<button type="button" data-ui-action="open-config">Open .repolog.json</button>`
-      : "";
-    const repoButton = liveBridge === "desktop"
-      ? `<button type="button" class="primary" data-ui-action="open-repo">Open Repo</button>`
-      : "";
+function renderSettingsPanel(state: QuestState, liveBridge?: SurfaceHtmlOptions["liveBridge"]): string {
+  const writeback = state.config?.writeback ? "enabled" : "off by default";
+  const promptDir = state.config?.prompts?.dir?.trim() || "~/.repolog/prompts";
+  const startup = "Desktop opens the last repo automatically and keeps the current root in Electron userData.";
+  const configButton = liveBridge === "desktop"
+    ? `<button type="button" data-ui-action="open-config">Open .repolog.json</button>`
+    : "";
+  const doctorButton = liveBridge === "desktop"
+    ? `<button type="button" data-ui-action="run-doctor">Run doctor</button>`
+    : "";
+  const repoButton = liveBridge === "desktop"
+    ? `<button type="button" class="primary" data-ui-action="open-repo">Open Repo</button>`
+    : "";
     return `<div class="settings-overlay" data-settings-panel data-open="false" role="dialog" aria-label="Settings panel">
       <section class="settings-panel">
         <div class="settings-panel-head">
@@ -1452,6 +1478,7 @@ function renderSettingsRack(state: QuestState, liveBridge?: SurfaceHtmlOptions["
             <div class="detail">Editable: checkbox state in <strong>Now</strong>, <strong>Next</strong>, and <strong>Blocked</strong> only. Mission, objective, agents, decisions, and recent changes are read-only.</div>
             <div class="actions">
               ${configButton}
+              ${doctorButton}
             </div>
           </div>
           <div class="settings-panel-card">
@@ -1487,6 +1514,7 @@ function renderSettingsRack(state: QuestState, liveBridge?: SurfaceHtmlOptions["
           <span><strong>Ctrl+K</strong> copy prompt</span>
           <span><strong>Ctrl+R</strong> refresh scan</span>
         </div>
+        <pre class="settings-panel-report" data-doctor-report hidden></pre>
       </section>
     </div>`;
   }
@@ -1689,6 +1717,7 @@ function renderSettingsScript(): string {
       var KEY = "repolog-surface-settings";
       var defaults = { scale: 1.08, density: "cozy" };
       var settingsOverlay = document.querySelector("[data-settings-panel]");
+      var doctorReport = document.querySelector("[data-doctor-report]");
 
       function clamp(value, min, max) { return Math.min(max, Math.max(min, value)); }
       function normalizeDensity(value) {
@@ -1808,6 +1837,24 @@ function renderSettingsScript(): string {
               window.repologDesktop.openDoc(".repolog.json", 1);
             } else if (window.__rqlToast) {
               window.__rqlToast("settings config is only available in the desktop shell");
+            }
+            return;
+          }
+          if (action === "run-doctor") {
+            if (window.repologDesktop && typeof window.repologDesktop.runDoctor === "function") {
+              window.repologDesktop.runDoctor().then(function (report) {
+                if (!doctorReport) return;
+                doctorReport.hidden = false;
+                doctorReport.setAttribute("data-visible", "true");
+                doctorReport.textContent = report && report.text ? report.text : "repolog doctor returned no output";
+                if (window.__rqlToast) {
+                  window.__rqlToast(report && report.hasWarn ? "doctor found warnings" : "doctor is clean");
+                }
+              }).catch(function () {
+                if (window.__rqlToast) window.__rqlToast("doctor failed");
+              });
+            } else if (window.__rqlToast) {
+              window.__rqlToast("doctor is only available in the desktop shell");
             }
             return;
           }
@@ -2211,23 +2258,29 @@ function isEmptyRepo(state: QuestState): boolean {
   function resolveAgentStatus(agent: AgentProfile, activity: readonly { agent: string; file: string; at: string; confidence: number }[]): string {
     const entry = latestAgentActivity(agent.id, activity);
     if (!entry) {
-      return agent.status;
+      return "idle";
     }
 
     if (isResumeFresh(entry.at) || entry.confidence >= 0.84) {
       return "working";
     }
 
-    if (entry.confidence >= 0.5) {
+    if (entry.confidence >= 0.55 && !isOlderThan(entry.at, 180)) {
       return "active";
     }
 
-    return agent.status;
+    return "idle";
   }
 
   function resolveAgentTask(agent: AgentProfile, activity: readonly { agent: string; file: string; at: string; confidence: number }[]): string {
     const entry = latestAgentActivity(agent.id, activity);
     return entry ? `${entry.file} · ${entry.at}` : (agent.lastTask ?? "");
+  }
+
+  function renderAgentStatusLabel(status: string): string {
+    if (status === "working") return "likely working";
+    if (status === "active") return "likely active";
+    return "idle";
   }
 
   function isResumeFresh(since: string): boolean {
@@ -2242,6 +2295,33 @@ function isEmptyRepo(state: QuestState): boolean {
   if (unit.startsWith("m") && !unit.startsWith("h")) return n < 2;
   return false;
 }
+
+  function isOlderThan(since: string, minutes: number): boolean {
+    const age = relativeMinutes(since);
+    return typeof age === "number" ? age > minutes : true;
+  }
+
+  function relativeMinutes(since: string): number | undefined {
+    const s = since.trim().toLowerCase();
+    if (!s) return undefined;
+    if (s === "just now" || s === "now") return 0;
+    const shorthand = /^(\d+)\s*([mhd])/.exec(s);
+    if (shorthand) {
+      const n = Number(shorthand[1]);
+      const unit = shorthand[2];
+      if (unit === "m") return n;
+      if (unit === "h") return n * 60;
+      if (unit === "d") return n * 24 * 60;
+    }
+    const word = /^(\d+)\s*(min|mins|minute|minutes|hour|hours|day|days)\b/.exec(s);
+    if (!word) return undefined;
+    const n = Number(word[1]);
+    const unit = word[2] ?? "";
+    if (unit.startsWith("min")) return n;
+    if (unit.startsWith("hour")) return n * 60;
+    if (unit.startsWith("day")) return n * 24 * 60;
+    return undefined;
+  }
 
 function escapeForScriptJson(value: string): string {
   return value.replace(/</g, "\\u003c").replace(/>/g, "\\u003e").replace(/&/g, "\\u0026");

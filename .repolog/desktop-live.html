@@ -369,6 +369,23 @@
       border-top: 1px solid var(--tile-border);
       padding-top: 10px;
     }
+    .settings-panel-report {
+      margin: 0;
+      display: none;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      font-family: var(--mono);
+      font-size: var(--tiny-size);
+      line-height: 1.45;
+      color: var(--muted);
+      max-height: 18vh;
+      overflow: auto;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--tile-border);
+      background: rgba(255,255,255,0.02);
+    }
+    .settings-panel-report[data-visible="true"] { display: block; }
     .settings-panel-legend {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -552,6 +569,12 @@
     .col {
       display: flex; flex-direction: column; gap: var(--tile-gap);
       min-height: 0; min-width: 0;
+    }
+    .col:nth-child(2) .tile[data-area="next"] {
+      flex: 1.4 1 0;
+    }
+    .col:nth-child(2) .tile.tight[data-area="changes"] {
+      flex: 0.68 1 0;
     }
 
     .tile {
@@ -936,7 +959,7 @@
       <div class="watch-meta">
         <span class="dot"></span>
         <span>7 files</span>
-        <span style="color: var(--dim)">· 2026-04-22T02:12:19.281Z</span>
+        <span style="color: var(--dim)">· 2026-04-22T02:24:01.192Z</span>
       </div>
       <div class="surface-controls" aria-label="Display controls">
         <button type="button" data-ui-action="refresh" aria-label="Refresh desktop" title="Refresh desktop">↻</button>
@@ -990,6 +1013,7 @@
             <div class="detail">Editable: checkbox state in <strong>Now</strong>, <strong>Next</strong>, and <strong>Blocked</strong> only. Mission, objective, agents, decisions, and recent changes are read-only.</div>
             <div class="actions">
               <button type="button" data-ui-action="open-config">Open .repolog.json</button>
+              <button type="button" data-ui-action="run-doctor">Run doctor</button>
             </div>
           </div>
           <div class="settings-panel-card">
@@ -1025,6 +1049,7 @@
           <span><strong>Ctrl+K</strong> copy prompt</span>
           <span><strong>Ctrl+R</strong> refresh scan</span>
         </div>
+        <pre class="settings-panel-report" data-doctor-report hidden></pre>
       </section>
     </div>
     
@@ -1072,7 +1097,7 @@ Please read plan_implementation.md and let&#39;s continue." title="Copy resume c
         <span class="tail">PLAN.md · plan_implementation.md</span>
       </nav>
 
-      <section class="git-strip" aria-label="Git context"><span class="git-chip branch">branch main</span><span class="git-chip dirty">dirty 8</span><span class="git-subject">Add desktop startup controls and config handling <span class="git-sha">198b568</span> · 16m</span></section>
+      <section class="git-strip" aria-label="Git context"><span class="git-chip branch">branch main</span><span class="git-chip dirty">dirty 5</span><span class="git-subject">Add opt-in checklist write-back and UI <span class="git-sha">aef49cc</span> · 10m</span></section>
 
       <section class="board">
       <div class="col">
@@ -1200,7 +1225,7 @@ Please read plan_implementation.md and let&#39;s continue." title="Copy resume c
         <div class="change-row">
           <span class="change-file">README.md</span>
           <span class="change-diff"></span>
-          <span class="change-age">1h</span>
+          <span class="change-age">2h</span>
         </div>
       
         <div class="change-row">
@@ -1212,13 +1237,13 @@ Please read plan_implementation.md and let&#39;s continue." title="Copy resume c
         <div class="change-row">
           <span class="change-file">AGENTS.md</span>
           <span class="change-diff"></span>
-          <span class="change-age">4h</span>
+          <span class="change-age">5h</span>
         </div>
       
         <div class="change-row">
           <span class="change-file">GEMINI.md</span>
           <span class="change-diff"></span>
-          <span class="change-age">10h</span>
+          <span class="change-age">11h</span>
         </div>
       
     </div>
@@ -1238,7 +1263,7 @@ Please read plan_implementation.md and let&#39;s continue." title="Copy resume c
               <span class="chip agent-codex">CX</span>
               <span class="agent-name">Codex</span>
               <span class="agent-role">Implementer of Backend Code and Coding Expert You write TypeScript per PLAN.md. You do not redesign. You do not expand scope.</span>
-              <span class="agent-status working" data-pulse="false" data-agent-id="codex" data-last-task="Desktop shell hardening landed: packaged rebuild works, click-to-open works in desktop, archive/exclude filtering is live, and the current push is TUI visual parity plus root-doc sync."><span class="dot"></span>working</span>
+              <span class="agent-status idle" title="Heuristic status from file activity, not live presence" data-pulse="false" data-agent-id="codex" data-last-task="Desktop shell hardening landed: packaged rebuild works, click-to-open works in desktop, archive/exclude filtering is live, and the current push is TUI visual parity plus root-doc sync."><span class="dot"></span>idle</span>
             </div>
             <div class="agent-objective">Keep the CLI, desktop app, and VS Code extension on one shared QuestState and one design-faithful renderer.</div>
             <div class="agent-meta">AGENTS.md · src/engine/** — parser, normalizer, ranker, watcher · src/cli/** — CLI entry, argv parsing, JSON output · src/web/** — shared HTML/CSS renderer for desktop + VS Code shells · apps/desktop/** — Windows desktop host · extensions/vscode/** — VS Code extension shell · tests/** — vitest suites, fixture repos</div>
@@ -1249,7 +1274,7 @@ Please read plan_implementation.md and let&#39;s continue." title="Copy resume c
               <span class="chip agent-claude">CL</span>
               <span class="agent-name">Claude</span>
               <span class="agent-role">Planner + implementer (unlocked). You draft specs, PRDs, schemas, and plans AND you write implementation code. Default to the smallest coherent slice, keep scope tight, and verify with npm run build &amp;&amp; npm run lint &amp;&amp; npm test before declaring a pass done. UI/UX changes are in scope when they serve the active plan.</span>
-              <span class="agent-status active" data-pulse="false" data-agent-id="claude" data-last-task="STATE.md · 1h"><span class="dot"></span>active</span>
+              <span class="agent-status idle" title="Heuristic status from file activity, not live presence" data-pulse="false" data-agent-id="claude" data-last-task="STATE.md · 1h"><span class="dot"></span>idle</span>
             </div>
             <div class="agent-objective">Drive plan_implementation.md to 100% in order: Foundation → Workflow tooling → Context enrichment (schema v2) → Safe write-back. &quot;Tool any dev needs&quot; is the north star for v0.2+.</div>
             <div class="agent-meta">CLAUDE.md · PRD.md, PLAN.md, STATE.md · docs/** (except docs/design/** — that&#39;s human-owned) · Schema design in docs/SCHEMA.md · src/**, apps/**, extensions/**, tests/** · PR descriptions and review comments</div>
@@ -1260,7 +1285,7 @@ Please read plan_implementation.md and let&#39;s continue." title="Copy resume c
               <span class="chip agent-gemini">GM</span>
               <span class="agent-name">Gemini</span>
               <span class="agent-role">Reviewer. You audit output. You do not write production code.</span>
-              <span class="agent-status idle" data-pulse="false" data-agent-id="gemini" data-last-task=""><span class="dot"></span>idle</span>
+              <span class="agent-status idle" title="Heuristic status from file activity, not live presence" data-pulse="false" data-agent-id="gemini" data-last-task=""><span class="dot"></span>idle</span>
             </div>
             <div class="agent-objective">Objective unavailable</div>
             <div class="agent-meta">GEMINI.md · Test coverage audits · Type-safety audits · PR review comments</div>
@@ -1279,7 +1304,7 @@ Please read plan_implementation.md and let&#39;s continue." title="Copy resume c
         
           <div class="activity-row">
             <span class="file">Likely claude · GEMINI.md</span>
-            <span class="ago">10h · low confidence</span>
+            <span class="ago">11h · low confidence</span>
           </div>
         </div>
       </div>
@@ -1354,6 +1379,7 @@ Please read plan_implementation.md and let&#39;s continue." title="Copy resume c
       var KEY = "repolog-surface-settings";
       var defaults = { scale: 1.08, density: "cozy" };
       var settingsOverlay = document.querySelector("[data-settings-panel]");
+      var doctorReport = document.querySelector("[data-doctor-report]");
 
       function clamp(value, min, max) { return Math.min(max, Math.max(min, value)); }
       function normalizeDensity(value) {
@@ -1473,6 +1499,24 @@ Please read plan_implementation.md and let&#39;s continue." title="Copy resume c
               window.repologDesktop.openDoc(".repolog.json", 1);
             } else if (window.__rqlToast) {
               window.__rqlToast("settings config is only available in the desktop shell");
+            }
+            return;
+          }
+          if (action === "run-doctor") {
+            if (window.repologDesktop && typeof window.repologDesktop.runDoctor === "function") {
+              window.repologDesktop.runDoctor().then(function (report) {
+                if (!doctorReport) return;
+                doctorReport.hidden = false;
+                doctorReport.setAttribute("data-visible", "true");
+                doctorReport.textContent = report && report.text ? report.text : "repolog doctor returned no output";
+                if (window.__rqlToast) {
+                  window.__rqlToast(report && report.hasWarn ? "doctor found warnings" : "doctor is clean");
+                }
+              }).catch(function () {
+                if (window.__rqlToast) window.__rqlToast("doctor failed");
+              });
+            } else if (window.__rqlToast) {
+              window.__rqlToast("doctor is only available in the desktop shell");
             }
             return;
           }

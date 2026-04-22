@@ -91,15 +91,18 @@ async function loadModules() {
       importModule("dist/engine/config.js"),
       importModule("dist/engine/changes.js"),
       importModule("dist/engine/editor.js"),
+      importModule("dist/engine/doctor.js"),
       importModule("dist/engine/scan.js"),
       importModule("dist/engine/watcher.js"),
       importModule("dist/engine/writeback.js"),
       importModule("dist/web/render.js"),
       importModule("dist/engine/prompts.js"),
-    ]).then(([config, changes, editor, scan, watcher, writeback, web, prompts]) => ({
+    ]).then(([config, changes, editor, doctor, scan, watcher, writeback, web, prompts]) => ({
       readRepoConfig: config.readRepoConfig,
       mergeChanges: changes.mergeChanges,
       formatCodeOpenTarget: editor.formatCodeOpenTarget,
+      formatDoctorReport: doctor.formatDoctorReport,
+      runDoctor: doctor.runDoctor,
       scanRepo: scan.scanRepo,
       startWatcher: watcher.startWatcher,
       toggleChecklistItem: writeback.toggleChecklistItem,
@@ -367,6 +370,15 @@ ipcMain.handle("repolog:toggle-checklist", async (_event, payload = {}) => {
   }
 
   return result;
+});
+
+ipcMain.handle("repolog:run-doctor", async () => {
+  const { formatDoctorReport, runDoctor } = await loadModules();
+  const report = await runDoctor(targetRoot);
+  return {
+    text: formatDoctorReport(report),
+    hasWarn: report.findings.some((finding) => finding.severity === "warn"),
+  };
 });
 
 ipcMain.on("repolog:remember-startup-root", () => {

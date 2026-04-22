@@ -15,6 +15,8 @@ describe("web renderers", () => {
     expect(html).toContain("Prompt dir");
     expect(html).toContain("Startup behavior");
     expect(html).toContain("data-writeback-toggle");
+    expect(html).toContain("Run doctor");
+    expect(html).toContain("likely working");
     expect(html).toContain("heuristic feed");
     expect(html).toContain("source: STATE.md resume note");
     expect(html).toContain("source: PLAN.md");
@@ -80,6 +82,9 @@ function sampleState(): QuestState {
         constraints: [],
         status: "working",
       },
+    ],
+    agentActivity: [
+      { agent: "codex", file: "src/web/render.ts", at: "2m", confidence: 0.92 },
     ],
     recentChanges: [{ file: "PLAN.md", at: "1m", diff: "+3 -1" }],
     decisions: [],

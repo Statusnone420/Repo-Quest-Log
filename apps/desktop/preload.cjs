@@ -43,15 +43,6 @@ contextBridge.exposeInMainWorld("repologDesktop", {
   copyStandup() {
     return ipcRenderer.invoke("repolog:copy-standup");
   },
-  getRepoBotStatus() {
-    return ipcRenderer.invoke("repolog:repobot-auth-status");
-  },
-  setRepoBotProvider(provider) {
-    return ipcRenderer.invoke("repolog:repobot-set-provider", provider);
-  },
-  askRepoBot(prompt) {
-    return ipcRenderer.invoke("repolog:repobot-ask", prompt);
-  },
   windowAction(action) {
     ipcRenderer.send("repolog:window-action", action);
   },

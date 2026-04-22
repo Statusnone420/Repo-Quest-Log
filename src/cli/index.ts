@@ -1,21 +1,17 @@
 #!/usr/bin/env node
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
-import { createInterface } from "node:readline/promises";
-import { stdin, stdout } from "node:process";
 import React from "react";
 import { render } from "ink";
 
 import { renderDesktopHtml } from "../desktop/render.js";
 import { copyTextToClipboard } from "../engine/clipboard.js";
-import { formatCopilotResponse, runCopilotQuery } from "../engine/copilot.js";
 import { formatDoctorReport, runDoctor } from "../engine/doctor.js";
 import { loadPromptPresets } from "../engine/prompts.js";
 import { buildStandupForRepo, type StandupSince } from "../engine/standup.js";
 import { scanRepo } from "../engine/scan.js";
 import { buildTuneup } from "../engine/tuneup.js";
 import { formatStaticFrame, WatchApp } from "../tui/App.js";
-import { buildAuthDiscoveryReport, formatAuthDiscoveryReport, saveSelectedProvider } from "./copilot-auth.js";
 
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
@@ -37,33 +33,6 @@ async function main(): Promise<void> {
     process.stdout.write(`${formatDoctorReport(report)}\n`);
     const hasWarn = report.findings.some((f) => f.severity === "warn");
     if (hasWarn) process.exitCode = 1;
-    return;
-  }
-
-  if (command.mode === "auth") {
-    if (command.action === "use") {
-      await saveSelectedProvider(command.rootDir, command.provider);
-      const report = await buildAuthDiscoveryReport(command.rootDir);
-      if (command.json) {
-        process.stdout.write(`${JSON.stringify({ selectedProvider: command.provider, report }, null, 2)}\n`);
-      } else {
-        process.stdout.write(`selected ${command.provider} for ${report.rootDir}\n`);
-      }
-      return;
-    }
-
-    const report = await buildAuthDiscoveryReport(command.rootDir);
-    if (command.json) {
-      process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-      return;
-    }
-
-    process.stdout.write(`${formatAuthDiscoveryReport(report)}\n`);
-    return;
-  }
-
-  if (command.mode === "repobot") {
-    await runRepoBot(command);
     return;
   }
 
@@ -186,10 +155,6 @@ async function main(): Promise<void> {
 type Command =
   | { mode: "scan" | "watch" | "status"; rootDir: string }
   | { mode: "doctor"; rootDir: string; json: boolean }
-  | { mode: "auth"; rootDir: string; action: "discover"; json: boolean }
-  | { mode: "auth"; rootDir: string; action: "status"; json: boolean }
-  | { mode: "auth"; rootDir: string; action: "use"; provider: string; json: boolean }
-  | { mode: "repobot"; rootDir: string; prompt: string | null; json: boolean }
   | { mode: "tuneup"; rootDir: string; writeCharter: boolean; copy: boolean; agent: string | null }
   | { mode: "desktop"; rootDir: string; outputFile: string }
   | { mode: "prompt"; rootDir: string; action: "list" }
@@ -218,37 +183,9 @@ function readCommand(args: string[]): Command {
     const pathArg = args.slice(1).find((arg) => !arg.startsWith("-"));
     return { mode: "status", rootDir: resolve(pathArg ?? ".") };
   }
-  if (first === "repobot") {
-    const pathArg = args.slice(1).find((arg) => !arg.startsWith("-") && !arg.startsWith("--prompt="));
-    const prompt = args.find((arg) => arg.startsWith("--prompt="))?.slice("--prompt=".length) ?? null;
-    return {
-      mode: "repobot",
-      rootDir: resolve(pathArg ?? "."),
-      prompt,
-      json: args.includes("--json"),
-    };
-  }
   if (first === "doctor") {
     const pathArg = args.slice(1).find((arg) => !arg.startsWith("-"));
     return { mode: "doctor", rootDir: resolve(pathArg ?? "."), json: args.includes("--json") };
-  }
-  if (first === "auth") {
-    const subcommand = args[1];
-    const json = args.includes("--json");
-    if (subcommand === "use") {
-      const provider = args[2];
-      if (!provider || provider.startsWith("-")) {
-        process.stderr.write("missing provider for repolog auth use\n");
-        process.exit(1);
-      }
-      const rootDir = readPathArg(args.slice(3)) ?? resolve(".");
-      return { mode: "auth", rootDir, action: "use", provider, json };
-    }
-    const rootDir = readPathArg(args.slice(2)) ?? resolve(".");
-    if (subcommand === "status") {
-      return { mode: "auth", rootDir, action: "status", json };
-    }
-    return { mode: "auth", rootDir, action: "discover", json };
   }
   if (first === "tuneup") {
     const pathArg = args.slice(1).find((arg) => !arg.startsWith("-"));
@@ -298,55 +235,6 @@ function readCommand(args: string[]): Command {
   };
 }
 
-async function runRepoBot(command: Extract<Command, { mode: "repobot" }>): Promise<void> {
-  const prompt = command.prompt?.trim() || (stdin.isTTY ? await runRepoBotInteractivePrompt(command.rootDir) : await readStdin());
-  if (!prompt) {
-    process.stderr.write("missing prompt for repolog repobot\n");
-    process.exit(1);
-  }
-
-  const result = await runCopilotQuery(command.rootDir, prompt);
-  if (command.json) {
-    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-    return;
-  }
-
-  process.stdout.write(`${formatCopilotResponse(result)}\n`);
-}
-
-async function runRepoBotInteractivePrompt(rootDir: string): Promise<string> {
-  const rl = createInterface({ input: stdin, output: stdout });
-  const state = await scanRepo(rootDir);
-  process.stdout.write(`RepoBot ready for ${state.name}. Type a question, or "exit" to quit.\n`);
-
-  while (true) {
-    const answer = await rl.question("RepoBot> ");
-    const prompt = answer.trim();
-    if (!prompt) {
-      continue;
-    }
-    if (prompt === "exit" || prompt === "quit") {
-      rl.close();
-      process.exit(0);
-    }
-    rl.close();
-    return prompt;
-  }
-}
-
-async function readStdin(): Promise<string> {
-  if (stdin.isTTY) {
-    return "";
-  }
-
-  return await new Promise<string>((resolveInput) => {
-    const chunks: Buffer[] = [];
-    stdin.on("data", (chunk) => chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)));
-    stdin.on("end", () => resolveInput(Buffer.concat(chunks).toString("utf8").trim()));
-    stdin.resume();
-  });
-}
-
 function printHelp(): void {
   process.stdout.write(
     [
@@ -360,10 +248,6 @@ function printHelp(): void {
       "  repolog desktop [path] Write a desktop HUD snapshot HTML file",
       "  repolog status [path] --short   Print a one-line status summary",
       "  repolog doctor [path] [--json]  Explain what was scanned and why state looks empty",
-      "  repolog auth discover [path] [--json] Scan machine for LLM auth",
-      "  repolog auth status [path] [--json]   Show saved provider and discovery status",
-      "  repolog auth use <provider> [path] [--json] Save preferred provider to .repolog.json",
-      "  repolog repobot [path] [--prompt=...] [--json]  Ask RepoBot a repo question",
       "  repolog tuneup [path] [--write-charter] [--copy] [--agent=claude|codex|gemini]",
       "  repolog prompt list             List available prompt presets",
       "  repolog prompt <id> [--copy]    Render a prompt; --copy sends to clipboard",
@@ -376,10 +260,6 @@ function printHelp(): void {
       "",
     ].join("\n"),
   );
-}
-
-function readPathArg(args: string[]): string | undefined {
-  return args.find((arg) => !arg.startsWith("-") && arg !== "discover" && arg !== "status" && arg !== "use");
 }
 
 function readStandupSince(args: string[]): StandupSince {

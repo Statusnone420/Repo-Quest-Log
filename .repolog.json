@@ -7,9 +7,5 @@
   "writeback": false,
   "prompts": {
     "dir": "~/.repolog/prompts"
-  },
-  "llm": {
-    "provider": "anthropic",
-    "discovered": true
   }
 }

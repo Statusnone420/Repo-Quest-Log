@@ -100,24 +100,18 @@ async function loadModules() {
       importModule("dist/engine/changes.js"),
       importModule("dist/engine/editor.js"),
       importModule("dist/engine/doctor.js"),
-      importModule("dist/engine/copilot.js"),
-      importModule("dist/engine/llm-providers.js"),
       importModule("dist/engine/scan.js"),
       importModule("dist/engine/watcher.js"),
       importModule("dist/engine/writeback.js"),
       importModule("dist/engine/standup.js"),
       importModule("dist/web/render.js"),
       importModule("dist/engine/prompts.js"),
-    ]).then(([config, changes, editor, doctor, copilot, llmProviders, scan, watcher, writeback, standup, web, prompts]) => ({
+    ]).then(([config, changes, editor, doctor, scan, watcher, writeback, standup, web, prompts]) => ({
       readRepoConfig: config.readRepoConfig,
-      setRepoLlmSelection: config.setRepoLlmSelection,
       mergeChanges: changes.mergeChanges,
       formatCodeOpenTarget: editor.formatCodeOpenTarget,
       formatDoctorReport: doctor.formatDoctorReport,
       runDoctor: doctor.runDoctor,
-      runCopilotQuery: copilot.runCopilotQuery,
-      formatCopilotResponse: copilot.formatCopilotResponse,
-      discoverProviders: llmProviders.discoverProviders,
       scanRepo: scan.scanRepo,
       startWatcher: watcher.startWatcher,
       toggleChecklistItem: writeback.toggleChecklistItem,
@@ -439,40 +433,6 @@ ipcMain.handle("repolog:run-tuneup", async () => {
   return buildTuneup(state, report);
 });
 
-ipcMain.handle("repolog:repobot-auth-status", async () => {
-  const { discoverProviders, readRepoConfig } = await loadModules();
-  const config = await readRepoConfig(targetRoot);
-  const providers = discoverProviders();
-  return {
-    selectedProvider: config.llm?.provider ?? null,
-    providers,
-  };
-});
-
-ipcMain.handle("repolog:repobot-set-provider", async (_event, provider) => {
-  const { setRepoLlmSelection } = await loadModules();
-  if (typeof provider !== "string" || !provider) {
-    return { ok: false, reason: "missing provider" };
-  }
-  await setRepoLlmSelection(targetRoot, provider);
-  return { ok: true };
-});
-
-ipcMain.handle("repolog:repobot-ask", async (_event, prompt) => {
-  const { runCopilotQuery } = await loadModules();
-  if (typeof prompt !== "string" || !prompt.trim()) {
-    return { ok: false, reason: "missing prompt" };
-  }
-
-  try {
-    const result = await runCopilotQuery(targetRoot, prompt.trim());
-    return { ok: true, result, text: formatRepoBotResult(result) };
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    return { ok: false, reason: message };
-  }
-});
-
 ipcMain.handle("repolog:write-tuneup-charter", async (_event, charter) => {
   const charterDir = path.join(targetRoot, ".repolog");
   fs.mkdirSync(charterDir, { recursive: true });
@@ -579,27 +539,3 @@ function tryOpenWithCode(target) {
 module.exports = {
   resolveDesktopRepoRoot,
 };
-
-function formatRepoBotResult(result) {
-  const lines = [];
-  lines.push(`RepoBot · ${result.provider} · ${result.model} · ${Math.round(result.response.confidence * 100)}%`);
-  lines.push("");
-  if (result.response.analysis) {
-    lines.push("Analysis:");
-    lines.push(result.response.analysis);
-    lines.push("");
-  }
-  if (result.response.fixes) {
-    lines.push("Fixes:");
-    lines.push(result.response.fixes);
-    lines.push("");
-  }
-  if (result.response.reasoning) {
-    lines.push("Reasoning:");
-    lines.push(result.response.reasoning);
-    lines.push("");
-  }
-  lines.push("User query:");
-  lines.push(result.context.userQuery);
-  return lines.join("\n");
-}

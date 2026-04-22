@@ -1,5 +1,0 @@
-# Agents
-
-## Codex
-
-Implementer.

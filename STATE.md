@@ -9,17 +9,20 @@ owner: claude
 Live "where we are." Update this as work progresses. The normalizer reads this to build the Resume Note.
 
 ## Current Focus
-RepoBot Phase 2 underway: CLI chat mode, desktop RepoBot card, VS Code webview bridge, and provider selection are in place. 46 tests green.
+v0.3 Slice 1 complete + Settings panel redesigned. Scrollable body, fixed head/footer, tuneup card first, compressed settings cards, legend removed. 42 tests green.
 
-## Last Session — RepoBot Phase 2 chat surface (2026-04-22)
-- **`src/engine/llm-providers.ts`** (NEW): provider registry for Anthropic, OpenAI, Google, and local Ollama, with auth discovery from env, standard token files, `~/.repolog/llm-config.json`, and runtime `ask()` clients.
-- **`src/engine/copilot.ts`** (NEW): strict JSON prompt builder and response parser for `analysis`, `fixes`, `reasoning`, `confidence`, plus RepoBot context/request helpers.
-- **`src/engine/config.ts` / `src/engine/types.ts` / `src/engine/scan.ts`**: repo config now preserves `llm.provider` / `llm.discovered` and exposes it on the scan snapshot.
-- **`src/cli/copilot-auth.ts`** (NEW) + **`src/cli/index.ts`**: `repolog auth discover`, `repolog auth use <provider>`, `repolog auth status`, and `repolog repobot` now work from the CLI.
-- **`apps/desktop/main.cjs`**, **`apps/desktop/preload.cjs`**, **`extensions/vscode/extension.js`**, and **`src/web/render.ts`**: RepoBot ask/status/provider selection are wired through the desktop shell and the shared settings panel.
-- **`docs/SCHEMA.md`**, **`PLAN.md`**, **`AGENTS.md`**, and **`plan_implementation.md`** updated to reflect the RepoBot naming and phase 2 progress.
-- **`tests/auth.test.ts`** and **`tests/copilot.test.ts`** (NEW): auth discovery, repo selection write-back, prompt construction, RepoBot query flow, and fenced JSON parsing are covered by 3 fixture-backed tests.
-- `npm run build`, `npm run lint`, and `npm test` all pass (46 tests, 17 files).
+## Last Session — v0.3 Tuneup + Settings redesign (2026-04-22)
+- **`src/engine/tuneup.ts`** (NEW): `buildTuneup(state, doctorReport): TuneupResult`. Score weights: mission(15) + objective(15) + now-heading(15) + agents-owned-areas(10) + state-resume(10) + plan-next(10) + charter-present(15) + frontmatter(10) = 100. Generates per-repo prompt, CHARTER.md contents, and per-agent prompts.
+- **`src/engine/types.ts`**: Added `charterPresent?` and `hasFrontmatter?` to `RepoConfigSnapshot`.
+- **`src/engine/scan.ts`**: Detects `.repolog/CHARTER.md` and parsed doc frontmatter; sets both fields on config snapshot.
+- **`src/engine/doctor.ts`**: `DoctorReport` now includes `tuneup: { score, gaps }` built from `buildTuneup`.
+- **`src/cli/index.ts`**: `repolog tuneup [path] [--write-charter] [--copy] [--agent=claude|codex|gemini]`. Missing agent → stderr note + generic prompt. Charter write uses `--write-charter` flag.
+- **`src/web/render.ts`**: "Tune this repo" full-width card in settings panel. Coverage meter (accent ≥80, warn 50-79, danger <50), read-only prompt textarea (max-height 40vh), Copy / Write CHARTER.md / Preview Gaps / Send to Claude|Codex|Gemini buttons. Desktop calls `window.repologDesktop.runTuneup()`; VS Code posts `{ type: "runTuneup" }`.
+- **`src/tui/App.tsx`**: `t` hotkey triggers `runDoctor` + `buildTuneup` then shows `TuneupOverlay` (score bar + gap list). `q`/Esc dismisses.
+- **`extensions/vscode/extension.js`**: `repoQuestLog.tuneup` command registered — runs quick pick with Copy / Write CHARTER / per-agent options. Webview handles `runTuneup` and `writeTuneupCharter` messages.
+- **`apps/desktop/main.cjs` + `preload.cjs`**: `repolog:run-tuneup` and `repolog:write-tuneup-charter` IPC handlers.
+- **`tests/tuneup.test.ts`** (NEW): 8 tests — pristine=100, missing-objective gap, missing-now gap, per-agent prompt content, charter determinism, missing-charter gap, prompt structure, doctor JSON output.
+- `npm run build && npm run lint && npm test` — 42 tests, 15 files, all green.
 
 ## Last Session
 - Standup export landed across CLI, shared engine formatting, TUI, desktop, and VS Code webview. New CLI: `repolog standup [--since=today|yesterday|7d] [--copy] [--json]`. Standup copy hotkey is now `Ctrl+Shift+C` in the shared renderer, with the prompt-palette toast styling and a 2s timeout.
@@ -37,7 +40,7 @@ RepoBot Phase 2 underway: CLI chat mode, desktop RepoBot card, VS Code webview b
 - `npm run build`, `npm run lint`, `npm test` all green (30 tests, 13 files).
 
 ## Resume Note
-> Handoff complete: Codex now owns RepoBot implementation (plan_implementation.md, 38h, 4 phases). Phase 2 chat interfaces are in progress: provider abstraction, auth discovery, prompt engineering, CLI repobot, and desktop/webview RepoBot surfaces are wired. 46 tests green.
+> Handoff complete: Codex now owns Co-Pilot implementation (plan_implementation.md, 38h, 4 phases). Multi-provider LLM abstraction (Anthropic, OpenAI, Google, Ollama) with zero-friction token discovery from user's machine. Chat modes (CLI + Electron). Ownership: AGENTS.md Objective updated. PLAN.md Now/Next scoped to Codex for rest of day. 42 tests green, doctor all-clear.
 
 Last touched: `plan_implementation.md`, `PLAN.md`, `AGENTS.md`, `STATE.md`
 

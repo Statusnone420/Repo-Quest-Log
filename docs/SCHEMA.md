@@ -112,10 +112,6 @@ export interface RepoConfig {
   prompts?: {
     dir: string;           // default "~/.repolog/prompts"
   };
-  llm?: {
-    provider?: "anthropic" | "openai" | "google" | "local-ollama";
-    discovered?: boolean;  // saved provider selection from auth use
-  };
 }
 
 export interface QuestState {
@@ -172,8 +168,7 @@ export interface QuestState {
 {
   "excludes": ["docs/Archived"],
   "writeback": false,
-  "prompts": { "dir": "~/.repolog/prompts" },
-  "llm": { "provider": "anthropic", "discovered": true }
+  "prompts": { "dir": "~/.repolog/prompts" }
 }
 ```
 
@@ -181,7 +176,6 @@ export interface QuestState {
 - `excludes` / `exclude` / `ignore` / `ignored` may contain repo-relative paths or folder names to skip from scanning and watcher-based recent-changes. Folder-name excludes match any path segment; path excludes match that subtree exactly.
 - `archive`, `archives`, and `archived` are ignored by default even without a config file so stale planning docs do not pollute the HUD.
 - `writeback: true` enables **checkbox toggles only** (see below). Nothing else is ever written.
-- `llm.provider` stores the preferred RepoBot provider selected by `repolog auth use <provider>`. `discovered: true` marks that the selection came from local auth discovery instead of a manual override.
 - Invalid JSON → log a warning and fall back to defaults; never crash the scan.
 
 ## Write-back rules (v2, opt-in)

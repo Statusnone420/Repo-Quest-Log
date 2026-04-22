@@ -18,12 +18,11 @@ Instructions for any coding agent working in this repo (Codex, generic agents, C
 - Work through `PLAN.md` → "The 7 build tasks" in order
 - Keep the design mockup (`docs/design/Repo Quest Log.html`) as the source of truth for visual output
 - Write tests against the fixture repos under `tests/fixtures/` before marking a task done
-- Update `STATE.md` when you finish a task
+- Update `STATE.md` when you finish a task. Keep all relevant md's updated when finishing tasks.
 - Run `npm run lint && npm test` before committing
 - Check with `CLAUDE.md` to make sure you and Claude are on the same page but don't intefere in what it's doing.
 
 ## Do Not
-- Write or modify markdown in the root (leave `PLAN.md`, `STATE.md`, etc. to the human)
 - Add source-code parsing (v0.2+)
 - Add LLM calls (v0.2+, and even then: opt-in, user-supplied key)
 - Introduce new dependencies without a note in the PR description

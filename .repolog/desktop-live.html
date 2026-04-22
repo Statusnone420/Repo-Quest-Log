@@ -54,7 +54,7 @@
     .shell {
       width: 100vw; height: 100vh;
       display: grid;
-      grid-template-rows: auto auto auto auto minmax(0, 1fr);
+      grid-template-rows: auto auto auto auto auto minmax(0, 1fr);
       overflow: hidden;
     }
 
@@ -130,6 +130,97 @@
     .surface-controls .label { color: var(--muted); letter-spacing: 0.8px; text-transform: uppercase; margin-left: 4px; }
     .dot { width: 6px; height: 6px; border-radius: 999px; background: var(--ok); display: inline-block; }
 
+    /* ---- SETTINGS RACK ---- */
+    .settings-rack {
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr) minmax(0, 1fr);
+      gap: var(--tile-gap);
+      padding: var(--pad-y) var(--pad-x) 0;
+      min-width: 0;
+    }
+    .settings-card {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 10px 12px;
+      min-width: 0;
+      border-radius: 10px;
+      border: 1px solid var(--tile-border);
+      background: rgba(18,22,28,0.72);
+    }
+    .settings-head {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--mono);
+      font-size: var(--tiny-size);
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .settings-head .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 1px 7px;
+      border-radius: 999px;
+      background: var(--faint);
+      color: var(--ink);
+      letter-spacing: 0.5px;
+    }
+    .settings-copy {
+      font-family: var(--mono);
+      font-size: var(--small-size);
+      color: var(--muted);
+      line-height: 1.35;
+    }
+    .settings-copy strong { color: var(--ink); font-weight: 600; }
+    .settings-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+    .settings-actions button {
+      appearance: none;
+      border: 1px solid var(--tile-border);
+      background: rgba(255,255,255,0.02);
+      color: var(--ink);
+      border-radius: 7px;
+      padding: 5px 9px;
+      cursor: pointer;
+      font: inherit;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .settings-actions button:hover {
+      border-color: rgba(138,180,255,0.42);
+      color: var(--accent);
+    }
+    .settings-actions button.primary {
+      border-color: rgba(138,180,255,0.32);
+      background: rgba(138,180,255,0.08);
+    }
+    .settings-actions button .kbd-inline {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      font-family: var(--mono);
+      font-size: var(--tiny-size);
+      color: var(--muted);
+    }
+    .settings-actions button kbd,
+    .settings-copy kbd {
+      font-family: var(--mono);
+      font-size: var(--tiny-size);
+      padding: 1px 5px;
+      border: 1px solid var(--tile-border);
+      border-radius: 3px;
+      background: rgba(255,255,255,0.04);
+      color: var(--ink);
+    }
+
     /* ---- HEADER STRIP (mission + objective + resume in ONE row) ---- */
     .header-strip {
       display: grid;
@@ -170,6 +261,10 @@
     }
     .strip-subline {
       font-family: var(--mono); font-size: var(--small-size); color: var(--muted);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .strip-why {
+      font-family: var(--mono); font-size: var(--tiny-size); color: var(--dim);
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
     .strip-actions {
@@ -273,6 +368,12 @@
     }
     .activity-row .file { color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; flex: 1; }
     .activity-row .ago { color: var(--dim); }
+    .task-note {
+      margin: 2px 0 8px 26px;
+      font-family: var(--mono); font-size: var(--tiny-size);
+      color: var(--dim);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
 
     /* ---- BOARD (3 cols, single row, fits viewport) ---- */
     .board {
@@ -646,7 +747,7 @@
       <div class="watch-meta">
         <span class="dot"></span>
         <span>7 files</span>
-        <span style="color: var(--dim)">· 2026-04-22T01:19:58.748Z</span>
+        <span style="color: var(--dim)">· 2026-04-22T01:35:43.589Z</span>
       </div>
       <div class="surface-controls" aria-label="Display controls">
         <button type="button" data-ui-action="refresh" aria-label="Refresh desktop" title="Refresh desktop">↻</button>
@@ -665,25 +766,46 @@
         </div>
       </div>
     </header>
+    <section class="settings-rack" aria-label="Settings and shortcuts">
+      <div class="settings-card">
+        <div class="settings-head">Settings <span class="pill">off</span></div>
+        <div class="settings-copy">Repo picker and keyboard shortcuts live here so the desktop shell is discoverable without hunting menus.</div>
+        <div class="settings-actions">
+          <button type="button" class="primary" data-ui-action="open-repo" title="Open a repo folder (Ctrl+O)">Open Repo <span class="kbd-inline"><kbd>Ctrl</kbd><kbd>O</kbd></span></button>
+          <button type="button" data-ui-action="refresh" title="Refresh desktop (Ctrl+R)">Refresh <span class="kbd-inline"><kbd>Ctrl</kbd><kbd>R</kbd></span></button>
+        </div>
+      </div>
+      <div class="settings-card">
+        <div class="settings-head">Shortcuts</div>
+        <div class="settings-copy"><strong>Ctrl+K</strong> copy a resume prompt</div>
+        <div class="settings-copy"><strong>Ctrl+O</strong> open a repo folder</div>
+        <div class="settings-copy"><strong>Ctrl+R</strong> refresh the scan</div>
+      </div>
+      <div class="settings-card">
+        <div class="settings-head">Write-back</div>
+        <div class="settings-copy">Off by default. Add <strong>"writeback": true</strong> to <strong>.repolog.json</strong> to enable checkbox-only edits.</div>
+      </div>
+    </section>
     
     <section class="header-strip">
       <div class="strip-cell mission">
         <div class="kicker">Mission</div>
         <div class="strip-headline">A local-first CLI + TUI + desktop + VS Code shell that makes repo intent legible at a glance and hands that intent to whichever coding agent you open next.</div>
       </div>
-      <div class="strip-cell objective">
-        <div class="kicker">Objective <span class="meta">0/0</span></div>
-        <div class="strip-headline">Close v0.1 with a fit-to-window desktop, a TUI that visually matches it, and clean panel labels — then ship the v0.2 agent-integration wedge (resume-prompt palette, git panel, agent activity feed, standup export, opt-in write-back).</div>
-        <div class="strip-subline">PLAN.md:6</div>
-      </div>
-      <div class="strip-cell resume">
+        <div class="strip-cell objective">
+          <div class="kicker">Objective <span class="meta">0/0</span></div>
+          <div class="strip-headline">Close v0.1 with a fit-to-window desktop, a TUI that visually matches it, and clean panel labels — then ship the v0.2 agent-integration wedge (resume-prompt palette, git panel, agent activity feed, standup export, opt-in write-back).</div>
+          <div class="strip-subline">PLAN.md:6</div>
+          <div class="strip-why">Why now: CLI JSON scan: repolog scan .</div>
+        </div>
+        <div class="strip-cell resume">
         
         <div class="strip-actions">
           <button type="button" class="icon-btn warn" data-copy-context="I am resuming work on Repo Quest Log (branch: main).
 Mission: A local-first CLI + TUI + desktop + VS Code shell that makes repo intent legible at a glance and hands that intent to whichever coding agent you open next.
 Objective: Close v0.1 with a fit-to-window desktop, a TUI that visually matches it, and clean panel labels — then ship the v0.2 agent-integration wedge (resume-prompt palette, git panel, agent activity feed, standup export, opt-in write-back). (0/0 · PLAN.md:6)
 Current task: CLI JSON scan: repolog scan .
-Last touched: plan_implementation.md · idle 14m
+Last touched: plan_implementation.md · idle 29m
 Please read plan_implementation.md and let&#39;s continue." title="Copy resume context to clipboard">
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
             copy
@@ -692,10 +814,11 @@ Please read plan_implementation.md and let&#39;s continue." title="Copy resume c
             ⌘K
           </button>
         </div>
-        <div class="kicker">Resume where you left off <span class="meta">· idle 14m</span></div>
-        <div class="strip-headline">CLI JSON scan: repolog scan .</div>
-        <div class="strip-subline">↳ plan_implementation.md · README.md</div>
-      </div>
+          <div class="kicker">Current focus <span class="meta">· idle 29m</span></div>
+          <div class="strip-headline">CLI JSON scan: repolog scan .</div>
+          <div class="strip-subline">↳ plan_implementation.md · README.md</div>
+          <div class="strip-why">Why this matters: CLI JSON scan: repolog scan .</div>
+        </div>
     </section>
 
       <nav class="cockpit" aria-label="Status cockpit">
@@ -708,7 +831,7 @@ Please read plan_implementation.md and let&#39;s continue." title="Copy resume c
         <span class="tail">PLAN.md · plan_implementation.md</span>
       </nav>
 
-      <section class="git-strip" aria-label="Git context"><span class="git-chip branch">branch main</span><span class="git-chip dirty">dirty 10</span><span class="git-subject">Add repolog doctor and prompt-presets integration <span class="git-sha">6648f4b</span> · 19m</span></section>
+      <section class="git-strip" aria-label="Git context"><span class="git-chip branch">branch main</span><span class="git-chip dirty">dirty 0</span><span class="git-subject">Add desktop repo picker and task notes <span class="git-sha">99a4ce2</span> · just now</span></section>
       
 
       <section class="board">
@@ -720,24 +843,24 @@ Please read plan_implementation.md and let&#39;s continue." title="Copy resume c
     </div>
     <div class="tile-body">
       <div class="item p-now clickable" data-open-doc="README.md" data-line="7" role="button" tabindex="0" title="CLI JSON scan: repolog scan .">
-    <span class="bar"></span>
-    <span class="sigil" title="heuristic confidence: 0.95"><span class="on">●</span><span class="on">●</span><span class="on">●</span></span>
-    <span class="item-num">01</span>
-    <span class="item-text">CLI JSON scan: repolog scan .</span>
-    <span class="item-aside"><span class="chip doc">README.md</span></span>
-  </div><div class="item p-now clickable" data-open-doc="README.md" data-line="8" role="button" tabindex="0" title="Terminal HUD: repolog or repolog watch .">
-    <span class="bar"></span>
-    <span class="sigil" title="heuristic confidence: 0.95"><span class="on">●</span><span class="on">●</span><span class="on">●</span></span>
-    <span class="item-num">02</span>
-    <span class="item-text">Terminal HUD: repolog or repolog watch .</span>
-    <span class="item-aside"><span class="chip doc">README.md</span></span>
-  </div><div class="item p-now clickable" data-open-doc="README.md" data-line="9" role="button" tabindex="0" title="Desktop snapshot: repolog desktop .">
-    <span class="bar"></span>
-    <span class="sigil" title="heuristic confidence: 0.95"><span class="on">●</span><span class="on">●</span><span class="on">●</span></span>
-    <span class="item-num">03</span>
-    <span class="item-text">Desktop snapshot: repolog desktop .</span>
-    <span class="item-aside"><span class="chip doc">README.md</span></span>
-  </div>
+      <span class="bar"></span>
+      <span class="sigil" title="heuristic confidence: 0.95"><span class="on">●</span><span class="on">●</span><span class="on">●</span></span>
+      <span class="item-num">01</span>
+      <span class="item-text">CLI JSON scan: repolog scan .</span>
+      <span class="item-aside"><span class="chip doc">README.md</span></span>
+    </div><div class="item p-now clickable" data-open-doc="README.md" data-line="8" role="button" tabindex="0" title="Terminal HUD: repolog or repolog watch .">
+      <span class="bar"></span>
+      <span class="sigil" title="heuristic confidence: 0.95"><span class="on">●</span><span class="on">●</span><span class="on">●</span></span>
+      <span class="item-num">02</span>
+      <span class="item-text">Terminal HUD: repolog or repolog watch .</span>
+      <span class="item-aside"><span class="chip doc">README.md</span></span>
+    </div><div class="task-note">CLI JSON scan: repolog scan .</div><div class="item p-now clickable" data-open-doc="README.md" data-line="9" role="button" tabindex="0" title="Desktop snapshot: repolog desktop .">
+      <span class="bar"></span>
+      <span class="sigil" title="heuristic confidence: 0.95"><span class="on">●</span><span class="on">●</span><span class="on">●</span></span>
+      <span class="item-num">03</span>
+      <span class="item-text">Desktop snapshot: repolog desktop .</span>
+      <span class="item-aside"><span class="chip doc">README.md</span></span>
+    </div><div class="task-note">CLI JSON scan: repolog scan .</div>
     </div>
   </section>
         <section class="tile tight" data-area="blocked">
@@ -746,18 +869,19 @@ Please read plan_implementation.md and let&#39;s continue." title="Copy resume c
       <span class="tile-meta">1 waiting</span>
     </div>
     <div class="tile-body">
-      
-          <div class="item p-blocked" title="Publish npm package @repo-quest/core">
-            <span class="bar"></span>
-            <span class="sigil" title="heuristic confidence: 0.95"><span class="on">●</span><span class="on">●</span><span class="on">●</span></span>
-            <span class="item-num">01</span>
-            <span class="item-text">Publish npm package @repo-quest/core</span>
-            <span class="item-aside"><span class="chip doc">23m</span></span>
-          </div>
-          <div class="blocked-reason">↳ need npm org + CI secrets</div>
         
-    </div>
-  </section>
+            <div class="item p-blocked" title="Publish npm package @repo-quest/core">
+              <span class="bar"></span>
+              <span class="sigil" title="heuristic confidence: 0.95"><span class="on">●</span><span class="on">●</span><span class="on">●</span></span>
+              <span class="item-num">01</span>
+              <span class="item-text">Publish npm package @repo-quest/core</span>
+              <span class="item-aside"><span class="chip doc">38m</span></span>
+            </div>
+            <div class="blocked-reason">↳ need npm org + CI secrets</div>
+            
+          
+      </div>
+    </section>
       </div>
       <div class="col">
         <section class="tile " data-area="next">
@@ -767,36 +891,36 @@ Please read plan_implementation.md and let&#39;s continue." title="Copy resume c
     </div>
     <div class="tile-body">
       <div class="item p-next clickable" data-open-doc="PLAN.md" data-line="28" role="button" tabindex="0" title="Live git panel — branch, ahead/behind, dirty count, last commit subject + relative time">
-    <span class="bar"></span>
-    <span class="sigil" title="heuristic confidence: 0.95"><span class="on">●</span><span class="on">●</span><span class="on">●</span></span>
-    <span class="item-num">01</span>
-    <span class="item-text">Live git panel — branch, ahead/behind, dirty count, last commit subject + relative time</span>
-    <span class="item-aside"><span class="chip doc">PLAN.md</span></span>
-  </div><div class="item p-next clickable" data-open-doc="PLAN.md" data-line="29" role="button" tabindex="0" title="Agent activity feed — infer agent × file from mtimes × owned-areas in AGENTS.md / CLAUDE.md / GEMINI.md">
-    <span class="bar"></span>
-    <span class="sigil" title="heuristic confidence: 0.95"><span class="on">●</span><span class="on">●</span><span class="on">●</span></span>
-    <span class="item-num">02</span>
-    <span class="item-text">Agent activity feed — infer agent × file from mtimes × owned-areas in AGENTS.md / CLAUDE.md / GEMINI.md</span>
-    <span class="item-aside"><span class="chip doc">PLAN.md</span></span>
-  </div><div class="item p-next clickable" data-open-doc="PLAN.md" data-line="30" role="button" tabindex="0" title="Standup export — one-keypress markdown of today&#39;s done + currently-active to clipboard">
-    <span class="bar"></span>
-    <span class="sigil" title="heuristic confidence: 0.95"><span class="on">●</span><span class="on">●</span><span class="on">●</span></span>
-    <span class="item-num">03</span>
-    <span class="item-text">Standup export — one-keypress markdown of today&#39;s done + currently-active to clipboard</span>
-    <span class="item-aside"><span class="chip doc">PLAN.md</span></span>
-  </div><div class="item p-next clickable" data-open-doc="PLAN.md" data-line="31" role="button" tabindex="0" title="Opt-in write-back for checkbox toggles only, gated by .repolog.json → &quot;writeback&quot;: true, with persistent on-screen banner">
-    <span class="bar"></span>
-    <span class="sigil" title="heuristic confidence: 0.95"><span class="on">●</span><span class="on">●</span><span class="on">●</span></span>
-    <span class="item-num">04</span>
-    <span class="item-text">Opt-in write-back for checkbox toggles only, gated by .repolog.json → &quot;writeback&quot;: true, with persistent on-screen banner</span>
-    <span class="item-aside"><span class="chip doc">PLAN.md</span></span>
-  </div><div class="item p-next clickable" data-open-doc="PLAN.md" data-line="32" role="button" tabindex="0" title="Schema v2 — rename activeQuest → objective, add gitContext, agentActivity, config.writeback; ship compat shim for v1">
-    <span class="bar"></span>
-    <span class="sigil" title="heuristic confidence: 0.95"><span class="on">●</span><span class="on">●</span><span class="on">●</span></span>
-    <span class="item-num">05</span>
-    <span class="item-text">Schema v2 — rename activeQuest → objective, add gitContext, agentActivity, config.writeback; ship compat shim for v1</span>
-    <span class="item-aside"><span class="chip doc">PLAN.md</span></span>
-  </div>
+      <span class="bar"></span>
+      <span class="sigil" title="heuristic confidence: 0.95"><span class="on">●</span><span class="on">●</span><span class="on">●</span></span>
+      <span class="item-num">01</span>
+      <span class="item-text">Live git panel — branch, ahead/behind, dirty count, last commit subject + relative time</span>
+      <span class="item-aside"><span class="chip doc">PLAN.md</span></span>
+    </div><div class="item p-next clickable" data-open-doc="PLAN.md" data-line="29" role="button" tabindex="0" title="Agent activity feed — infer agent × file from mtimes × owned-areas in AGENTS.md / CLAUDE.md / GEMINI.md">
+      <span class="bar"></span>
+      <span class="sigil" title="heuristic confidence: 0.95"><span class="on">●</span><span class="on">●</span><span class="on">●</span></span>
+      <span class="item-num">02</span>
+      <span class="item-text">Agent activity feed — infer agent × file from mtimes × owned-areas in AGENTS.md / CLAUDE.md / GEMINI.md</span>
+      <span class="item-aside"><span class="chip doc">PLAN.md</span></span>
+    </div><div class="task-note">Live git panel — branch, ahead/behind, dirty count, last commit subject + relative time</div><div class="item p-next clickable" data-open-doc="PLAN.md" data-line="30" role="button" tabindex="0" title="Standup export — one-keypress markdown of today&#39;s done + currently-active to clipboard">
+      <span class="bar"></span>
+      <span class="sigil" title="heuristic confidence: 0.95"><span class="on">●</span><span class="on">●</span><span class="on">●</span></span>
+      <span class="item-num">03</span>
+      <span class="item-text">Standup export — one-keypress markdown of today&#39;s done + currently-active to clipboard</span>
+      <span class="item-aside"><span class="chip doc">PLAN.md</span></span>
+    </div><div class="task-note">Live git panel — branch, ahead/behind, dirty count, last commit subject + relative time</div><div class="item p-next clickable" data-open-doc="PLAN.md" data-line="31" role="button" tabindex="0" title="Opt-in write-back for checkbox toggles only, gated by .repolog.json → &quot;writeback&quot;: true, with persistent on-screen banner">
+      <span class="bar"></span>
+      <span class="sigil" title="heuristic confidence: 0.95"><span class="on">●</span><span class="on">●</span><span class="on">●</span></span>
+      <span class="item-num">04</span>
+      <span class="item-text">Opt-in write-back for checkbox toggles only, gated by .repolog.json → &quot;writeback&quot;: true, with persistent on-screen banner</span>
+      <span class="item-aside"><span class="chip doc">PLAN.md</span></span>
+    </div><div class="task-note">Live git panel — branch, ahead/behind, dirty count, last commit subject + relative time</div><div class="item p-next clickable" data-open-doc="PLAN.md" data-line="32" role="button" tabindex="0" title="Schema v2 — rename activeQuest → objective, add gitContext, agentActivity, config.writeback; ship compat shim for v1">
+      <span class="bar"></span>
+      <span class="sigil" title="heuristic confidence: 0.95"><span class="on">●</span><span class="on">●</span><span class="on">●</span></span>
+      <span class="item-num">05</span>
+      <span class="item-text">Schema v2 — rename activeQuest → objective, add gitContext, agentActivity, config.writeback; ship compat shim for v1</span>
+      <span class="item-aside"><span class="chip doc">PLAN.md</span></span>
+    </div><div class="task-note">Live git panel — branch, ahead/behind, dirty count, last commit subject + relative time</div>
     </div>
   </section>
         <section class="tile tight" data-area="changes">
@@ -808,38 +932,32 @@ Please read plan_implementation.md and let&#39;s continue." title="Copy resume c
       
         <div class="change-row">
           <span class="change-file">plan_implementation.md</span>
-          <span class="change-diff">
-    <span class="change-diff-value">+4 -3</span>
-    <span class="change-spark" aria-hidden="true">
-      <span class="spark-add" style="height:8px"></span>
-      <span class="spark-del" style="height:6px"></span>
-    </span>
-  </span>
-          <span class="change-age">14m</span>
+          <span class="change-diff"></span>
+          <span class="change-age">29m</span>
         </div>
       
         <div class="change-row">
           <span class="change-file">STATE.md</span>
           <span class="change-diff"></span>
-          <span class="change-age">22m</span>
+          <span class="change-age">38m</span>
         </div>
       
         <div class="change-row">
           <span class="change-file">PLAN.md</span>
           <span class="change-diff"></span>
-          <span class="change-age">23m</span>
+          <span class="change-age">38m</span>
         </div>
       
         <div class="change-row">
           <span class="change-file">README.md</span>
           <span class="change-diff"></span>
-          <span class="change-age">26m</span>
+          <span class="change-age">42m</span>
         </div>
       
         <div class="change-row">
           <span class="change-file">CLAUDE.md</span>
           <span class="change-diff"></span>
-          <span class="change-age">51m</span>
+          <span class="change-age">1h</span>
         </div>
       
         <div class="change-row">
@@ -864,36 +982,36 @@ Please read plan_implementation.md and let&#39;s continue." title="Copy resume c
         <span class="tile-meta">3 registered</span>
       </div>
     <div class="tile-body">
-      
-        <div class="agent-card">
-          <div class="agent-head">
-            <span class="chip agent-codex">CX</span>
-            <span class="agent-name">Codex</span>
-            <span class="agent-role">Implementer of Backend Code and Coding Expert You write TypeScript per PLAN.md. You do not redesign. You do not expand scope.</span>
-            <span class="agent-status working" data-agent-id="codex" data-last-task="Desktop shell hardening landed: packaged rebuild works, click-to-open works in desktop, archive/exclude filtering is live, and the current push is TUI visual parity plus root-doc sync."><span class="dot"></span>working</span>
-          </div>
+        
+          <div class="agent-card">
+            <div class="agent-head">
+              <span class="chip agent-codex">CX</span>
+              <span class="agent-name">Codex</span>
+              <span class="agent-role">Implementer of Backend Code and Coding Expert You write TypeScript per PLAN.md. You do not redesign. You do not expand scope.</span>
+              <span class="agent-status working" data-pulse="false" data-agent-id="codex" data-last-task="Desktop shell hardening landed: packaged rebuild works, click-to-open works in desktop, archive/exclude filtering is live, and the current push is TUI visual parity plus root-doc sync."><span class="dot"></span>working</span>
+            </div>
             <div class="agent-objective">Keep the CLI, desktop app, and VS Code extension on one shared QuestState and one design-faithful renderer.</div>
             <div class="agent-meta">AGENTS.md · src/engine/** — parser, normalizer, ranker, watcher · src/cli/** — CLI entry, argv parsing, JSON output · src/web/** — shared HTML/CSS renderer for desktop + VS Code shells · apps/desktop/** — Windows desktop host · extensions/vscode/** — VS Code extension shell · tests/** — vitest suites, fixture repos</div>
           </div>
         
-        <div class="agent-card">
-          <div class="agent-head">
-            <span class="chip agent-claude">CL</span>
-            <span class="agent-name">Claude</span>
-            <span class="agent-role">Planner + implementer (unlocked). You draft specs, PRDs, schemas, and plans AND you write implementation code. Default to the smallest coherent slice, keep scope tight, and verify with npm run build &amp;&amp; npm run lint &amp;&amp; npm test before declaring a pass done. UI/UX changes are in scope when they serve the active plan.</span>
-            <span class="agent-status active" data-agent-id="claude" data-last-task=""><span class="dot"></span>active</span>
-          </div>
+          <div class="agent-card">
+            <div class="agent-head">
+              <span class="chip agent-claude">CL</span>
+              <span class="agent-name">Claude</span>
+              <span class="agent-role">Planner + implementer (unlocked). You draft specs, PRDs, schemas, and plans AND you write implementation code. Default to the smallest coherent slice, keep scope tight, and verify with npm run build &amp;&amp; npm run lint &amp;&amp; npm test before declaring a pass done. UI/UX changes are in scope when they serve the active plan.</span>
+              <span class="agent-status active" data-pulse="false" data-agent-id="claude" data-last-task="STATE.md · 38m"><span class="dot"></span>active</span>
+            </div>
             <div class="agent-objective">Drive plan_implementation.md to 100% in order: Foundation → Workflow tooling → Context enrichment (schema v2) → Safe write-back. &quot;Tool any dev needs&quot; is the north star for v0.2+.</div>
             <div class="agent-meta">CLAUDE.md · PRD.md, PLAN.md, STATE.md · docs/** (except docs/design/** — that&#39;s human-owned) · Schema design in docs/SCHEMA.md · src/**, apps/**, extensions/**, tests/** · PR descriptions and review comments</div>
           </div>
         
-        <div class="agent-card">
-          <div class="agent-head">
-            <span class="chip agent-gemini">GM</span>
-            <span class="agent-name">Gemini</span>
-            <span class="agent-role">Reviewer. You audit output. You do not write production code.</span>
-            <span class="agent-status idle" data-agent-id="gemini" data-last-task=""><span class="dot"></span>idle</span>
-          </div>
+          <div class="agent-card">
+            <div class="agent-head">
+              <span class="chip agent-gemini">GM</span>
+              <span class="agent-name">Gemini</span>
+              <span class="agent-role">Reviewer. You audit output. You do not write production code.</span>
+              <span class="agent-status idle" data-pulse="false" data-agent-id="gemini" data-last-task=""><span class="dot"></span>idle</span>
+            </div>
             <div class="agent-objective">Objective unavailable</div>
             <div class="agent-meta">GEMINI.md · Test coverage audits · Type-safety audits · PR review comments</div>
           </div>
@@ -901,12 +1019,12 @@ Please read plan_implementation.md and let&#39;s continue." title="Copy resume c
         <div class="activity-list">
           <div class="activity-row">
             <span class="file">claude · STATE.md</span>
-            <span class="ago">22m · medium confidence</span>
+            <span class="ago">38m · medium confidence</span>
           </div>
         
           <div class="activity-row">
             <span class="file">claude · PLAN.md</span>
-            <span class="ago">23m · medium confidence</span>
+            <span class="ago">38m · medium confidence</span>
           </div>
         
           <div class="activity-row">
@@ -951,8 +1069,8 @@ Please read plan_implementation.md and let&#39;s continue." title="Copy resume c
 
   <div class="toast" data-toast>copied</div>
 
-  <script id="rql-presets" type="application/json">[{"id":"resume-claude","glyph":"C","label":"Resume for Claude Code","sub":"Paste into Claude with full context","keywords":"claude resume planner","body":"I'm resuming our Claude Code session.\nRepo: Repo Quest Log (branch: main)\nMission: A local-first CLI + TUI + desktop + VS Code shell that makes repo intent legible at a glance and hands that intent to whichever coding agent you open next.\nObjective: Close v0.1 with a fit-to-window desktop, a TUI that visually matches it, and clean panel labels — then ship the v0.2 agent-integration wedge (resume-prompt palette, git panel, agent activity feed, standup export, opt-in write-back). (0/0)\nCurrent task: CLI JSON scan: repolog scan .\nLast touched: plan_implementation.md · idle 14m\n\nNow:\n1. CLI JSON scan: repolog scan . (README.md)\n2. Terminal HUD: repolog or repolog watch . (README.md)\n3. Desktop snapshot: repolog desktop . (README.md)\n\nPlease read PLAN.md and STATE.md, then continue from \"CLI JSON scan: repolog scan .\".","source":"builtin"},{"id":"resume-codex","glyph":"X","label":"Resume for Codex","sub":"Paste into Codex - implementer mode","keywords":"codex resume implementer","body":"Resuming Codex implementer session.\nRepo: Repo Quest Log (branch: main)\nMission: A local-first CLI + TUI + desktop + VS Code shell that makes repo intent legible at a glance and hands that intent to whichever coding agent you open next.\nObjective: Close v0.1 with a fit-to-window desktop, a TUI that visually matches it, and clean panel labels — then ship the v0.2 agent-integration wedge (resume-prompt palette, git panel, agent activity feed, standup export, opt-in write-back). (0/0)\nCurrent task: CLI JSON scan: repolog scan .\nLast touched: plan_implementation.md · idle 14m\n\nRead AGENTS.md for your instructions, then pick up the Now task:\n1. CLI JSON scan: repolog scan . (README.md)\n2. Terminal HUD: repolog or repolog watch . (README.md)\n3. Desktop snapshot: repolog desktop . (README.md)\n\nRun npm run lint \u0026\u0026 npm test before committing.","source":"builtin"},{"id":"resume-gemini","glyph":"G","label":"Resume for Gemini","sub":"Paste into Gemini - reviewer mode","keywords":"gemini resume reviewer","body":"Resuming Gemini reviewer session.\nRepo: Repo Quest Log (branch: main)\nMission: A local-first CLI + TUI + desktop + VS Code shell that makes repo intent legible at a glance and hands that intent to whichever coding agent you open next.\nObjective: Close v0.1 with a fit-to-window desktop, a TUI that visually matches it, and clean panel labels — then ship the v0.2 agent-integration wedge (resume-prompt palette, git panel, agent activity feed, standup export, opt-in write-back). (0/0)\nCurrent task: CLI JSON scan: repolog scan .\nLast touched: plan_implementation.md · idle 14m\n\nRead GEMINI.md for your scope. Recent work touches: plan_implementation.md.\nPlease review the latest diff against AGENTS.md constraints.","source":"builtin"},{"id":"standup","glyph":"*","label":"Daily standup","sub":"What's in flight + what's next","keywords":"standup daily update","body":"Standup - Repo Quest Log (main)\n\nObjective: Close v0.1 with a fit-to-window desktop, a TUI that visually matches it, and clean panel labels — then ship the v0.2 agent-integration wedge (resume-prompt palette, git panel, agent activity feed, standup export, opt-in write-back). (0/0)\n\nIn flight:\n1. CLI JSON scan: repolog scan . (README.md)\n2. Terminal HUD: repolog or repolog watch . (README.md)\n3. Desktop snapshot: repolog desktop . (README.md)\n\nUp next:\n1. Live git panel — branch, ahead/behind, dirty count, last commit subject + relative time\n2. Agent activity feed — infer agent × file from mtimes × owned-areas in AGENTS.md / CLAUDE.md / GEMINI.md\n3. Standup export — one-keypress markdown of today's done + currently-active to clipboard\n4. Opt-in write-back for checkbox toggles only, gated by .repolog.json → \"writeback\": true, with persistent on-screen banner\n5. Schema v2 — rename activeQuest → objective, add gitContext, agentActivity, config.writeback; ship compat shim for v1\n\nBlocked:\n1. Publish npm package @repo-quest/core — waiting on need npm org + CI secrets (23m)","source":"builtin"},{"id":"blocker-summary","glyph":"!","label":"Blocker summary","sub":"For a human or agent to unblock","keywords":"blocker blocked waiting","body":"Blocker summary - Repo Quest Log\n\n1. Publish npm package @repo-quest/core — waiting on need npm org + CI secrets (23m)\n\nContext: objective is \"Close v0.1 with a fit-to-window desktop, a TUI that visually matches it, and clean panel labels — then ship the v0.2 agent-integration wedge (resume-prompt palette, git panel, agent activity feed, standup export, opt-in write-back).\". Resolving these unblocks: CLI JSON scan: repolog scan ..","source":"builtin"},{"id":"briefing","glyph":"B","label":"Repo intent briefing","sub":"Onboard a fresh agent session","keywords":"briefing intent onboard fresh","body":"Briefing: Repo Quest Log\n\nMission: A local-first CLI + TUI + desktop + VS Code shell that makes repo intent legible at a glance and hands that intent to whichever coding agent you open next.\nCurrent objective: Close v0.1 with a fit-to-window desktop, a TUI that visually matches it, and clean panel labels — then ship the v0.2 agent-integration wedge (resume-prompt palette, git panel, agent activity feed, standup export, opt-in write-back).\nBranch: main\n\nNow (3):\n1. CLI JSON scan: repolog scan . (README.md)\n2. Terminal HUD: repolog or repolog watch . (README.md)\n3. Desktop snapshot: repolog desktop . (README.md)\n\nNext (5):\n1. Live git panel — branch, ahead/behind, dirty count, last commit subject + relative time\n2. Agent activity feed — infer agent × file from mtimes × owned-areas in AGENTS.md / CLAUDE.md / GEMINI.md\n3. Standup export — one-keypress markdown of today's done + currently-active to clipboard\n4. Opt-in write-back for checkbox toggles only, gated by .repolog.json → \"writeback\": true, with persistent on-screen banner\n5. Schema v2 — rename activeQuest → objective, add gitContext, agentActivity, config.writeback; ship compat shim for v1\n\nAgents in this repo:\n- Codex (Implementer of Backend Code and Coding Expert You write TypeScript per PLAN.md. You do not redesign. You do not expand scope.): Keep the CLI, desktop app, and VS Code extension on one shared QuestState and one design-faithful renderer.\n- Claude (Planner + implementer (unlocked). You draft specs, PRDs, schemas, and plans AND you write implementation code. Default to the smallest coherent slice, keep scope tight, and verify with npm run build \u0026\u0026 npm run lint \u0026\u0026 npm test before declaring a pass done. UI/UX changes are in scope when they serve the active plan.): Drive plan_implementation.md to 100% in order: Foundation → Workflow tooling → Context enrichment (schema v2) → Safe write-back. \"Tool any dev needs\" is the north star for v0.2+.\n- Gemini (Reviewer. You audit output. You do not write production code.): Objective unavailable\n\nStart by reading PRD.md, PLAN.md, STATE.md. Then ask me what the current priority is before writing code.","source":"builtin"}]</script>
-  <script id="rql-state" type="application/json">{"name":"Repo Quest Log","branch":"main","mission":"A local-first CLI + TUI + desktop + VS Code shell that makes repo intent legible at a glance and hands that intent to whichever coding agent you open next.","objective":{"title":"Close v0.1 with a fit-to-window desktop, a TUI that visually matches it, and clean panel labels — then ship the v0.2 agent-integration wedge (resume-prompt palette, git panel, agent activity feed, standup export, opt-in write-back).","doc":"PLAN.md","line":6,"progress":{"done":0,"total":0}},"resume":{"task":"CLI JSON scan: repolog scan .","doc":"README.md","since":"14m","lastTouched":"plan_implementation.md","thought":"CLI JSON scan: repolog scan ."},"nowCount":3,"nextCount":5,"blockedCount":1,"agentCount":3,"filesCount":7}</script>
+  <script id="rql-presets" type="application/json">[{"id":"resume-claude","glyph":"C","label":"Resume for Claude Code","sub":"Paste into Claude with full context","keywords":"claude resume planner","body":"I'm resuming our Claude Code session.\nRepo: Repo Quest Log (branch: main)\nMission: A local-first CLI + TUI + desktop + VS Code shell that makes repo intent legible at a glance and hands that intent to whichever coding agent you open next.\nObjective: Close v0.1 with a fit-to-window desktop, a TUI that visually matches it, and clean panel labels — then ship the v0.2 agent-integration wedge (resume-prompt palette, git panel, agent activity feed, standup export, opt-in write-back). (0/0)\nCurrent task: CLI JSON scan: repolog scan .\nLast touched: plan_implementation.md · idle 29m\n\nNow:\n1. CLI JSON scan: repolog scan . (README.md)\n2. Terminal HUD: repolog or repolog watch . (README.md)\n3. Desktop snapshot: repolog desktop . (README.md)\n\nPlease read PLAN.md and STATE.md, then continue from \"CLI JSON scan: repolog scan .\".","source":"builtin"},{"id":"resume-codex","glyph":"X","label":"Resume for Codex","sub":"Paste into Codex - implementer mode","keywords":"codex resume implementer","body":"Resuming Codex implementer session.\nRepo: Repo Quest Log (branch: main)\nMission: A local-first CLI + TUI + desktop + VS Code shell that makes repo intent legible at a glance and hands that intent to whichever coding agent you open next.\nObjective: Close v0.1 with a fit-to-window desktop, a TUI that visually matches it, and clean panel labels — then ship the v0.2 agent-integration wedge (resume-prompt palette, git panel, agent activity feed, standup export, opt-in write-back). (0/0)\nCurrent task: CLI JSON scan: repolog scan .\nLast touched: plan_implementation.md · idle 29m\n\nRead AGENTS.md for your instructions, then pick up the Now task:\n1. CLI JSON scan: repolog scan . (README.md)\n2. Terminal HUD: repolog or repolog watch . (README.md)\n3. Desktop snapshot: repolog desktop . (README.md)\n\nRun npm run lint \u0026\u0026 npm test before committing.","source":"builtin"},{"id":"resume-gemini","glyph":"G","label":"Resume for Gemini","sub":"Paste into Gemini - reviewer mode","keywords":"gemini resume reviewer","body":"Resuming Gemini reviewer session.\nRepo: Repo Quest Log (branch: main)\nMission: A local-first CLI + TUI + desktop + VS Code shell that makes repo intent legible at a glance and hands that intent to whichever coding agent you open next.\nObjective: Close v0.1 with a fit-to-window desktop, a TUI that visually matches it, and clean panel labels — then ship the v0.2 agent-integration wedge (resume-prompt palette, git panel, agent activity feed, standup export, opt-in write-back). (0/0)\nCurrent task: CLI JSON scan: repolog scan .\nLast touched: plan_implementation.md · idle 29m\n\nRead GEMINI.md for your scope. Recent work touches: plan_implementation.md.\nPlease review the latest diff against AGENTS.md constraints.","source":"builtin"},{"id":"standup","glyph":"*","label":"Daily standup","sub":"What's in flight + what's next","keywords":"standup daily update","body":"Standup - Repo Quest Log (main)\n\nObjective: Close v0.1 with a fit-to-window desktop, a TUI that visually matches it, and clean panel labels — then ship the v0.2 agent-integration wedge (resume-prompt palette, git panel, agent activity feed, standup export, opt-in write-back). (0/0)\n\nIn flight:\n1. CLI JSON scan: repolog scan . (README.md)\n2. Terminal HUD: repolog or repolog watch . (README.md)\n3. Desktop snapshot: repolog desktop . (README.md)\n\nUp next:\n1. Live git panel — branch, ahead/behind, dirty count, last commit subject + relative time\n2. Agent activity feed — infer agent × file from mtimes × owned-areas in AGENTS.md / CLAUDE.md / GEMINI.md\n3. Standup export — one-keypress markdown of today's done + currently-active to clipboard\n4. Opt-in write-back for checkbox toggles only, gated by .repolog.json → \"writeback\": true, with persistent on-screen banner\n5. Schema v2 — rename activeQuest → objective, add gitContext, agentActivity, config.writeback; ship compat shim for v1\n\nBlocked:\n1. Publish npm package @repo-quest/core — waiting on need npm org + CI secrets (38m)","source":"builtin"},{"id":"blocker-summary","glyph":"!","label":"Blocker summary","sub":"For a human or agent to unblock","keywords":"blocker blocked waiting","body":"Blocker summary - Repo Quest Log\n\n1. Publish npm package @repo-quest/core — waiting on need npm org + CI secrets (38m)\n\nContext: objective is \"Close v0.1 with a fit-to-window desktop, a TUI that visually matches it, and clean panel labels — then ship the v0.2 agent-integration wedge (resume-prompt palette, git panel, agent activity feed, standup export, opt-in write-back).\". Resolving these unblocks: CLI JSON scan: repolog scan ..","source":"builtin"},{"id":"briefing","glyph":"B","label":"Repo intent briefing","sub":"Onboard a fresh agent session","keywords":"briefing intent onboard fresh","body":"Briefing: Repo Quest Log\n\nMission: A local-first CLI + TUI + desktop + VS Code shell that makes repo intent legible at a glance and hands that intent to whichever coding agent you open next.\nCurrent objective: Close v0.1 with a fit-to-window desktop, a TUI that visually matches it, and clean panel labels — then ship the v0.2 agent-integration wedge (resume-prompt palette, git panel, agent activity feed, standup export, opt-in write-back).\nBranch: main\n\nNow (3):\n1. CLI JSON scan: repolog scan . (README.md)\n2. Terminal HUD: repolog or repolog watch . (README.md)\n3. Desktop snapshot: repolog desktop . (README.md)\n\nNext (5):\n1. Live git panel — branch, ahead/behind, dirty count, last commit subject + relative time\n2. Agent activity feed — infer agent × file from mtimes × owned-areas in AGENTS.md / CLAUDE.md / GEMINI.md\n3. Standup export — one-keypress markdown of today's done + currently-active to clipboard\n4. Opt-in write-back for checkbox toggles only, gated by .repolog.json → \"writeback\": true, with persistent on-screen banner\n5. Schema v2 — rename activeQuest → objective, add gitContext, agentActivity, config.writeback; ship compat shim for v1\n\nAgents in this repo:\n- Codex (Implementer of Backend Code and Coding Expert You write TypeScript per PLAN.md. You do not redesign. You do not expand scope.): Keep the CLI, desktop app, and VS Code extension on one shared QuestState and one design-faithful renderer.\n- Claude (Planner + implementer (unlocked). You draft specs, PRDs, schemas, and plans AND you write implementation code. Default to the smallest coherent slice, keep scope tight, and verify with npm run build \u0026\u0026 npm run lint \u0026\u0026 npm test before declaring a pass done. UI/UX changes are in scope when they serve the active plan.): Drive plan_implementation.md to 100% in order: Foundation → Workflow tooling → Context enrichment (schema v2) → Safe write-back. \"Tool any dev needs\" is the north star for v0.2+.\n- Gemini (Reviewer. You audit output. You do not write production code.): Objective unavailable\n\nStart by reading PRD.md, PLAN.md, STATE.md. Then ask me what the current priority is before writing code.","source":"builtin"}]</script>
+  <script id="rql-state" type="application/json">{"name":"Repo Quest Log","branch":"main","mission":"A local-first CLI + TUI + desktop + VS Code shell that makes repo intent legible at a glance and hands that intent to whichever coding agent you open next.","objective":{"title":"Close v0.1 with a fit-to-window desktop, a TUI that visually matches it, and clean panel labels — then ship the v0.2 agent-integration wedge (resume-prompt palette, git panel, agent activity feed, standup export, opt-in write-back).","doc":"PLAN.md","line":6,"progress":{"done":0,"total":0}},"resume":{"task":"CLI JSON scan: repolog scan .","doc":"README.md","since":"29m","lastTouched":"plan_implementation.md","thought":"CLI JSON scan: repolog scan ."},"nowCount":3,"nextCount":5,"blockedCount":1,"agentCount":3,"filesCount":7}</script>
 
   <script>
     (function () {
@@ -1065,6 +1183,14 @@ Please read plan_implementation.md and let&#39;s continue." title="Copy resume c
           if (action === "refresh") {
             if (window.repologDesktop && typeof window.repologDesktop.requestRefresh === "function") {
               window.repologDesktop.requestRefresh();
+            }
+            return;
+          }
+          if (action === "open-repo") {
+            if (window.repologDesktop && typeof window.repologDesktop.openRepoPicker === "function") {
+              window.repologDesktop.openRepoPicker();
+            } else if (window.__rqlToast) {
+              window.__rqlToast("open repo is only available in the desktop shell");
             }
             return;
           }

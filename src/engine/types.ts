@@ -70,19 +70,46 @@ export interface Decision {
   line?: number;
 }
 
+export interface Objective {
+  title: string;
+  doc: string;
+  line?: number;
+  progress: { done: number; total: number };
+}
+
+export interface GitContext {
+  branch: string;
+  ahead: number;
+  behind: number;
+  dirtyFiles: number;
+  lastCommit?: {
+    subject: string;
+    sha: string;
+    at: string;
+  };
+}
+
+export interface AgentActivity {
+  agent: AgentId;
+  file: string;
+  at: string;
+  confidence: number;
+}
+
+export interface RepoConfigSnapshot {
+  writeback: boolean;
+  prompts?: { dir?: string };
+}
+
 export interface QuestState {
-  schemaVersion: 1;
+  schemaVersion: 2;
   name: string;
   branch: string;
   lastScan: string;
   scannedFiles: string[];
   mission: string;
-  activeQuest: {
-    title: string;
-    doc: string;
-    line?: number;
-    progress: { done: number; total: number };
-  };
+  objective: Objective;
+  activeQuest: Objective;
   resumeNote: ResumeNote;
   now: Task[];
   next: Task[];
@@ -90,4 +117,7 @@ export interface QuestState {
   agents: AgentProfile[];
   recentChanges: FileChange[];
   decisions: Decision[];
+  gitContext?: GitContext;
+  agentActivity: AgentActivity[];
+  config: RepoConfigSnapshot;
 }

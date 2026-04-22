@@ -56,7 +56,7 @@ describe("normalizeQuestState", () => {
     );
 
     expect(plan).toBeDefined();
-    expect(state.schemaVersion).toBe(1);
+    expect(state.schemaVersion).toBe(2);
     expect(state.name).toBe("healthy-fixture");
     expect(state.branch).toBe("feat/tui-hud");
     expect(state.scannedFiles).toEqual(["PLAN.md", "README.md"]);

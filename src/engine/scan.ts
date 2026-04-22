@@ -1,7 +1,10 @@
 import { basename, resolve } from "node:path";
 import { execFileSync } from "node:child_process";
 
+import { inferAgentActivity } from "./activity.js";
+import { extractAgentProfiles } from "./agents.js";
 import { isExcludedPath, readRepoConfig } from "./config.js";
+import { readGitContext } from "./git.js";
 import { normalizeQuestState } from "./normalize.js";
 import { parseRepo } from "./parse.js";
 import { relativeSince } from "./time.js";
@@ -17,15 +20,22 @@ export async function scanRepo(rootDir: string, options: ScanOptions = {}): Prom
   const resolvedRoot = resolve(rootDir);
   const config = await readRepoConfig(resolvedRoot);
   const docs = await parseRepo(resolvedRoot);
+  const gitContext = readGitContext(resolvedRoot);
+  const recentChanges = buildRecentChanges(docs, options.recentChanges, resolvedRoot, config.excludes);
+  const agents = extractAgentProfiles(docs);
+  const agentActivity = inferAgentActivity(agents, recentChanges);
 
   return normalizeQuestState(docs, {
     repoRoot: resolvedRoot,
     repoName: basename(resolvedRoot),
-    branch: readBranchName(resolvedRoot),
+    branch: gitContext?.branch ?? readBranchName(resolvedRoot),
     lastScan: new Date().toISOString(),
-    recentChanges: buildRecentChanges(docs, options.recentChanges, resolvedRoot, config.excludes),
+    recentChanges,
     lastTouchedFile: options.lastTouchedFile,
     lastTouchedAt: options.lastTouchedAt,
+    gitContext,
+    agentActivity,
+    config: { writeback: config.writeback, prompts: config.prompts },
   });
 }
 

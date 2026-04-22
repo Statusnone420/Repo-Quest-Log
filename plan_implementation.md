@@ -15,9 +15,10 @@ Overall progress: **65%**
 | Workstream | Progress | What is actually left |
 |---|---:|---|
 | Foundation pass | 100% | Shared helpers (`prompts.ts`, `changes.ts`, `time.ts`, `editor.ts`) landed; TUI visual parity done; PLAN.md reconciled with source. |
-| Workflow tooling pass | 95% | Prompt loader, `repolog prompt`, `repolog status --short`, Ctrl+O Open-Repo picker, `repolog doctor` + `--json`, and **Ctrl+K palettes now hydrate from `loadPromptPresets`** in TUI (`src/tui/App.tsx`), desktop (`apps/desktop/main.cjs` + `SurfaceHtmlOptions.presets`), and VS Code webview (`extensions/vscode/extension.js`). External `~/.repolog/prompts/*.md` + `<repo>/.repolog/prompts/*.md` overrides now show up in-app. Remaining: VS Code command-palette entrypoints (quick-pick for prompt copy + doctor). |
-| Context enrichment pass | 0% | Schema v2 compat, `gitContext`, `agentActivity`, and minimal git/activity rendering. |
-| Safe write-back pass | 0% | Opt-in checkbox-only write-back, banner, and adversarial tests. Config now parses `writeback: true`, but no writer module yet. |
+| Workflow tooling pass | 100% | Prompt loader, `repolog prompt`, `repolog status --short`, Ctrl+O Open-Repo picker, `repolog doctor` + `--json`, and Ctrl+K palettes hydrating from `loadPromptPresets` across TUI, desktop, and VS Code webview. VS Code command-palette entrypoints were dropped as out-of-scope for v0.2 — the owning user is on Antigravity-style IDEs, not stock VS Code, so webview Ctrl+K is sufficient. Revisit only if a VS Code user files an issue. |
+| Context enrichment pass | 0% → in progress | Schema v2 compat, `gitContext`, `agentActivity`, and minimal git/activity rendering (desktop first). |
+| Safe write-back pass | 0% | Opt-in checkbox-only write-back on desktop, banner, and adversarial tests. Config parses `writeback: true`; no writer module yet. |
+| Ship pass | 0% | App icon + metadata, About window, on-screen version, end-user README, electron-builder NSIS + portable targets, v0.2.0 bump. Target: GitHub Releases artifact that a non-developer can install. |
 
 The next coding agent should treat the table above as the real priority order. If the percentage changes, update this table first.
 

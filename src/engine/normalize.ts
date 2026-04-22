@@ -3,13 +3,17 @@ import { HEADING_PATTERNS } from "./fileset.js";
 import { rankBuckets } from "./rank.js";
 import { relativeSince } from "./time.js";
 import type {
+  AgentActivity,
   AgentId,
   BlockedTask,
   Decision,
   FileChange,
+  GitContext,
+  Objective,
   ParsedDoc,
   ParsedSection,
   QuestState,
+  RepoConfigSnapshot,
   ResumeNote,
   Task,
 } from "./types.js";
@@ -22,6 +26,9 @@ export interface NormalizeOptions {
   lastTouchedFile?: string;
   lastTouchedAt?: string;
   recentChanges?: readonly FileChange[];
+  gitContext?: GitContext;
+  agentActivity?: readonly AgentActivity[];
+  config?: RepoConfigSnapshot;
 }
 
 interface ExtractedTask extends Task {
@@ -56,13 +63,16 @@ export function normalizeQuestState(
   const decisions = extractDecisions(sortedDocs);
   const topTask = ranked.now[0] ?? ranked.next[0] ?? ranked.blocked[0];
 
+  const branch = options.gitContext?.branch ?? options.branch ?? "main";
+
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     name: options.repoName ?? inferRepoName(options.repoRoot, scannedFiles),
-    branch: options.branch ?? "main",
+    branch,
     lastScan: options.lastScan ?? "just now",
     scannedFiles,
     mission,
+    objective: activeQuest,
     activeQuest,
     resumeNote: buildResumeNote({
       activeQuest,
@@ -78,6 +88,9 @@ export function normalizeQuestState(
     agents,
     recentChanges,
     decisions,
+    gitContext: options.gitContext,
+    agentActivity: [...(options.agentActivity ?? [])],
+    config: options.config ?? { writeback: false },
   };
 }
 
@@ -142,7 +155,7 @@ function extractMission(docs: readonly ParsedDoc[]): string {
   return firstSentence(sourceText);
 }
 
-function extractActiveQuest(docs: readonly ParsedDoc[]): QuestState["activeQuest"] {
+function extractActiveQuest(docs: readonly ParsedDoc[]): Objective {
   const questDoc = docs.find((doc) => isFile(doc.file, "PLAN.md"))
     ?? docs[0];
   const questSection = questDoc ? findSectionByHeading(questDoc.sections, HEADING_PATTERNS.activeQuest) : undefined;
@@ -267,7 +280,7 @@ function collectBlockedTasks(
 }
 
 function buildResumeNote(params: {
-  activeQuest: QuestState["activeQuest"];
+  activeQuest: Objective;
   recentChanges: readonly FileChange[];
   topTask?: ExtractedTask | ExtractedBlockedTask;
   lastTouchedFile?: string;

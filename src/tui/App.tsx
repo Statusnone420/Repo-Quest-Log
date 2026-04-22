@@ -666,10 +666,20 @@ function renderAgents(state: QuestState, width: number): string[] {
     return [" · no agent profiles"];
   }
 
-  return state.agents.map((agent) => truncate(
+  const lines = state.agents.map((agent) => truncate(
     `▍ ${formatAgentGlyph(agent.id)} ${agent.name} · ${agent.status.toUpperCase()} · ${agent.objective}`,
     width - 2,
   ));
+
+  const activity = (state.agentActivity ?? []).slice(0, 3);
+  if (activity.length > 0) {
+    lines.push(" · recent activity");
+    for (const entry of activity) {
+      lines.push(truncate(`  ↳ ${entry.agent} ${entry.file} · ${entry.at} · ${formatConfidence(entry.confidence)}`, width - 2));
+    }
+  }
+
+  return lines;
 }
 
 function renderChanges(state: QuestState, width: number, limit = 6): string[] {
@@ -702,6 +712,7 @@ function renderPaletteLines(presets: PromptPreset[], selectedIndex: number, widt
 }
 
 function renderCockpitLine(state: QuestState, width: number): string {
+  const git = state.gitContext;
   const value = [
     `● ${state.now.length} NOW`,
     `○ ${state.next.length} NEXT`,
@@ -709,8 +720,20 @@ function renderCockpitLine(state: QuestState, width: number): string {
     `◉ ${state.agents.length} AGENTS`,
     `◌ ${state.scannedFiles.length} FILES`,
     `tail ${state.resumeNote.lastTouched}`,
-  ].join(" · ");
+    git ? `git ${git.branch}${git.dirtyFiles ? ` ${git.dirtyFiles} dirty` : ""}` : "",
+  ].filter(Boolean).join(" · ");
   return truncate(value, width);
+}
+
+function formatConfidence(confidence: number): string {
+  const c = Math.max(0, Math.min(1, confidence));
+  if (c >= 0.84) {
+    return "high";
+  }
+  if (c >= 0.5) {
+    return "med";
+  }
+  return "low";
 }
 
 function truncate(value: string, width: number): string {

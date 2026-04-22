@@ -77,7 +77,7 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     .shell {
       width: 100vw; height: 100vh;
       display: grid;
-      grid-template-rows: auto auto auto minmax(0, 1fr);
+      grid-template-rows: auto auto auto auto minmax(0, 1fr);
       overflow: hidden;
     }
 
@@ -246,6 +246,56 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     .pip-files { background: var(--muted); }
     .cockpit .spacer { flex: 1; }
     .cockpit .tail { color: var(--dim); }
+
+    /* ---- GIT STRIP ---- */
+    .git-strip {
+      display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+      padding: calc(var(--pad-y) - 2px) var(--pad-x);
+      font-family: var(--mono); font-size: var(--small-size);
+      color: var(--muted);
+      border-bottom: 1px solid var(--tile-border);
+    }
+    .git-strip .git-chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 2px 8px; border-radius: 999px;
+      background: var(--faint); color: var(--ink);
+    }
+    .git-strip .git-chip.dirty { color: var(--warn); }
+    .git-strip .git-chip.ahead { color: var(--accent); }
+    .git-strip .git-chip.behind { color: var(--warn); }
+    .git-strip .git-subject { color: var(--dim); flex: 1; min-width: 0;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .git-strip .git-sha { color: var(--muted); font-family: var(--mono); }
+
+    /* ---- WRITE-BACK BANNER ---- */
+    .wb-banner {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 6px var(--pad-x);
+      background: linear-gradient(90deg, rgba(233,185,115,0.14), rgba(233,185,115,0.06));
+      border-bottom: 1px solid rgba(233,185,115,0.35);
+      color: var(--warn);
+      font-family: var(--mono); font-size: var(--small-size);
+    }
+    .wb-banner .wb-left { display: inline-flex; align-items: center; gap: 8px; }
+    .wb-banner .wb-dot {
+      width: 8px; height: 8px; border-radius: 999px; background: var(--warn);
+      box-shadow: 0 0 0 3px rgba(233,185,115,0.2);
+      animation: wb-pulse 1.6s ease-in-out infinite;
+    }
+    @keyframes wb-pulse {
+      0%,100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    .wb-banner .wb-hint { color: var(--dim); }
+
+    /* ---- AGENT ACTIVITY BADGE ---- */
+    .activity-list { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
+    .activity-row {
+      display: flex; gap: 8px; align-items: center;
+      font-family: var(--mono); font-size: var(--tiny-size); color: var(--muted);
+    }
+    .activity-row .file { color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; flex: 1; }
+    .activity-row .ago { color: var(--dim); }
 
     /* ---- BOARD (3 cols, single row, fits viewport) ---- */
     .board {
@@ -666,17 +716,20 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       </div>
     </section>
 
-    <nav class="cockpit" aria-label="Status cockpit">
-      <span class="stat"><span class="pip pip-now"></span><span class="num">${state.now.length}</span> now</span>
-      <span class="stat"><span class="pip pip-next"></span><span class="num">${state.next.length}</span> next</span>
-      <span class="stat"><span class="pip pip-blocked"></span><span class="num">${state.blocked.length}</span> blocked</span>
-      <span class="stat"><span class="pip pip-agents"></span><span class="num">${state.agents.length}</span> agents</span>
-      <span class="stat"><span class="pip pip-files"></span><span class="num">${state.scannedFiles.length}</span> files watched</span>
-      <span class="spacer"></span>
-      <span class="tail">${escapeHtml(state.activeQuest.doc)} · ${escapeHtml(state.resumeNote.lastTouched)}</span>
-    </nav>
+      <nav class="cockpit" aria-label="Status cockpit">
+        <span class="stat"><span class="pip pip-now"></span><span class="num">${state.now.length}</span> now</span>
+        <span class="stat"><span class="pip pip-next"></span><span class="num">${state.next.length}</span> next</span>
+        <span class="stat"><span class="pip pip-blocked"></span><span class="num">${state.blocked.length}</span> blocked</span>
+        <span class="stat"><span class="pip pip-agents"></span><span class="num">${state.agents.length}</span> agents</span>
+        <span class="stat"><span class="pip pip-files"></span><span class="num">${state.scannedFiles.length}</span> files watched</span>
+        <span class="spacer"></span>
+        <span class="tail">${escapeHtml(state.activeQuest.doc)} · ${escapeHtml(state.resumeNote.lastTouched)}</span>
+      </nav>
 
-    <section class="board">
+      ${renderGitStrip(state)}
+      ${state.config?.writeback ? renderWritebackBanner() : ""}
+
+      <section class="board">
       <div class="col">
         ${renderTaskTile("now", "Now", state.now.length, state.now, true)}
         ${renderBlockedTile(state.blocked)}
@@ -686,10 +739,10 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
         ${renderChangesTile(state.recentChanges)}
       </div>
       <div class="col">
-        ${renderAgentsTile(state.agents)}
-        ${renderDecisionsTile(state.decisions)}
-      </div>
-    </section>
+          ${renderAgentsTile(state)}
+          ${renderDecisionsTile(state.decisions)}
+        </div>
+      </section>
     `}
   </div>
 
@@ -871,8 +924,8 @@ export function renderVSCodeHtml(state: QuestState, options: SurfaceHtmlOptions 
       ${renderVSCodeSection("Now", state.now.length, "#0e639c", state.now.map((task) => renderVSCodeTaskRow(task, "◆", "#4ec9b0")))}
       ${renderVSCodeSection("Next", state.next.length, undefined, state.next.map((task) => renderVSCodeTaskRow(task, "○")))}
       ${renderVSCodeSection("Blocked", state.blocked.length, "#a1260d", state.blocked.map((task) => renderVSCodeBlockedRow(task)))}
-      ${renderVSCodeSection("Agents", state.agents.length, undefined, state.agents.map((agent) => renderVSCodeAgent(agent)))}
-      ${renderVSCodeSection("Recent changes", state.recentChanges.length, undefined, state.recentChanges.map((change) => renderVSCodeChangeRow(change)))}
+        ${renderVSCodeSection("Agents", state.agents.length, undefined, state.agents.map((agent) => renderVSCodeAgent(agent)))}${renderVSCodeActivitySection(state)}
+        ${renderVSCodeSection("Recent changes", state.recentChanges.length, undefined, state.recentChanges.map((change) => renderVSCodeChangeRow(change)))}
     </div>
 
     <div class="status-bar">
@@ -960,12 +1013,14 @@ function renderBlockedTile(tasks: BlockedTask[]): string {
   </section>`;
 }
 
-function renderAgentsTile(agents: AgentProfile[]): string {
-  return `<section class="tile" data-area="agents">
-    <div class="tile-header">
-      <h3 class="tile-title agents"><span class="accent-bar"></span>Agents</h3>
-      <span class="tile-meta">${agents.length} registered</span>
-    </div>
+  function renderAgentsTile(state: QuestState): string {
+    const agents = state.agents;
+    const activity = (state.agentActivity ?? []).slice(0, 4);
+    return `<section class="tile" data-area="agents">
+      <div class="tile-header">
+        <h3 class="tile-title agents"><span class="accent-bar"></span>Agents</h3>
+        <span class="tile-meta">${agents.length} registered</span>
+      </div>
     <div class="tile-body">
       ${agents.length === 0 ? `<div class="agent-card"><div class="agent-objective">No agent profiles discovered.</div></div>` : agents.map((agent) => `
         <div class="agent-card">
@@ -975,13 +1030,71 @@ function renderAgentsTile(agents: AgentProfile[]): string {
             <span class="agent-role">${escapeHtml(agent.role)}</span>
             <span class="agent-status ${escapeHtml(agent.status)}" data-agent-id="${escapeHtml(agent.id)}" data-last-task="${escapeHtml(agent.lastTask ?? "")}"><span class="dot"></span>${escapeHtml(agent.status)}</span>
           </div>
-          <div class="agent-objective">${escapeHtml(agent.objective)}</div>
-          <div class="agent-meta">${escapeHtml(agent.file)} · ${escapeHtml(agent.area)}</div>
-        </div>
-      `).join("")}
-    </div>
-  </section>`;
-}
+            <div class="agent-objective">${escapeHtml(agent.objective)}</div>
+            <div class="agent-meta">${escapeHtml(agent.file)} · ${escapeHtml(agent.area)}</div>
+          </div>
+        `).join("")}
+        ${activity.length > 0 ? `<div class="activity-list">${activity.map((entry) => `
+          <div class="activity-row">
+            <span class="file">${escapeHtml(entry.agent)} · ${escapeHtml(entry.file)}</span>
+            <span class="ago">${escapeHtml(entry.at)} · ${renderConfidenceLabel(entry.confidence)}</span>
+          </div>
+        `).join("")}</div>` : ""}
+      </div>
+    </section>`;
+  }
+
+  function renderGitStrip(state: QuestState): string {
+    const git = state.gitContext;
+    if (!git) {
+      return "";
+    }
+
+    const chips = [
+      `<span class="git-chip branch">branch ${escapeHtml(git.branch)}</span>`,
+      git.ahead > 0 ? `<span class="git-chip ahead">ahead ${git.ahead}</span>` : "",
+      git.behind > 0 ? `<span class="git-chip behind">behind ${git.behind}</span>` : "",
+      `<span class="git-chip dirty">dirty ${git.dirtyFiles}</span>`,
+    ].filter(Boolean).join("");
+
+    const commit = git.lastCommit
+      ? `<span class="git-subject">${escapeHtml(git.lastCommit.subject)} <span class="git-sha">${escapeHtml(git.lastCommit.sha)}</span> · ${escapeHtml(git.lastCommit.at)}</span>`
+      : `<span class="git-subject">No commits available</span>`;
+
+    return `<section class="git-strip" aria-label="Git context">${chips}${commit}</section>`;
+  }
+
+  function renderWritebackBanner(): string {
+    return `<section class="wb-banner" aria-label="Write-back enabled">
+      <div class="wb-left"><span class="wb-dot"></span><span>write-back ON</span></div>
+      <span class="wb-hint">Checkbox toggles only</span>
+    </section>`;
+  }
+
+  function renderConfidenceLabel(confidence: number): string {
+    const c = Math.max(0, Math.min(1, confidence));
+    if (c >= 0.84) {
+      return "high confidence";
+    }
+    if (c >= 0.5) {
+      return "medium confidence";
+    }
+    return "low confidence";
+  }
+
+  function renderVSCodeActivitySection(state: QuestState): string {
+    const activity = (state.agentActivity ?? []).slice(0, 4);
+    if (activity.length === 0) {
+      return "";
+    }
+
+    return renderVSCodeSection(
+      "Agent activity",
+      activity.length,
+      undefined,
+      activity.map((entry) => `<div class="row"><span class="row-icon">↳</span><span class="row-text">${escapeHtml(entry.agent)} ${escapeHtml(entry.file)}</span><span class="row-sub">${escapeHtml(entry.at)} · ${renderConfidenceLabel(entry.confidence)}</span></div>`),
+    );
+  }
 
 function renderDecisionsTile(decisions: Decision[] | undefined): string {
   if (!decisions || decisions.length === 0) return "";

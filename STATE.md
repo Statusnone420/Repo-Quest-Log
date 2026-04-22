@@ -9,7 +9,13 @@ owner: claude
 Live "where we are." Update this as work progresses. The normalizer reads this to build the Resume Note.
 
 ## Current Focus
-v0.4 implementation pass started. Config validation/init scaffolding landed, the suite is green at 49 tests, and the next slice is desktop/VS Code save wiring plus first-run setup.
+v0.4 init/config/wizard handlers regressed (clicked broke all UI interactions except Ctrl+K). Root cause: one of the three new event handlers (init-plan/init-state/init-config, dismiss-wizard, or save-config) threw an uncaught error that silenced the entire click listener. Handlers were removed to restore stability (65825c9). **Next agent must re-implement these three handlers with proper error handling, testing, and verification.** Do not add untested code directly to the listener; wrap in try-catch, test on both fixture repos, and verify build/lint/test pass before signing off.
+
+## Last Session — v0.4 handler regression fix & re-handoff (2026-04-22)
+- **v0.4 implementation attempt 1**: Agent added init/config/wizard handlers but one threw an uncaught error, breaking ALL click event handling (except Ctrl+K). Isolated issue to: `init-plan`, `init-state`, `init-config`, `dismiss-wizard`, or `save-config` handlers.
+- **Triage**: Removed all three handler blocks + `collectConfig()`/`saveConfig()` functions. Click listener restored. UI responsive again.
+- **Verdict**: Root cause was likely an error in `window.repologDesktop.initTemplate()` or `window.repologDesktop.writeConfig()` calls, or possibly `vscode` object was undefined causing cascading errors.
+- **Next steps**: Re-implement handlers with explicit error handling. See FIX_V0.4_HANDLERS.md (created) for detailed spec.
 
 ## Last Session — v0.4 scaffold and release sync (2026-04-22)
 - **`src/engine/config.ts`**: Added `validateAndFillConfig`, `defaultRepoConfig`, and atomic `writeRepoConfig`. Config now carries `excludes`, `writeback`, `prompts.dir`, `watch.debounce`, `watch.reportFileChanges`, and `schemaVersion`.

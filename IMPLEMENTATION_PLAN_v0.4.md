@@ -8,6 +8,21 @@
 
 ---
 
+## 🔴 CURRENT STATUS: REGRESSION FIX IN PROGRESS
+
+**What happened:** First v0.4 implementation (commit 65825c9) added init/config/wizard handlers but one threw an uncaught error in the click event listener, breaking all UI interactions except Ctrl+K. Handlers were surgically removed to restore stability. **Next agent must re-implement with proper error handling.** See `FIX_V0.4_HANDLERS.md` for exact implementation spec.
+
+**Progress:**
+- ✅ All core engine features (doctor, tuneup, watcher, writeback) working
+- ✅ Desktop app responsive again
+- ⚠️ Wizard buttons disabled (init-plan, init-state, init-config)
+- ⚠️ Settings save button disabled (save-config)
+- ⏳ Awaiting corrected re-implementation with error handling
+
+**Next step:** Follow `FIX_V0.4_HANDLERS.md` spec exactly. All code provided. Wrap in try-catch, test both fixtures, verify build/test/lint pass before signing off.
+
+---
+
 ## Prerequisites for Implementation
 
 - Read `docs/SCHEMA.md` for all type shapes: `RepoConfig`, `QuestState`, `DoctorReport`, `TuneupResult`

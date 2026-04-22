@@ -38,5 +38,8 @@ Instructions for any coding agent working in this repo (Codex, generic agents, C
 ## Current Objective
 Keep the CLI, desktop app, and VS Code extension on one shared `QuestState` and one design-faithful renderer while landing the v0.4 first-run/config/write-back pass.
 
+## Current Task
+**CRITICAL FIX REQUIRED:** v0.4 init/config/wizard handlers regressed (broke all click handling). Root cause: uncaught error in one of three new handlers. Handlers were removed to restore stability. **You must re-implement all three with proper try-catch error handling, testing on both fixture repos, and full build/test verification.** See **FIX_V0.4_HANDLERS.md** for exact spec — this is not a design task, it's a surgical code fix with all details provided. Do not deviate. Do not commit until `npm test` passes on all 49+ tests.
+
 ## Last Task
-Desktop shell hardening landed: packaged rebuild works, click-to-open works in desktop, archive/exclude filtering is live, and the current push is v0.4 init/config/write-back scaffolding plus root-doc sync.
+Desktop shell hardening landed: packaged rebuild works, click-to-open works in desktop, archive/exclude filtering is live. v0.4 implementation attempted but handler error broke UI click responses; waiting for corrected re-implementation.

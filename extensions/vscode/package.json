@@ -4,6 +4,10 @@
   "description": "A local-first repo HUD for markdown-driven agent workflows.",
   "version": "0.0.2",
   "publisher": "local",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Statusnone420/Repo-Quest-Log.git"
+  },
   "engines": {
     "vscode": "^1.96.0"
   },

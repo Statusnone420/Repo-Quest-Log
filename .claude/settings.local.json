@@ -6,7 +6,8 @@
       "Bash(npx tsc *)",
       "Bash(node dist/cli/index.js status --short .)",
       "Bash(node dist/cli/index.js prompt list .)",
-      "Bash(node dist/cli/index.js doctor .)"
+      "Bash(node dist/cli/index.js doctor .)",
+      "Bash(npx repolog *)"
     ]
   }
 }

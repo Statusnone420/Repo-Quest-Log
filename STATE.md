@@ -1,3 +1,9 @@
+---
+title: Repo Quest Log — State
+status: active
+owner: claude
+---
+
 # STATE.md
 
 Live "where we are." Update this as work progresses. The normalizer reads this to build the Resume Note.
@@ -34,7 +40,7 @@ v0.3 Slice 1 complete + Settings panel redesigned. Scrollable body, fixed head/f
 - `npm run build`, `npm run lint`, `npm test` all green (30 tests, 13 files).
 
 ## Resume Note
-> v0.3 Slice 1 complete + Settings panel redesigned: scrollable body with fixed head/footer, tuneup card promoted to top, settings cards compressed, legend removed. Test labels updated to match new copy. 42 tests green. Next: v0.3+ items or release.
+> RepoLog tuneup + Objective sync: legibility 65→100. Added active Now/Next to PLAN.md; updated PLAN.md Objective to v0.3/v0.4 reality; renamed CLAUDE.md's "Current Objective" to "Objective"; added Objective to GEMINI.md. Added Objective Sync Rule to PLAN.md: agent objectives must align with repo objective. 42 tests green, doctor all-clear. HUD now reflects current state.
 
 Last touched: `STATE.md`
 

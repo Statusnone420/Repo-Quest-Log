@@ -31,8 +31,8 @@ Instructions for Claude (Claude Code) working in this repo. "RepoLog"
 - Add new runtime dependencies without a note
 - Redesign landed work unless source disagrees with docs
 
-## Current Objective
-Drive `plan_implementation.md` to 100% in order: Foundation → Workflow tooling → Context enrichment (schema v2) → Safe write-back. "Tool any dev needs" is the north star for v0.2+.
+## Objective
+Drive implementation toward v0.3 release and v0.4 kickoff: finalize existing work, verify tests, ship release, then begin gh integration planning. Align with PLAN.md and execute top-down.
 
 ## UI copy rule
 The product is "RepoLog". Panel labels are literal — Objective, Now, Next, Blocked, Agents, Recent changes. Do not introduce quest / mission / XP / progression language in UI copy. The RPG metaphor is a brand hook only.

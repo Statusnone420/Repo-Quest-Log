@@ -1,3 +1,9 @@
+import { readdir, readFile } from "node:fs/promises";
+import { homedir } from "node:os";
+import { join, resolve } from "node:path";
+
+import matter from "gray-matter";
+
 import type { QuestState } from "./types.js";
 
 export interface PromptPreset {
@@ -7,6 +13,7 @@ export interface PromptPreset {
   sub: string;
   keywords: string;
   body: string;
+  source?: "builtin" | "user" | "repo";
 }
 
 export function buildContextPrompt(state: QuestState): string {
@@ -125,5 +132,108 @@ ${agentList || "(none configured)"}
 
 Start by reading PRD.md, PLAN.md, STATE.md. Then ask me what the current priority is before writing code.`,
     },
-  ];
+  ].map((preset) => ({ ...preset, source: "builtin" as const }));
+}
+
+export interface LoadPromptOptions {
+  rootDir: string;
+  userPromptDir?: string;
+  repoPromptDir?: string;
+}
+
+export async function loadPromptPresets(
+  state: QuestState,
+  options: LoadPromptOptions,
+): Promise<PromptPreset[]> {
+  const builtins = buildPromptPresets(state);
+  const userDir = options.userPromptDir ?? defaultUserPromptDir();
+  const repoDir = options.repoPromptDir ?? join(options.rootDir, ".repolog", "prompts");
+
+  const userOverrides = await readPromptDir(userDir, "user", state);
+  const repoOverrides = await readPromptDir(repoDir, "repo", state);
+
+  const byId = new Map<string, PromptPreset>();
+  for (const preset of builtins) byId.set(preset.id, preset);
+  for (const preset of userOverrides) byId.set(preset.id, preset);
+  for (const preset of repoOverrides) byId.set(preset.id, preset);
+
+  return [...byId.values()];
+}
+
+export function defaultUserPromptDir(): string {
+  return join(homedir(), ".repolog", "prompts");
+}
+
+async function readPromptDir(
+  dir: string,
+  source: "user" | "repo",
+  state: QuestState,
+): Promise<PromptPreset[]> {
+  let entries: string[];
+  try {
+    entries = await readdir(dir);
+  } catch {
+    return [];
+  }
+
+  const results: PromptPreset[] = [];
+  for (const entry of entries) {
+    if (!entry.endsWith(".md")) continue;
+    const full = resolve(dir, entry);
+    try {
+      const raw = await readFile(full, "utf8");
+      const parsed = matter(raw);
+      const data = parsed.data as Record<string, unknown>;
+      const id = String(data.id ?? entry.replace(/\.md$/, ""));
+      const preset: PromptPreset = {
+        id,
+        label: String(data.label ?? id),
+        sub: String(data.sub ?? ""),
+        glyph: String(data.glyph ?? "*"),
+        keywords: String(data.keywords ?? id),
+        body: renderTemplate(parsed.content.trim(), state),
+        source,
+      };
+      results.push(preset);
+    } catch {
+      // skip malformed prompt files silently; doctor command will surface these later
+    }
+  }
+  return results;
+}
+
+export function renderTemplate(template: string, state: QuestState): string {
+  const nowList = state.now
+    .slice(0, 5)
+    .map((task, i) => `${i + 1}. ${task.text}${task.doc ? ` (${task.doc})` : ""}`)
+    .join("\n");
+  const nextList = state.next
+    .slice(0, 5)
+    .map((task, i) => `${i + 1}. ${task.text}`)
+    .join("\n");
+  const blockedList = state.blocked
+    .map((task, i) => `${i + 1}. ${task.text} — waiting on ${task.reason} (${task.since})`)
+    .join("\n");
+  const agentList = state.agents
+    .map((agent) => `- ${agent.name} (${agent.role}): ${agent.objective}`)
+    .join("\n");
+
+  const vars: Record<string, string> = {
+    name: state.name,
+    branch: state.branch,
+    mission: state.mission,
+    "objective.title": state.activeQuest.title,
+    "objective.doc": state.activeQuest.doc,
+    "objective.done": String(state.activeQuest.progress.done),
+    "objective.total": String(state.activeQuest.progress.total),
+    "resume.task": state.resumeNote.task,
+    "resume.lastTouched": state.resumeNote.lastTouched,
+    "resume.since": state.resumeNote.since,
+    now: nowList || "(none)",
+    next: nextList || "(none)",
+    blocked: blockedList || "(none)",
+    agents: agentList || "(none)",
+  };
+
+  return template.replace(/\{\{\s*([\w.]+)\s*\}\}/g, (_, key: string) => vars[key] ?? "");
 }

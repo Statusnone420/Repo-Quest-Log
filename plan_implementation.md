@@ -10,14 +10,14 @@ The most important implication is this: the next pass should not try to make the
 
 ## Execution tracker
 
-Overall progress: **30%**
+Overall progress: **45%**
 
 | Workstream | Progress | What is actually left |
 |---|---:|---|
-| Foundation pass | 75% | Keep the shared helpers thin, finish any remaining doc/source reconciliation, and avoid reintroducing duplicated prompt or change logic. |
-| Workflow tooling pass | 20% | External prompt files, `repolog prompt`, `repolog status --short`, `repolog doctor`, and command-palette parity in every surface. |
+| Foundation pass | 100% | Shared helpers (`prompts.ts`, `changes.ts`, `time.ts`, `editor.ts`) landed; TUI visual parity done; PLAN.md reconciled with source. |
+| Workflow tooling pass | 55% | `loadPromptPresets` + `.repolog/prompts` + `~/.repolog/prompts` overrides landed. `repolog prompt list/<id>/--copy` and `repolog status --short` landed. Remaining: wire TUI+desktop Ctrl+K to the shared loader, add `repolog doctor`, and VS Code command-palette entrypoints. |
 | Context enrichment pass | 0% | Schema v2 compat, `gitContext`, `agentActivity`, and minimal git/activity rendering. |
-| Safe write-back pass | 0% | Opt-in checkbox-only write-back, banner, and adversarial tests. |
+| Safe write-back pass | 0% | Opt-in checkbox-only write-back, banner, and adversarial tests. Config now parses `writeback: true`, but no writer module yet. |
 
 The next coding agent should treat the table above as the real priority order. If the percentage changes, update this table first.
 

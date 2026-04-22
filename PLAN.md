@@ -15,11 +15,14 @@ Detailed completion estimates now live in `plan_implementation.md`.
 - [x] Desktop cockpit rewrite: compact top strip, stat bar, single-row 3-col board, priority-bar task rows (claude, touches: src/web/render.ts)
 - [x] Resume-prompt palette (Ctrl+K) pulled forward from v0.2 — 6 presets, in-memory templates, clipboard + toast (claude, touches: src/web/render.ts)
 - [x] Rename "Active Quest" → "Objective" in desktop UI copy (schema key stays `activeQuest` until v0.2 schema v2)
-- [ ] **TUI visual parity** — top strip + cockpit + compact task rows + Ctrl+K overlay landed in `src/tui/App.tsx`; finish visual cleanup and verify parity against the desktop HUD. (agent: codex, touches: src/tui/App.tsx)
+- [x] **TUI visual parity** — top strip + cockpit + compact task rows + Ctrl+K overlay landed in `src/tui/App.tsx`
 - [x] Rename "Active Quest" → "Objective" in TUI and VS Code surfaces (agent: codex, touches: src/tui/App.tsx, extensions/vscode/)
 - [x] Fixture coverage for noisy / imperfect repo docs under tests/fixtures/ (agent: codex, touches: tests/)
 - [x] Click-to-open doc links verified in every remaining surface (agent: codex, touches: extensions/vscode/)
-- [ ] Externalize prompt-palette templates to `~/.repolog/prompts/*.md` so users can edit them (agent: codex, touches: src/engine/, src/web/render.ts)
+- [x] Externalize prompt-palette templates — loader reads `~/.repolog/prompts/*.md` and `<repo>/.repolog/prompts/*.md`, repo wins, built-ins fall through
+- [x] `repolog prompt list` / `repolog prompt <id> [--copy]` / `repolog status --short` CLI commands
+- [ ] Wire TUI and desktop Ctrl+K to the shared `loadPromptPresets` loader so external overrides show up in the palettes (agent: claude, touches: src/tui/App.tsx, src/web/render.ts)
+- [ ] `repolog doctor` — explain scanned files, ignored paths, missing sections, and why each task landed in Now/Next/Blocked (agent: claude, touches: src/engine/doctor.ts, src/cli/index.ts)
 
 ## Next — v0.2 (agent-integration wedge)
 - [ ] Live git panel — branch, ahead/behind, dirty count, last commit subject + relative time

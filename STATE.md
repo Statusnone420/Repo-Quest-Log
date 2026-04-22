@@ -6,17 +6,15 @@ Live "where we are." Update this as work progresses. The normalizer reads this t
 v0.1 close-out: keep the desktop / VS Code / TUI surfaces aligned to one shared `QuestState`, then move the remaining work into prompt-file externalization, CLI workflow tooling, and schema v2 prep. v0.2 wedge work starts only after the v0.1 punch list is green.
 
 ## Last Session
-- Desktop shell is now in a usable state: packaged rebuild succeeds, the direct exe in `release\win-unpacked\Repo Quest Log.exe` is the preferred test target, click-to-open works, and the shell has in-app refresh + window controls.
-- Desktop readability pass landed in `src/web/render.ts`: larger defaults, clearer agent chips (`CX` / `CL` / `GM`), less cryptic Ctrl+K copy, and better header-strip fit without outer scroll.
-- Repo-level excludes are now live via `.repolog.json`; `archive` / `archives` / `archived` are ignored by default so stale docs stop polluting Recent changes.
-- Shared workflow helpers were centralized into `src/engine/prompts.ts`, `src/engine/changes.ts`, `src/engine/time.ts`, and `src/engine/editor.ts` so the TUI, desktop shell, and renderer stop duplicating prompt and recent-change logic.
-- Desktop click-to-open now tries exact-line `code -g` opens before falling back to the system file handler, and the same path is exercised by the VS Code view via the shared change-merging helper.
-- Fixture coverage now includes a noisy repo with malformed config plus archived markdown, and the tests assert the extractor keeps the useful signals while ignoring the archived tree.
-- The docs now carry a live percent tracker in `plan_implementation.md`, and `CLAUDE.md` has been repointed to own the rest of that handoff.
-- `npm run build`, `npm run lint`, and `npm test` are green.
+- CLAUDE.md role unlocked: Claude now plans AND implements (build/lint/test gate still required).
+- Foundation pass closed: TUI visual parity confirmed landed in `src/tui/App.tsx`, PLAN.md reconciled to source, tracker bumped to 100% for that pass.
+- Prompt externalization landed: `loadPromptPresets` in `src/engine/prompts.ts` merges built-ins with `~/.repolog/prompts/*.md` (user) and `<repo>/.repolog/prompts/*.md` (repo-wins). Markdown frontmatter + `{{var}}` template rendering.
+- `RepoConfig` expanded: now parses `writeback: boolean` and `prompts.dir?: string` from `.repolog.json` (still back-compat with plain excludes files).
+- New CLI surfaces: `repolog status --short`, `repolog prompt list`, `repolog prompt <id> [--copy]` (clipboard via `clip`/`pbcopy`/`xclip`).
+- `npm run build`, `npm run lint`, `npm test` all green (20 tests, 10 files).
 
 ## Resume Note
-> Shared prompt presets and the desktop line-open path are consolidated. The next doc-driven step is prompt-file externalization plus CLI workflow tooling, with `plan_implementation.md` now acting as the live handoff for the remaining work.
+> Prompt loader + `repolog prompt` / `repolog status --short` shipped. Next slice: wire the TUI and desktop Ctrl+K palettes to `loadPromptPresets` so external overrides show up in-app, then start `repolog doctor`.
 
 Last touched: `src/engine/prompts.ts`
 

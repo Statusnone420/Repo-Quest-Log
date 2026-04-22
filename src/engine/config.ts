@@ -3,6 +3,10 @@ import { resolve } from "node:path";
 
 export interface RepoConfig {
   excludes: string[];
+  writeback: boolean;
+  prompts: {
+    dir?: string;
+  };
 }
 
 const DEFAULT_EXCLUDES = ["archive", "archives", "archived"] as const;
@@ -17,6 +21,8 @@ export async function readRepoConfig(rootDir: string): Promise<RepoConfig> {
       excludes?: unknown;
       ignore?: unknown;
       ignored?: unknown;
+      writeback?: unknown;
+      prompts?: unknown;
     };
 
     return {
@@ -27,13 +33,21 @@ export async function readRepoConfig(rootDir: string): Promise<RepoConfig> {
         ...readStringArray(parsed.ignore),
         ...readStringArray(parsed.ignored),
       ]),
+      writeback: parsed.writeback === true,
+      prompts: readPromptsConfig(parsed.prompts),
     };
   } catch {
-    return { excludes: [...DEFAULT_EXCLUDES] };
+    return { excludes: [...DEFAULT_EXCLUDES], writeback: false, prompts: {} };
   }
 }
 
-export function isExcludedPath(relativePath: string, config: RepoConfig): boolean {
+function readPromptsConfig(value: unknown): { dir?: string } {
+  if (!value || typeof value !== "object") return {};
+  const dir = (value as { dir?: unknown }).dir;
+  return typeof dir === "string" && dir.trim() ? { dir: dir.trim() } : {};
+}
+
+export function isExcludedPath(relativePath: string, config: Pick<RepoConfig, "excludes">): boolean {
   const normalized = normalize(relativePath);
   const segments = normalized.split("/").filter(Boolean);
 

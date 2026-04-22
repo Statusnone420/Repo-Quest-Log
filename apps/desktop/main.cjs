@@ -4,14 +4,43 @@ const { pathToFileURL } = require("node:url");
 const { spawn } = require("node:child_process");
 const { mkdir, writeFile } = require("node:fs/promises");
 
-const { app, BrowserWindow, ipcMain, shell, screen } = require("electron");
+const { app, BrowserWindow, Menu, dialog, ipcMain, shell, screen } = require("electron");
 const { resolveDesktopRepoRoot } = require(path.join(__dirname, "..", "..", "dist", "desktop", "root.js"));
 
 const repoRoot = path.resolve(__dirname, "..", "..");
-const targetRoot = resolveDesktopRepoRoot({
+
+function lastRootFile() {
+  try {
+    return path.join(app.getPath("userData"), "last-root.txt");
+  } catch {
+    return path.join(repoRoot, ".repolog", "last-root.txt");
+  }
+}
+
+function readLastRoot() {
+  try {
+    const raw = fs.readFileSync(lastRootFile(), "utf8").trim();
+    return raw && fs.existsSync(raw) ? raw : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeLastRoot(dir) {
+  try {
+    const file = lastRootFile();
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(file, dir, "utf8");
+  } catch {
+    // best-effort only
+  }
+}
+
+let targetRoot = resolveDesktopRepoRoot({
   argv: process.argv.slice(2),
   cwd: process.cwd(),
   execPath: process.execPath,
+  lastRoot: readLastRoot(),
 });
 
 let win = null;
@@ -20,7 +49,7 @@ let watcherHandle = null;
 let recentChanges = [];
 let modulesPromise = null;
 let revealTimer = null;
-const liveHtmlPath = path.join(targetRoot, ".repolog", "desktop-live.html");
+let liveHtmlPath = path.join(targetRoot, ".repolog", "desktop-live.html");
 
 async function loadModules() {
   if (!modulesPromise) {

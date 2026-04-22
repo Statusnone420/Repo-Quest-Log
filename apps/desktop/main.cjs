@@ -8,6 +8,7 @@ const { app, BrowserWindow, Menu, dialog, ipcMain, shell, screen } = require("el
 const { resolveDesktopRepoRoot } = require(path.join(__dirname, "..", "..", "dist", "desktop", "root.js"));
 
 const repoRoot = path.resolve(__dirname, "..", "..");
+const { version: appVersion } = require(path.join(repoRoot, "package.json"));
 
 function lastRootFile() {
   try {
@@ -185,7 +186,7 @@ async function refresh(changes = []) {
       lastTouchedFile: recentChanges[0] && recentChanges[0].file,
     });
     const presets = await loadPromptPresets(currentState, { rootDir: targetRoot });
-    const html = renderDesktopHtml(currentState, { liveBridge: "desktop", presets });
+    const html = renderDesktopHtml(currentState, { liveBridge: "desktop", presets, appVersion });
     await pushHtml(html);
   } catch (error) {
     const message = error instanceof Error ? error.stack || error.message : String(error);
@@ -307,6 +308,23 @@ function buildMenu() {
       ],
     },
     {
+      label: "Help",
+      submenu: [
+        {
+          label: "About Repo Quest Log",
+          click: () => {
+            void dialog.showMessageBox(win, {
+              type: "info",
+              title: "About Repo Quest Log",
+              message: "Repo Quest Log",
+              detail: `Version ${appVersion}\nPortable build available via electron-builder.\nLocal-first desktop shell for repo intent legibility.`,
+              buttons: ["OK"],
+            });
+          },
+        },
+      ],
+    },
+    {
       label: "View",
       submenu: [
         { role: "reload" },
@@ -321,6 +339,7 @@ function buildMenu() {
 
 async function start() {
   await app.whenReady();
+  app.setAppUserModelId("com.repoquestlog.app");
   buildMenu();
   createWindow();
   if (win) {

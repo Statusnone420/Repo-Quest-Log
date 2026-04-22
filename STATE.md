@@ -3,20 +3,23 @@
 Live "where we are." Update this as work progresses. The normalizer reads this to build the Resume Note.
 
 ## Current Focus
-v0.1 close-out: keep the desktop / VS Code / TUI surfaces aligned to one shared `QuestState`, then move the remaining work into prompt-file externalization, CLI workflow tooling, and schema v2 prep. v0.2 wedge work starts only after the v0.1 punch list is green.
+v0.2 wedge is mostly landed in code: shared `QuestState` now carries `gitContext`, `agentActivity`, and `config.writeback`, and the desktop shell shows the git strip, agent feed, and safe checkbox write-back. The remaining open slices are standup export and ship/shareability.
 
 ## Last Session
 - CLAUDE.md role unlocked: Claude now plans AND implements (build/lint/test gate still required).
 - Foundation pass closed: TUI visual parity confirmed landed in `src/tui/App.tsx`, PLAN.md reconciled to source, tracker bumped to 100% for that pass.
 - Prompt externalization landed: `loadPromptPresets` in `src/engine/prompts.ts` merges built-ins with `~/.repolog/prompts/*.md` (user) and `<repo>/.repolog/prompts/*.md` (repo-wins). Markdown frontmatter + `{{var}}` template rendering.
 - `RepoConfig` expanded: now parses `writeback: boolean` and `prompts.dir?: string` from `.repolog.json` (still back-compat with plain excludes files).
+- Context enrichment landed: `gitContext`, `agentActivity`, `schemaVersion: 2`, and live git/activity rendering are wired through the shared `QuestState`.
+- Safe write-back landed: checkbox-only toggles now write back through the desktop shell with stale-line refusal and exact-line safety checks.
+- Desktop shell got a lighter ship pass: repo version is visible in the chrome, About is in the menu, and Windows build config now targets both NSIS and portable artifacts.
 - New CLI surfaces: `repolog status --short`, `repolog prompt list`, `repolog prompt <id> [--copy]` (clipboard via `clip`/`pbcopy`/`xclip`).
 - Desktop shell: **Ctrl+O / File → Open Repo…** folder picker + persistent `last-root.txt` in Electron userData, so the exe is now a real portable HUD you can aim at any repo. Title bar reflects the active repo basename.
 - `resolveDesktopRepoRoot` now accepts an optional `lastRoot`, falls back to it when cwd/exec paths have no markers, and accepts a bare user-picked directory when no marker ancestor exists.
-- `npm run build`, `npm run lint`, `npm test` all green (22 tests, 10 files).
+- `npm run build`, `npm run lint`, `npm test` all green (30 tests, 13 files).
 
 ## Resume Note
-> Ctrl+K palettes in TUI, desktop (Electron), and VS Code webview now read from `loadPromptPresets` — external `~/.repolog/prompts/*.md` + `<repo>/.repolog/prompts/*.md` overrides show up in-app. Added `presets?: PromptPreset[]` passthrough to `SurfaceHtmlOptions`. Next slice: schema v2 prep (`gitContext`, `agentActivity`, `config`) with v1 compat shim.
+> Ctrl+K palettes in TUI, desktop (Electron), and VS Code webview now read from `loadPromptPresets` — external `~/.repolog/prompts/*.md` + `<repo>/.repolog/prompts/*.md` overrides show up in-app. Added `presets?: PromptPreset[]` passthrough to `SurfaceHtmlOptions`. Next slice: standup export, then ship/shareability polish.
 
 Last touched: `src/tui/App.tsx`
 

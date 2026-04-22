@@ -4,6 +4,7 @@ import type { AgentProfile, BlockedTask, Decision, FileChange, QuestState, Task 
 export interface SurfaceHtmlOptions {
   liveBridge?: "desktop" | "vscode";
   presets?: PromptPreset[];
+  appVersion?: string;
 }
 
 export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions = {}): string {
@@ -96,6 +97,13 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     .divider { width: 1px; height: 14px; background: var(--tile-border); }
     .repo-meta { display: flex; align-items: baseline; gap: 8px; font-family: var(--mono); font-size: var(--body-size); }
     .repo-meta .branch { color: var(--accent); }
+    .app-version {
+      display: inline-flex; align-items: center;
+      padding: 2px 7px; border-radius: 999px;
+      font-family: var(--mono); font-size: var(--tiny-size);
+      color: var(--muted); background: rgba(255,255,255,0.03);
+      border: 1px solid var(--tile-border);
+    }
     .kbd-hint {
       margin-left: auto;
       display: inline-flex; align-items: center; gap: 6px;
@@ -428,21 +436,23 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     /* ---- HEADER STRIP (mission + objective + resume in ONE row) ---- */
     .header-strip {
       display: grid;
-      grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1.6fr);
-      gap: var(--tile-gap);
-      padding: var(--pad-y) var(--pad-x) 0;
+      grid-template-columns: minmax(0, 1.35fr) minmax(0, 0.96fr) minmax(0, 1.44fr);
+      gap: calc(var(--tile-gap) * 0.85);
+      padding: calc(var(--pad-y) * 0.42) var(--pad-x) 0;
       min-width: 0;
+      align-items: start;
     }
     .strip-cell {
       position: relative;
-      padding: var(--tile-pad);
+      padding: calc(var(--tile-pad) * 0.56);
       background: var(--tile);
       border: 1px solid var(--tile-border);
       border-radius: 10px;
-      min-height: 116px;
+      min-height: 72px;
       min-width: 0;
-      display: flex; flex-direction: column; gap: 4px;
+      display: flex; flex-direction: column; gap: 1px;
       overflow: hidden;
+      align-self: start;
     }
     .strip-cell.mission::before,
     .strip-cell.objective::before,
@@ -459,9 +469,9 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     }
     .kicker .meta { color: var(--dim); letter-spacing: 0.6px; }
     .strip-headline {
-      font-size: var(--headline-size); font-weight: 500; line-height: 1.3;
+      font-size: var(--headline-size); font-weight: 500; line-height: 1.14;
       overflow: hidden; text-overflow: ellipsis;
-      display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
     }
     .strip-subline {
       font-family: var(--mono); font-size: var(--small-size); color: var(--muted);
@@ -469,7 +479,8 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     }
     .strip-why {
       font-family: var(--mono); font-size: var(--tiny-size); color: var(--dim);
-      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      overflow: hidden; text-overflow: ellipsis;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
     }
     .strip-actions {
       position: absolute; top: 8px; right: 10px;
@@ -484,10 +495,10 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     .icon-btn:hover { color: var(--accent); border-color: rgba(138,180,255,0.42); }
     .icon-btn.warn:hover { color: var(--warn); border-color: rgba(233,185,115,0.4); }
 
-    .strip-cell.resume { min-height: 116px; }
+    .strip-cell.resume { min-height: 84px; }
     .strip-cell.resume.fresh {
-      min-height: 116px;
-      padding-top: calc(var(--tile-pad) + 8px);
+      min-height: 74px;
+      padding-top: calc(var(--tile-pad) * 0.6);
       background: rgba(233,185,115,0.03);
       border-color: rgba(233,185,115,0.18);
     }
@@ -505,12 +516,12 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     /* ---- COCKPIT STAT BAR ---- */
     .cockpit {
       display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
-      padding: var(--pad-y) var(--pad-x);
+      padding: calc(var(--pad-y) * 0.4) var(--pad-x);
       font-family: var(--mono); font-size: var(--small-size);
       color: var(--muted);
       border-bottom: 1px solid var(--tile-border);
       border-top: 1px solid var(--tile-border);
-      margin-top: var(--pad-y);
+      margin-top: calc(var(--pad-y) * 0.26);
     }
     .stat { display: inline-flex; align-items: center; gap: 6px; }
     .stat .num { color: var(--ink); font-weight: 600; font-size: var(--body-size); }
@@ -526,7 +537,7 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     /* ---- GIT STRIP ---- */
     .git-strip {
       display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
-      padding: calc(var(--pad-y) - 2px) var(--pad-x);
+      padding: calc(var(--pad-y) * 0.42) var(--pad-x);
       font-family: var(--mono); font-size: var(--small-size);
       color: var(--muted);
       border-bottom: 1px solid var(--tile-border);
@@ -594,10 +605,10 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       min-height: 0; min-width: 0;
     }
     .col:nth-child(2) .tile[data-area="next"] {
-      flex: 1.4 1 0;
+      flex: 1.72 1 0;
     }
     .col:nth-child(2) .tile.tight[data-area="changes"] {
-      flex: 0.68 1 0;
+      flex: 0.48 1 0;
     }
 
     .tile {
@@ -976,6 +987,7 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
         <span style="color: var(--dim)">/</span>
         <span class="branch">${escapeHtml(state.branch)}</span>
       </div>
+      ${options.appVersion ? `<span class="app-version">v${escapeHtml(options.appVersion)}</span>` : ""}
       <button type="button" class="kbd-hint" data-palette-open title="Copy a ready-to-paste resume prompt">
         <kbd>Ctrl</kbd><kbd>K</kbd><span>resume prompts</span>
       </button>
@@ -2261,11 +2273,12 @@ function isEmptyRepo(state: QuestState): boolean {
       return "idle";
     }
 
-    if (isResumeFresh(entry.at) || entry.confidence >= 0.84) {
+    const age = relativeMinutes(entry.at);
+    if ((typeof age === "number" && age <= 8 && entry.confidence >= 0.84) || isResumeFresh(entry.at)) {
       return "working";
     }
 
-    if (entry.confidence >= 0.55 && !isOlderThan(entry.at, 180)) {
+    if (typeof age === "number" && age <= 25 && entry.confidence >= 0.72) {
       return "active";
     }
 

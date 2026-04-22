@@ -10,9 +10,10 @@ import type { QuestState } from "../src/engine/types.js";
 
 describe("renderDesktopHtml", () => {
   it("renders the desktop HUD shell from QuestState", () => {
-    const html = renderDesktopHtml(sampleState());
+    const html = renderDesktopHtml(sampleState(), { appVersion: "0.0.1" });
 
     expect(html).toContain("repo quest log");
+    expect(html).toContain("v0.0.1");
     expect(html).toContain("Ship v0.1");
     expect(html).toContain("Current focus");
     expect(html).toContain("Why this matters");
@@ -37,6 +38,9 @@ describe("renderDesktopHtml", () => {
 describe("desktop shell sizing", () => {
   it("opens with a window size that can fit the target 560px fallback height", async () => {
     const source = await readFile(join(process.cwd(), "apps/desktop/main.cjs"), "utf8");
+    const packageJson = JSON.parse(await readFile(join(process.cwd(), "package.json"), "utf8")) as {
+      build?: { win?: { target?: string | string[] } };
+    };
 
     expect(source).toContain("width: workArea.width");
     expect(source).toContain("height: workArea.height");
@@ -45,6 +49,9 @@ describe("desktop shell sizing", () => {
     expect(source).toContain("useContentSize: true");
     expect(source).toContain("formatCodeOpenTarget");
     expect(source).toContain('spawn("code", ["-g"');
+    expect(source).toContain("About Repo Quest Log");
+    expect(source).toContain("setAppUserModelId");
+    expect(packageJson.build?.win?.target).toEqual(["nsis", "portable"]);
   });
 });
 

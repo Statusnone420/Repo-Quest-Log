@@ -77,7 +77,7 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     .shell {
       width: 100vw; height: 100vh;
       display: grid;
-      grid-template-rows: auto auto auto auto minmax(0, 1fr);
+      grid-template-rows: auto auto auto auto auto minmax(0, 1fr);
       overflow: hidden;
     }
 
@@ -153,6 +153,97 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     .surface-controls .label { color: var(--muted); letter-spacing: 0.8px; text-transform: uppercase; margin-left: 4px; }
     .dot { width: 6px; height: 6px; border-radius: 999px; background: var(--ok); display: inline-block; }
 
+    /* ---- SETTINGS RACK ---- */
+    .settings-rack {
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr) minmax(0, 1fr);
+      gap: var(--tile-gap);
+      padding: var(--pad-y) var(--pad-x) 0;
+      min-width: 0;
+    }
+    .settings-card {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 10px 12px;
+      min-width: 0;
+      border-radius: 10px;
+      border: 1px solid var(--tile-border);
+      background: rgba(18,22,28,0.72);
+    }
+    .settings-head {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--mono);
+      font-size: var(--tiny-size);
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .settings-head .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 1px 7px;
+      border-radius: 999px;
+      background: var(--faint);
+      color: var(--ink);
+      letter-spacing: 0.5px;
+    }
+    .settings-copy {
+      font-family: var(--mono);
+      font-size: var(--small-size);
+      color: var(--muted);
+      line-height: 1.35;
+    }
+    .settings-copy strong { color: var(--ink); font-weight: 600; }
+    .settings-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+    .settings-actions button {
+      appearance: none;
+      border: 1px solid var(--tile-border);
+      background: rgba(255,255,255,0.02);
+      color: var(--ink);
+      border-radius: 7px;
+      padding: 5px 9px;
+      cursor: pointer;
+      font: inherit;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .settings-actions button:hover {
+      border-color: rgba(138,180,255,0.42);
+      color: var(--accent);
+    }
+    .settings-actions button.primary {
+      border-color: rgba(138,180,255,0.32);
+      background: rgba(138,180,255,0.08);
+    }
+    .settings-actions button .kbd-inline {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      font-family: var(--mono);
+      font-size: var(--tiny-size);
+      color: var(--muted);
+    }
+    .settings-actions button kbd,
+    .settings-copy kbd {
+      font-family: var(--mono);
+      font-size: var(--tiny-size);
+      padding: 1px 5px;
+      border: 1px solid var(--tile-border);
+      border-radius: 3px;
+      background: rgba(255,255,255,0.04);
+      color: var(--ink);
+    }
+
     /* ---- HEADER STRIP (mission + objective + resume in ONE row) ---- */
     .header-strip {
       display: grid;
@@ -193,6 +284,10 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     }
     .strip-subline {
       font-family: var(--mono); font-size: var(--small-size); color: var(--muted);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .strip-why {
+      font-family: var(--mono); font-size: var(--tiny-size); color: var(--dim);
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
     .strip-actions {
@@ -296,6 +391,12 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     }
     .activity-row .file { color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; flex: 1; }
     .activity-row .ago { color: var(--dim); }
+    .task-note {
+      margin: 2px 0 8px 26px;
+      font-family: var(--mono); font-size: var(--tiny-size);
+      color: var(--dim);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
 
     /* ---- BOARD (3 cols, single row, fits viewport) ---- */
     .board {
@@ -688,18 +789,20 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
         </div>
       </div>
     </header>
+    ${renderSettingsRack(state, options.liveBridge)}
     ${isEmptyRepo(state) ? renderEmptyState(state) : `
     <section class="header-strip">
       <div class="strip-cell mission">
         <div class="kicker">Mission</div>
         <div class="strip-headline">${escapeHtml(state.mission)}</div>
       </div>
-      <div class="strip-cell objective">
-        <div class="kicker">Objective <span class="meta">${state.activeQuest.progress.done}/${state.activeQuest.progress.total}</span></div>
-        <div class="strip-headline">${escapeHtml(state.activeQuest.title)}</div>
-        <div class="strip-subline">${escapeHtml(state.activeQuest.doc)}${state.activeQuest.line ? `:${state.activeQuest.line}` : ""}</div>
-      </div>
-      <div class="strip-cell resume${isResumeFresh(state.resumeNote.since) ? " fresh" : ""}">
+        <div class="strip-cell objective">
+          <div class="kicker">Objective <span class="meta">${state.activeQuest.progress.done}/${state.activeQuest.progress.total}</span></div>
+          <div class="strip-headline">${escapeHtml(state.activeQuest.title)}</div>
+          <div class="strip-subline">${escapeHtml(state.activeQuest.doc)}${state.activeQuest.line ? `:${state.activeQuest.line}` : ""}</div>
+          <div class="strip-why">Why now: ${escapeHtml(getWhyNowLine(state))}</div>
+        </div>
+        <div class="strip-cell resume${isResumeFresh(state.resumeNote.since) ? " fresh" : ""}">
         ${isResumeFresh(state.resumeNote.since) ? `<div class="resume-freshline"><span class="pulse"></span>fresh · last touch ${escapeHtml(state.resumeNote.lastTouched)} · ${escapeHtml(state.resumeNote.since)}</div>` : ""}
         <div class="strip-actions">
           <button type="button" class="icon-btn warn" data-copy-context="${escapeHtml(buildContextPrompt(state))}" title="Copy resume context to clipboard">
@@ -710,10 +813,11 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
             ⌘K
           </button>
         </div>
-        <div class="kicker">Resume where you left off <span class="meta">· idle ${escapeHtml(state.resumeNote.since)}</span></div>
-        <div class="strip-headline">${escapeHtml(state.resumeNote.task)}</div>
-        <div class="strip-subline">↳ ${escapeHtml(state.resumeNote.lastTouched)} · ${escapeHtml(state.resumeNote.doc)}</div>
-      </div>
+          <div class="kicker">Current focus <span class="meta">· idle ${escapeHtml(state.resumeNote.since)}</span></div>
+          <div class="strip-headline">${escapeHtml(state.resumeNote.task)}</div>
+          <div class="strip-subline">↳ ${escapeHtml(state.resumeNote.lastTouched)} · ${escapeHtml(state.resumeNote.doc)}</div>
+          <div class="strip-why">Why this matters: ${escapeHtml(state.resumeNote.thought ?? getWhyNowLine(state))}</div>
+        </div>
     </section>
 
       <nav class="cockpit" aria-label="Status cockpit">
@@ -968,19 +1072,22 @@ function renderConfidenceSigil(confidence: number | undefined): string {
   return `<span class="sigil" title="heuristic confidence: ${c.toFixed(2)}">${dots.join("")}</span>`;
 }
 
-function renderItemRow(task: Task, index: number, priorityClass: string, showAgent: boolean): string {
-  const clickable = task.doc ? "clickable" : "";
-  const openAttrs = task.doc ? ` data-open-doc="${escapeHtml(task.doc)}" data-line="${task.line ?? 1}" role="button" tabindex="0"` : "";
-  const agentChip = showAgent && task.agent ? renderAgentChip(task.agent) : "";
-  const docChip = task.doc ? `<span class="chip doc">${escapeHtml(task.doc)}</span>` : "";
-  return `<div class="item ${priorityClass} ${clickable}"${openAttrs} title="${escapeHtml(task.text)}">
-    <span class="bar"></span>
-    ${renderConfidenceSigil(task.confidence)}
-    <span class="item-num">${String(index + 1).padStart(2, "0")}</span>
-    <span class="item-text">${escapeHtml(task.text)}</span>
-    <span class="item-aside">${agentChip}${docChip}</span>
-  </div>`;
-}
+  function renderItemRow(task: Task, index: number, priorityClass: string, showAgent: boolean): string {
+    const clickable = task.doc ? "clickable" : "";
+    const openAttrs = task.doc ? ` data-open-doc="${escapeHtml(task.doc)}" data-line="${task.line ?? 1}" role="button" tabindex="0"` : "";
+    const agentChip = showAgent && task.agent ? renderAgentChip(task.agent) : "";
+    const docChip = task.doc ? `<span class="chip doc">${escapeHtml(task.doc)}</span>` : "";
+    const note = task.thought && task.thought.trim() && task.thought.trim() !== task.text.trim()
+      ? `<div class="task-note">${escapeHtml(task.thought)}</div>`
+      : "";
+    return `<div class="item ${priorityClass} ${clickable}"${openAttrs} title="${escapeHtml(task.text)}">
+      <span class="bar"></span>
+      ${renderConfidenceSigil(task.confidence)}
+      <span class="item-num">${String(index + 1).padStart(2, "0")}</span>
+      <span class="item-text">${escapeHtml(task.text)}</span>
+      <span class="item-aside">${agentChip}${docChip}</span>
+    </div>${note}`;
+  }
 
 function renderAgentChip(agent: string): string {
   const key = agent.toLowerCase();
@@ -997,21 +1104,22 @@ function renderBlockedTile(tasks: BlockedTask[]): string {
       <span class="tile-meta">${tasks.length} waiting</span>
     </div>
     <div class="tile-body">
-      ${tasks.length === 0
-        ? `<div class="item"><span class="bar"></span><span class="sigil"></span><span class="item-num">·</span><span class="item-text">No blockers right now</span><span class="item-aside"></span></div>`
-        : tasks.map((task, index) => `
-          <div class="item p-blocked" title="${escapeHtml(task.text)}">
-            <span class="bar"></span>
-            ${renderConfidenceSigil(task.confidence)}
-            <span class="item-num">${String(index + 1).padStart(2, "0")}</span>
-            <span class="item-text">${escapeHtml(task.text)}</span>
-            <span class="item-aside"><span class="chip doc">${escapeHtml(task.since)}</span></span>
-          </div>
-          <div class="blocked-reason">↳ ${escapeHtml(task.reason)}</div>
-        `).join("")}
-    </div>
-  </section>`;
-}
+        ${tasks.length === 0
+          ? `<div class="item"><span class="bar"></span><span class="sigil"></span><span class="item-num">·</span><span class="item-text">No blockers right now</span><span class="item-aside"></span></div>`
+          : tasks.map((task, index) => `
+            <div class="item p-blocked" title="${escapeHtml(task.text)}">
+              <span class="bar"></span>
+              ${renderConfidenceSigil(task.confidence)}
+              <span class="item-num">${String(index + 1).padStart(2, "0")}</span>
+              <span class="item-text">${escapeHtml(task.text)}</span>
+              <span class="item-aside"><span class="chip doc">${escapeHtml(task.since)}</span></span>
+            </div>
+            <div class="blocked-reason">↳ ${escapeHtml(task.reason)}</div>
+            ${task.thought && task.thought.trim() && task.thought.trim() !== task.text.trim() ? `<div class="task-note">${escapeHtml(task.thought)}</div>` : ""}
+          `).join("")}
+      </div>
+    </section>`;
+  }
 
   function renderAgentsTile(state: QuestState): string {
     const agents = state.agents;
@@ -1022,18 +1130,22 @@ function renderBlockedTile(tasks: BlockedTask[]): string {
         <span class="tile-meta">${agents.length} registered</span>
       </div>
     <div class="tile-body">
-      ${agents.length === 0 ? `<div class="agent-card"><div class="agent-objective">No agent profiles discovered.</div></div>` : agents.map((agent) => `
-        <div class="agent-card">
-          <div class="agent-head">
-            ${renderAgentChip(agent.id)}
-            <span class="agent-name">${escapeHtml(agent.name)}</span>
-            <span class="agent-role">${escapeHtml(agent.role)}</span>
-            <span class="agent-status ${escapeHtml(agent.status)}" data-agent-id="${escapeHtml(agent.id)}" data-last-task="${escapeHtml(agent.lastTask ?? "")}"><span class="dot"></span>${escapeHtml(agent.status)}</span>
-          </div>
+        ${agents.length === 0 ? `<div class="agent-card"><div class="agent-objective">No agent profiles discovered.</div></div>` : agents.map((agent) => {
+          const status = resolveAgentStatus(agent, activity);
+          const pulse = isAgentActive(agent.id, activity);
+          const lastTask = resolveAgentTask(agent, activity);
+          return `
+          <div class="agent-card">
+            <div class="agent-head">
+              ${renderAgentChip(agent.id)}
+              <span class="agent-name">${escapeHtml(agent.name)}</span>
+              <span class="agent-role">${escapeHtml(agent.role)}</span>
+              <span class="agent-status ${escapeHtml(status)}" data-pulse="${pulse ? "true" : "false"}" data-agent-id="${escapeHtml(agent.id)}" data-last-task="${escapeHtml(lastTask)}"><span class="dot"></span>${escapeHtml(status)}</span>
+            </div>
             <div class="agent-objective">${escapeHtml(agent.objective)}</div>
             <div class="agent-meta">${escapeHtml(agent.file)} · ${escapeHtml(agent.area)}</div>
           </div>
-        `).join("")}
+        `;}).join("")}
         ${activity.length > 0 ? `<div class="activity-list">${activity.map((entry) => `
           <div class="activity-row">
             <span class="file">${escapeHtml(entry.agent)} · ${escapeHtml(entry.file)}</span>
@@ -1064,10 +1176,40 @@ function renderBlockedTile(tasks: BlockedTask[]): string {
     return `<section class="git-strip" aria-label="Git context">${chips}${commit}</section>`;
   }
 
-  function renderWritebackBanner(): string {
+function renderWritebackBanner(): string {
     return `<section class="wb-banner" aria-label="Write-back enabled">
       <div class="wb-left"><span class="wb-dot"></span><span>write-back ON</span></div>
       <span class="wb-hint">Checkbox toggles only</span>
+    </section>`;
+  }
+
+  function renderSettingsRack(state: QuestState, liveBridge?: SurfaceHtmlOptions["liveBridge"]): string {
+    const writeback = state.config?.writeback ? "on" : "off";
+    const writebackCopy = state.config?.writeback
+      ? "Enabled in .repolog.json. Checkbox toggles can write back exact task lines."
+      : "Off by default. Add <strong>\"writeback\": true</strong> to <strong>.repolog.json</strong> to enable checkbox-only edits.";
+    const openRepoButton = liveBridge === "desktop"
+      ? `<button type="button" class="primary" data-ui-action="open-repo" title="Open a repo folder (Ctrl+O)">Open Repo <span class="kbd-inline"><kbd>Ctrl</kbd><kbd>O</kbd></span></button>`
+      : "";
+    return `<section class="settings-rack" aria-label="Settings and shortcuts">
+      <div class="settings-card">
+        <div class="settings-head">Settings <span class="pill">${writeback}</span></div>
+        <div class="settings-copy">Repo picker and keyboard shortcuts live here so the desktop shell is discoverable without hunting menus.</div>
+        <div class="settings-actions">
+          ${openRepoButton}
+          <button type="button" data-ui-action="refresh" title="Refresh desktop (Ctrl+R)">Refresh <span class="kbd-inline"><kbd>Ctrl</kbd><kbd>R</kbd></span></button>
+        </div>
+      </div>
+      <div class="settings-card">
+        <div class="settings-head">Shortcuts</div>
+        <div class="settings-copy"><strong>Ctrl+K</strong> copy a resume prompt</div>
+        <div class="settings-copy"><strong>Ctrl+O</strong> open a repo folder</div>
+        <div class="settings-copy"><strong>Ctrl+R</strong> refresh the scan</div>
+      </div>
+      <div class="settings-card">
+        <div class="settings-head">Write-back</div>
+        <div class="settings-copy">${writebackCopy}</div>
+      </div>
     </section>`;
   }
 
@@ -1152,15 +1294,18 @@ function renderVSCodeSection(title: string, count: number, accent: string | unde
   </section>`;
 }
 
-function renderVSCodeTaskRow(task: Task, icon: string, color = "#858585"): string {
-  const agent = task.agent ? `[${task.agent[0]?.toUpperCase() ?? "·"}]` : "";
-  const clickAttr = task.doc ? ` data-open-doc="${escapeHtml(task.doc)}" data-line="${task.line || 1}" class="row clickable-row" role="button" tabindex="0"` : ` class="row"`;
-  return `<div${clickAttr}>
-    <span class="row-icon" style="color:${color}">${escapeHtml(icon)}</span>
-    <span class="row-text">${escapeHtml(task.text)}</span>
-    <span class="row-sub">${escapeHtml(agent)}</span>
-  </div>`;
-}
+  function renderVSCodeTaskRow(task: Task, icon: string, color = "#858585"): string {
+    const agent = task.agent ? `[${task.agent[0]?.toUpperCase() ?? "·"}]` : "";
+    const clickAttr = task.doc ? ` data-open-doc="${escapeHtml(task.doc)}" data-line="${task.line || 1}" class="row clickable-row" role="button" tabindex="0"` : ` class="row"`;
+    const note = task.thought && task.thought.trim() && task.thought.trim() !== task.text.trim()
+      ? `<div class="task-note">${escapeHtml(task.thought)}</div>`
+      : "";
+    return `<div${clickAttr}>
+      <span class="row-icon" style="color:${color}">${escapeHtml(icon)}</span>
+      <span class="row-text">${escapeHtml(task.text)}</span>
+      <span class="row-sub">${escapeHtml(agent)}</span>
+    </div>${note}`;
+  }
 
 function renderVSCodeBlockedRow(task: BlockedTask): string {
   return `<div class="row">
@@ -1345,6 +1490,14 @@ function renderSettingsScript(): string {
           if (action === "refresh") {
             if (window.repologDesktop && typeof window.repologDesktop.requestRefresh === "function") {
               window.repologDesktop.requestRefresh();
+            }
+            return;
+          }
+          if (action === "open-repo") {
+            if (window.repologDesktop && typeof window.repologDesktop.openRepoPicker === "function") {
+              window.repologDesktop.openRepoPicker();
+            } else if (window.__rqlToast) {
+              window.__rqlToast("open repo is only available in the desktop shell");
             }
             return;
           }
@@ -1626,7 +1779,7 @@ function isEmptyRepo(state: QuestState): boolean {
   return false;
 }
 
-function renderEmptyState(state: QuestState): string {
+  function renderEmptyState(state: QuestState): string {
   const expectedFiles = ["PLAN.md", "STATE.md", "AGENTS.md", "CLAUDE.md"];
   const scanned = new Set(state.scannedFiles.map((f) => f.split(/[\\/]/).pop()?.toUpperCase()));
   const slots = expectedFiles.map((f) => {
@@ -1655,11 +1808,51 @@ function renderEmptyState(state: QuestState): string {
         <pre>${escapeHtml(blocked)}</pre>
       </div>
     </div>
-    <div class="empty-missing">${slots}</div>
-  </div>`;
-}
+      <div class="empty-missing">${slots}</div>
+    </div>`;
+  }
 
-function isResumeFresh(since: string): boolean {
+  function getWhyNowLine(state: QuestState): string {
+    const candidate = state.now[0] ?? state.next[0] ?? state.blocked[0];
+    const raw = candidate?.thought?.trim() || candidate?.text.trim() || state.mission.trim() || "No additional context available.";
+    return raw.replace(/\s+/g, " ").slice(0, 180);
+  }
+
+  function latestAgentActivity(
+    agentId: string,
+    activity: readonly { agent: string; file: string; at: string; confidence: number }[],
+  ): { agent: string; file: string; at: string; confidence: number } | undefined {
+    return activity.find((entry) => entry.agent.toLowerCase() === agentId.toLowerCase());
+  }
+
+  function isAgentActive(agentId: string, activity: readonly { agent: string; file: string; at: string; confidence: number }[]): boolean {
+    const entry = latestAgentActivity(agentId, activity);
+    return entry ? isResumeFresh(entry.at) : false;
+  }
+
+  function resolveAgentStatus(agent: AgentProfile, activity: readonly { agent: string; file: string; at: string; confidence: number }[]): string {
+    const entry = latestAgentActivity(agent.id, activity);
+    if (!entry) {
+      return agent.status;
+    }
+
+    if (isResumeFresh(entry.at) || entry.confidence >= 0.84) {
+      return "working";
+    }
+
+    if (entry.confidence >= 0.5) {
+      return "active";
+    }
+
+    return agent.status;
+  }
+
+  function resolveAgentTask(agent: AgentProfile, activity: readonly { agent: string; file: string; at: string; confidence: number }[]): string {
+    const entry = latestAgentActivity(agent.id, activity);
+    return entry ? `${entry.file} · ${entry.at}` : (agent.lastTask ?? "");
+  }
+
+  function isResumeFresh(since: string): boolean {
   if (!since) return false;
   const s = since.trim().toLowerCase();
   if (s === "just now" || s === "now") return true;

@@ -8,7 +8,10 @@ describe("web renderers", () => {
     const html = renderDesktopHtml(sampleState(), { liveBridge: "desktop" });
 
     expect(html).toContain("repo quest log");
-    expect(html).toContain("Resume where you left off");
+    expect(html).toContain("Current focus");
+    expect(html).toContain("Why this matters");
+    expect(html).toContain("Settings");
+    expect(html).toContain("Ctrl+O");
     expect(html).toContain("window.repologDesktop");
     expect(html).toContain("data-copy-context=");
     expect(html).toContain('data-ui-action="refresh"');

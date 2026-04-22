@@ -288,6 +288,10 @@ ipcMain.on("repolog:refresh", () => {
   void refresh();
 });
 
+ipcMain.on("repolog:open-repo", () => {
+  void openRepoPicker();
+});
+
 ipcMain.on("repolog:open-doc", (_event, payload = {}) => {
   const doc = typeof payload.doc === "string" ? payload.doc : "";
   if (!doc) {

@@ -30,6 +30,7 @@ export interface Task {
   line?: number;
   est?: "S" | "M" | "L" | "XL";
   confidence: number;
+  thought?: string;
 }
 
 export interface BlockedTask extends Task {

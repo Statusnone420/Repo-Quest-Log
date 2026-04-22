@@ -14,7 +14,11 @@ describe("renderDesktopHtml", () => {
 
     expect(html).toContain("repo quest log");
     expect(html).toContain("Ship v0.1");
-    expect(html).toContain("Resume where you left off");
+    expect(html).toContain("Current focus");
+    expect(html).toContain("Why this matters");
+    expect(html).toContain("Settings");
+    expect(html).toContain("Open Repo");
+    expect(html).toContain("Ctrl+O");
     expect(html).toContain("desktop-preview.html");
     expect(html).toContain("data-copy-context=");
     expect(html).toContain('data-ui-action="refresh"');

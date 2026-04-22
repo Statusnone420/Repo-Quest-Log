@@ -1,0 +1,71 @@
+# Repo Quest Log: High-Level Overview
+
+## 🎯 The Mission
+**Repo Quest Log** is a local-first CLI + TUI + desktop + VS Code shell designed to make repo intent legible at a glance. It bridges the gap between unstructured markdown planning (like `PLAN.md` and `STATE.md`) and coding agents. By parsing human-readable docs, it builds a live, structured HUD of what's happening now, what's next, and what's blocked, allowing frictionless handoffs to AI coding assistants like Claude, Codex, or Gemini.
+
+## 🏗️ Architecture & Scope
+The project is built around a single, unified data model (`QuestState`) that drives multiple presentation layers. It operates strictly locally with zero network calls at runtime.
+
+### 1. The Core Engine (`src/engine/**`)
+This is the brain of the operation. It handles everything from reading files to generating the state payload.
+*   **Parsing (`parse.ts`, `fileset.ts`)**: Uses `remark` and `chokidar` to watch and parse specific markdown files (`PLAN.md`, `STATE.md`, `AGENTS.md`, etc.).
+*   **Normalization (`normalize.ts`, `rank.ts`)**: Extracts checklists, headings, and paragraphs, converting them into structured entities (Tasks, Objectives, Blockers).
+*   **Agent Tracking (`agents.ts`, `activity.ts`)**: Reads agent profile files to infer who is working on what based on file modification times and owned areas.
+*   **State Management (`types.ts`)**: Defines the `QuestState` JSON schema (currently transitioning from v1 to v2).
+*   **Write-back (`writeback.ts`)**: Carefully handles opt-in markdown edits (strictly limited to toggling `[ ]` to `[x]`).
+
+### 2. The Presentation Layers
+All surfaces consume the exact same `QuestState` object to ensure absolute feature and visual parity.
+*   **TUI (`src/tui/**`)**: A terminal UI built with React/Ink, offering a keyboard-first HUD directly in the terminal (`repolog watch`).
+*   **Desktop App (`apps/desktop/**`)**: A Windows-first Electron host. It relies on a shared HTML/CSS renderer (`src/web/render.ts`) to display a fit-to-window responsive dashboard.
+*   **VS Code Extension (`extensions/vscode/**`)**: A sidebar webview that utilizes the same shared HTML renderer as the desktop app, ensuring your HUD is available right where you code.
+*   **CLI (`src/cli/**`)**: Provides scriptable JSON outputs (`repolog scan`), status line summaries (`repolog status --short`), and diagnostic tools (`repolog doctor`).
+
+## 🔄 The Data Pipeline
+1.  **Watch & Read**: `chokidar` watches for changes in tracked files.
+2.  **Extract**: The engine looks for specific headings (e.g., `## Now`, `## Blocked`) and frontmatter.
+3.  **Synthesize**: It generates a `QuestState` JSON object containing `objective`, `now`, `next`, `blocked`, `gitContext`, and `agentActivity`.
+4.  **Render**: The state is broadcasted to the active UI shell (TUI, Webview, or Electron) which updates the view instantly.
+
+---
+
+## 🚀 The State of v0.2
+The transition to v0.2 (the "Agent-Integration Wedge") is actively underway and mostly implemented in code:
+*   **Schema v2** is live, featuring `gitContext`, `agentActivity`, and `config.writeback`.
+*   **Safe Write-back** is implemented. When enabled via `.repolog.json`, the UI can toggle markdown checkboxes safely without mangling the file.
+*   **Prompt Externalization** is live, allowing custom prompt templates via `~/.repolog/prompts/` that can inject live repo state.
+*   **The CLI `doctor`** command is implemented to diagnose messy repositories.
+
+*What's missing?* The `PLAN.md` points to **Standup export** and **ship/shareability polish** as the final slices for v0.2.
+
+---
+
+## 💡 Big Ideas for the v0.2 Release
+
+Here are several high-impact ideas to round out the 0.2 release, focusing on deepening IDE synergy and agent handoffs while respecting the "local-first, no-LLM-calls" constraint.
+
+### 1. "Context Clipboards" (Standup Export ++)
+The plan mentions a "Standup export". You should expand this into a **Context Clipboard** feature. 
+*   **Idea**: Add a hotkey (`Ctrl+Shift+C`) or a UI button that copies a meticulously formatted Markdown block designed *specifically* to be pasted into an LLM context window.
+*   **Payload**: "Here is the current state of my repo: I am working on [Objective]. My current tasks are [Now]. I just changed [Recent Changes]. What should I do next?"
+*   **Why**: This makes Repo Quest Log the ultimate "context aggregator" for coding agents that don't have direct workspace access.
+
+### 2. Deep IDE Synergy: Exact Line Navigation
+*   **Idea**: Finalize the "Click-to-open" functionality across all surfaces. If the user clicks a task in the Desktop App or TUI, it should invoke `code -g <file>:<line>` (if VS Code is installed).
+*   **Why**: It bridges the gap between the external HUD and the editor. It transitions the app from a passive dashboard to an interactive workspace controller.
+
+### 3. VSIX Packaging & Frictionless Distribution
+*   **Idea**: The desktop app has an installer, but the VS Code extension currently requires running as a dev-host. Automate the packaging of the extension into a `.vsix` file alongside the Windows `.exe` in the GitHub release pipeline.
+*   **Why**: Frictionless install is key for developer tools. A downloadable `.vsix` makes it instantly usable for the broader VS Code community.
+
+### 4. Interactive TUI Checkboxes
+*   **Idea**: Since the safe `writeback` module is now implemented for the desktop, wire it directly into the `Ink` TUI. Allow users to navigate tasks with `j/k` and press `Space` or `Enter` to check off tasks natively in the terminal.
+*   **Why**: Terminal-first users expect full interactivity. This makes the TUI a first-class citizen alongside the desktop app.
+
+### 5. Automated "Agent Check-in" Prompts
+*   **Idea**: Expand the newly added `repolog prompt` feature. Ship built-in prompt templates specifically tailored for the agents defined in `AGENTS.md` (e.g., `repolog prompt claude-review`, `repolog prompt codex-implement`).
+*   **Why**: It standardizes how developers interact with multiple specialized agents, reinforcing the tool's core mission of agent management.
+
+### 6. Git Context Enhancements (Local Only)
+*   **Idea**: Enhance the `gitContext` parser to detect if the current branch has an upstream tracking branch. If it does, and if `gh` CLI is locally installed, silently pull in the title of the associated PR to display in the HUD.
+*   **Why**: Fulfills the "Later (v0.3+)" goal of `gh` integration in a safe, opt-in, read-only manner that doesn't bloat the core dependencies.

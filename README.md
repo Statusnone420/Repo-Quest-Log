@@ -1,53 +1,157 @@
 # Repo Quest Log
 
-Local-first repo HUD for markdown-driven coding-agent workflows.
+A local-first CLI + TUI + desktop + VS Code shell that makes repo intent legible at a glance — and hands that intent to whichever coding agent you open next.
+
+It reads your planning markdown (`PLAN.md`, `STATE.md`, `AGENTS.md`, etc.) and builds a live structured HUD of what's happening now, what's next, and what's blocked. No server, no LLM calls, no account.
+
+---
 
 ## Install
 
-```text
-Windows exe download template
-https://github.com/<OWNER>/<REPO>/releases/download/v0.0.2/Repo%20Quest%20Log%20Setup%200.0.2.exe
-```
+### Desktop app (Windows)
+Download the latest installer from [GitHub Releases](https://github.com/Statusnone420/Repo-Quest-Log/releases):
+- **`Repo Quest Log Setup <version>.exe`** — recommended, installs like any app
+- **`Repo Quest Log <version>.exe`** — portable, run anywhere
 
+> First launch may trigger Windows SmartScreen. That's expected for a new binary with low reputation — check the publisher name and file name before allowing.
+
+### VS Code extension
 ```bash
 code --install-extension repo-quest-log-0.0.2.vsix
 ```
+Download the `.vsix` from the same release page, then run the command above.
 
-```text
-npm
-Coming when @repo-quest/core publishes. Do not use npm for 0.0.2 distribution.
+### CLI (from source)
+```bash
+git clone https://github.com/Statusnone420/Repo-Quest-Log.git
+cd Repo-Quest-Log
+npm install
+npm run build
+npm link   # makes `repolog` available globally
 ```
 
-## Current Surfaces
+---
 
-- CLI JSON scan: `repolog scan .`
-- Terminal HUD: `repolog` or `repolog watch .`
-- Desktop snapshot: `repolog desktop .`
-- Desktop dev shell: `npm run desktop:app`
-- Packaged Windows app: download the latest installer from GitHub Releases
-- VS Code extension package: `npm run pack:vscode` → `release/repo-quest-log-0.0.2.vsix`
-- Windows package build: `npm run desktop:build`
-- VS Code extension shell: open `extensions/vscode/` as an extension-development folder and run the extension host
+## Surfaces
 
-## Downloads
+| Surface | Command |
+|---|---|
+| CLI scan (JSON) | `repolog scan .` |
+| Live terminal HUD | `repolog watch .` |
+| Desktop app (dev) | `npm run desktop:app` |
+| Desktop app (build) | `npm run desktop:build` |
+| VS Code extension (dev) | Open `extensions/vscode/` as extension-development folder |
+| VS Code extension (package) | `npm run pack:vscode` |
 
-- GitHub Releases: use the latest release on the right side of the repo page.
-- Recommended Windows download: the installer asset, usually named `Repo Quest Log Setup <version>.exe`.
-- Optional portable download: the standalone app exe asset, if you prefer no install.
-- Do not use `release\win-unpacked\Repo Quest Log.exe` as a download target; that folder is only the local unpacked build output.
+---
 
-## Windows Notes
+## CLI Reference
 
-- The first run may trigger Microsoft Defender SmartScreen because a new binary starts with low reputation. That is expected for a first release.
-- If Windows asks for confirmation, check the publisher name and the file name before allowing it to run.
-- The installed app will be larger than the release asset because Electron is unpacked on disk after install.
+```
+repolog scan [path]               Parse repo and output QuestState as JSON
+repolog watch [path]              Live terminal HUD (TUI), refreshes on file change
+repolog status --short            One-line summary for shell status-line integrations
+repolog doctor [path] [--json]    Diagnose missing headings, malformed config, empty buckets
+repolog tuneup [path]             Score repo legibility (0-100), generate fix prompt for agents
+  --write-charter                 Write .repolog/CHARTER.md
+  --copy                          Copy prompt to clipboard
+  --agent=claude|codex|gemini     Output agent-specific prompt
+repolog prompt list               List available prompt presets
+repolog prompt <id> [--copy]      Render a prompt preset (copy to clipboard with --copy)
+repolog standup [--copy] [--json] Today's done + active tasks as markdown
+```
 
-## Notes
+---
 
-- All surfaces consume the same `QuestState` schema from `docs/SCHEMA.md`.
-- The desktop app and VS Code panel share the renderer in `src/web/render.ts`.
-- `.repolog.json` supports repo-local excludes; archive / archived / archives are ignored by default.
-- The design source of truth remains `docs/design/Repo Quest Log.html`.
-- You can point the CLI or packaged desktop app at another repo by passing the repo path as the first non-flag argument. For example: `repolog scan C:\path\to\repo`, `repolog watch C:\path\to\repo`, or `repolog desktop C:\path\to\repo`.
-- In the packaged desktop app, press **Ctrl+O** (File → Open Repo…) to switch to a different repo folder. The choice is remembered between sessions via Electron `userData\last-root.txt`. Tip on Windows: create a shortcut to `Repo Quest Log.exe` and drop it on your desktop — dragging a folder onto the shortcut will open that folder as the target repo.
-- New CLI helpers: `repolog status --short` (one-line summary for status-line integrations), `repolog prompt list`, `repolog prompt <id>` (render), `repolog prompt <id> --copy` (copy to clipboard), `repolog doctor [--json]` (explains scanned files, missing docs/headings, malformed config, and how to fix a messy repo — exits 1 on warnings so CI can gate on it). Prompt templates live in built-ins, and can be overridden per-user at `~/.repolog/prompts/*.md` or per-repo at `.repolog/prompts/*.md` (repo wins). Frontmatter fields: `id`, `label`, `sub`, `glyph`, `keywords`. Body supports `{{name}}`, `{{branch}}`, `{{mission}}`, `{{objective.title}}`, `{{objective.done}}`, `{{objective.total}}`, `{{resume.task}}`, `{{now}}`, `{{next}}`, `{{blocked}}`, `{{agents}}`.
+## Keyboard Shortcuts (Desktop + TUI)
+
+| Shortcut | Action |
+|---|---|
+| `Ctrl+K` | Prompt palette — 6 presets, copy to clipboard |
+| `Ctrl+Shift+C` | Standup export — today's tasks as markdown, copied |
+| `Ctrl+O` | Open repo folder picker (desktop) |
+| `Ctrl+R` | Force refresh |
+| `t` | Tuneup overlay — score bar + gap list (TUI) |
+| `q` / `Esc` | Close overlay |
+
+---
+
+## Prompt Templates
+
+Built-in presets are always available. Override per-user or per-repo:
+
+- **User:** `~/.repolog/prompts/*.md`
+- **Repo:** `.repolog/prompts/*.md` (wins over user)
+
+Frontmatter fields: `id`, `label`, `sub`, `glyph`, `keywords`
+
+Available template variables:
+```
+{{name}}  {{branch}}  {{mission}}  {{objective.title}}
+{{objective.done}}  {{objective.total}}  {{resume.task}}
+{{now}}  {{next}}  {{blocked}}  {{agents}}
+```
+
+---
+
+## Repo Setup
+
+RepoLog reads standard markdown files it finds in the repo root. No config required to get started.
+
+| File | What it feeds |
+|---|---|
+| `PLAN.md` | Objective, Now / Next / Blocked task lists |
+| `STATE.md` | Current focus, resume note, recent decisions |
+| `AGENTS.md` / `CLAUDE.md` / `GEMINI.md` | Agent roles, owned areas, activity feed |
+| `.repolog.json` | Optional: `writeback`, `prompts.dir`, `excludes` |
+| `.repolog/CHARTER.md` | Agent onboarding doc (generate with `repolog tuneup --write-charter`) |
+
+Heading patterns that the scanner recognises: `## Objective`, `## Now`, `## Next`, `## Blocked`, `## Mission`, `## Owned Areas`, `## Resume Note`. See [`docs/SCHEMA.md`](docs/SCHEMA.md) for the full spec.
+
+---
+
+## "Tune this repo" — Score and Fix
+
+```bash
+repolog tuneup
+```
+
+Scores your repo's markdown legibility from 0–100 across 8 checks (mission, objective, now-heading, agent owned areas, state resume note, plan next section, charter present, frontmatter). Outputs a targeted fix prompt you can paste directly into Claude, Codex, or Gemini.
+
+```bash
+repolog tuneup --write-charter   # generates .repolog/CHARTER.md
+repolog tuneup --agent=claude    # Claude-specific prompt
+```
+
+The score also appears in the desktop Settings panel with a live coverage meter and one-click copy.
+
+---
+
+## Desktop: Open Any Repo
+
+Press **Ctrl+O** (or File → Open Repo…) to point the app at any folder. The choice persists between sessions. You can also create a desktop shortcut to `Repo Quest Log.exe` and drag a folder onto it to open that repo directly.
+
+---
+
+## Building from Source
+
+```bash
+npm install
+npm run build      # TypeScript compile
+npm run lint       # type-check
+npm test           # Vitest (42 tests)
+npm run desktop:build   # Electron installer → release/
+npm run pack:vscode     # VS Code .vsix → release/
+```
+
+---
+
+## Contributing
+
+Fork it, build on it, ship it. All I ask is that you keep the copyright notice in the LICENSE — that's it. PRs, forks, and totally different directions are all welcome.
+
+---
+
+## License
+
+[MIT](LICENSE) — © 2026 Statusnone420

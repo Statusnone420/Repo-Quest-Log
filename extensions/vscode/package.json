@@ -29,7 +29,8 @@
       "repoQuestLog": [
         {
           "id": "repoQuestLog.view",
-          "name": "HUD"
+          "name": "HUD",
+          "type": "webview"
         }
       ]
     },
@@ -41,7 +42,7 @@
     ]
   },
   "scripts": {
-    "vscode:prepublish": "npm run build --prefix ../.. && node -e \"require('fs').cpSync('../../dist', './dist', {recursive: true})\""
+    "vscode:prepublish": "node -e \"require('fs').cpSync('../../dist', './dist', {recursive: true, force: true})\""
   },
   "dependencies": {
     "chokidar": "^3.6.0",

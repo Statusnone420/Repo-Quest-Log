@@ -18,6 +18,9 @@ if (!fs.existsSync(vsceEntryPoint)) {
 
 fs.mkdirSync(path.dirname(outputPath), { recursive: true });
 
+// vsce looks for LICENSE in the extension directory, not the repo root
+fs.copyFileSync(path.join(rootDir, "LICENSE"), path.join(extensionDir, "LICENSE"));
+
 const result = spawnSync(process.execPath, [
   vsceEntryPoint,
   "package",

@@ -18,7 +18,7 @@ Overall progress: **85%**
 | Workflow tooling pass | 100% | Prompt loader, `repolog prompt`, `repolog status --short`, Ctrl+O Open-Repo picker, `repolog doctor` + `--json`, and Ctrl+K palettes hydrating from `loadPromptPresets` across TUI, desktop, and VS Code webview. VS Code command-palette entrypoints were dropped as out-of-scope for v0.2 — the owning user is on Antigravity-style IDEs, not stock VS Code, so webview Ctrl+K is sufficient. Revisit only if a VS Code user files an issue. |
 | Context enrichment pass | 100% | Schema v2 compat, `gitContext`, `agentActivity`, and the compact git/activity rendering are live in the desktop shell and shared renderer. |
 | Safe write-back pass | 100% | Opt-in checkbox-only write-back is live in the desktop shell with stale-line refusal, exact-line safety, persistent banner copy, and adversarial tests. |
-| Ship pass | 25% | App metadata, About window, on-screen version, and electron-builder portable+NSIS targets are in. Remaining: app icon, end-user README, release artifact polish, and version bump. |
+| Ship pass | 50% | App metadata, About window, on-screen version, app icon plumbing, and electron-builder portable+NSIS targets are in. Remaining: end-user README, release artifact polish, and version bump. |
 
 Current reality: schema v2, `gitContext`, `agentActivity`, and safe write-back are already implemented in code. The remaining coded slice is standup export; the remaining release slice is ship/shareability polish.
 

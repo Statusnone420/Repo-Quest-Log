@@ -10,6 +10,13 @@ const { resolveDesktopRepoRoot } = require(path.join(__dirname, "..", "..", "dis
 const repoRoot = path.resolve(__dirname, "..", "..");
 const { version: appVersion } = require(path.join(repoRoot, "package.json"));
 
+function appIconPath() {
+  const bundled = path.join(process.resourcesPath, "build", "icon.png");
+  const local = path.join(repoRoot, "build", "icon.png");
+  const candidate = app.isPackaged ? bundled : local;
+  return fs.existsSync(candidate) ? candidate : undefined;
+}
+
 function lastRootFile() {
   try {
     return path.join(app.getPath("userData"), "last-root.txt");
@@ -127,6 +134,7 @@ function createWindow() {
     height: workArea.height,
     minWidth: 700,
     minHeight: 560,
+    icon: appIconPath(),
     useContentSize: true,
     backgroundColor: "#0b0d10",
     title: "Repo Quest Log",

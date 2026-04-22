@@ -64,8 +64,15 @@
     "files": [
       "dist/**/*",
       "apps/desktop/**/*",
+      "build/**/*",
       "docs/SCHEMA.md",
       "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "build/icon.png",
+        "to": "build/icon.png"
+      }
     ],
     "extraMetadata": {
       "main": "apps/desktop/main.cjs"

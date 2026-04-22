@@ -46,12 +46,14 @@ describe("desktop shell sizing", () => {
     expect(source).toContain("height: workArea.height");
     expect(source).toContain("minWidth: 700");
     expect(source).toContain("minHeight: 560");
+    expect(source).toContain("icon: appIconPath()");
     expect(source).toContain("useContentSize: true");
     expect(source).toContain("formatCodeOpenTarget");
     expect(source).toContain('spawn("code", ["-g"');
     expect(source).toContain("About Repo Quest Log");
     expect(source).toContain("setAppUserModelId");
     expect(packageJson.build?.win?.target).toEqual(["nsis", "portable"]);
+    expect(packageJson.build?.extraResources).toEqual([{ from: "build/icon.png", to: "build/icon.png" }]);
   });
 });
 

@@ -117,7 +117,7 @@ Store selection in `.repolog.json`:
 
 **Deliverables:**
 - `src/cli/repobot.ts` — interactive CLI chat mode
-- `src/web/RepoBotPanel.tsx` — desktop webview chat
+- `src/web/render.ts` — collapsible RepoBot dock in the main desktop UX
 - IPC handlers in `apps/desktop/main.cjs`
 - Integrated help text + examples
 
@@ -134,7 +134,7 @@ Store selection in `.repolog.json`:
    - [ ] Exit: `q` or Ctrl+C
 
 2. **Electron Chat Panel** (claude)
-   - [ ] New "RepoBot" tab in settings right-panel
+   - [ ] New collapsible "RepoBot" dock in the main desktop UX
    - [ ] Message history (user msgs, AI responses with diffs)
    - [ ] Input field + "Ask" button + suggested prompts
    - [ ] Suggested prompts:

@@ -135,11 +135,12 @@ export async function resolveCopilotProvider(
 
   const configuredName = config.llm?.provider;
   const configured = configuredName ? registry.find((entry) => entry.name === configuredName) : undefined;
+  const configuredReady = configured && configured.canDiscoverAuth() ? configured : undefined;
   const authenticatedDiscovery = discoveries.find((provider) => provider.available && provider.tokenFound);
   const authenticated = authenticatedDiscovery
     ? registry.find((entry) => entry.name === authenticatedDiscovery.name)
     : undefined;
-  const chosen = configured ?? authenticated ?? registry[0];
+  const chosen = configuredReady ?? authenticated ?? configured ?? registry[0];
   if (!chosen) {
     throw new Error("No RepoBot providers are configured.");
   }
@@ -164,7 +165,7 @@ export async function runCopilotQuery(
   const { provider } = await resolveCopilotProvider(rootDir, options);
   const token = provider.discoverToken() ?? "";
   if (!provider.canDiscoverAuth()) {
-    throw new Error(`No usable auth found for ${provider.name}.`);
+    throw new Error(`No usable RepoBot auth found for ${provider.name}. Run auth discovery or select a provider with credentials.`);
   }
   const response = await provider.createClient(token).ask(request.prompt, request.context);
   return {

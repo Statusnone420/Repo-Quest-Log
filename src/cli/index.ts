@@ -7,6 +7,7 @@ import { render } from "ink";
 import { spawn } from "node:child_process";
 
 import { renderDesktopHtml } from "../desktop/render.js";
+import { formatDoctorReport, runDoctor } from "../engine/doctor.js";
 import { loadPromptPresets } from "../engine/prompts.js";
 import { scanRepo } from "../engine/scan.js";
 import { formatStaticFrame, WatchApp } from "../tui/App.js";
@@ -18,6 +19,19 @@ async function main(): Promise<void> {
   if (command.mode === "scan") {
     const state = await scanRepo(command.rootDir);
     process.stdout.write(`${JSON.stringify(state, null, 2)}\n`);
+    return;
+  }
+
+  if (command.mode === "doctor") {
+    const report = await runDoctor(command.rootDir);
+    if (command.json) {
+      const { state: _state, ...rest } = report;
+      process.stdout.write(`${JSON.stringify(rest, null, 2)}\n`);
+      return;
+    }
+    process.stdout.write(`${formatDoctorReport(report)}\n`);
+    const hasWarn = report.findings.some((f) => f.severity === "warn");
+    if (hasWarn) process.exitCode = 1;
     return;
   }
 
@@ -73,6 +87,7 @@ async function main(): Promise<void> {
 
 type Command =
   | { mode: "scan" | "watch" | "status"; rootDir: string }
+  | { mode: "doctor"; rootDir: string; json: boolean }
   | { mode: "desktop"; rootDir: string; outputFile: string }
   | { mode: "prompt"; rootDir: string; action: "list" }
   | { mode: "prompt"; rootDir: string; action: "render"; id: string; copy: boolean };
@@ -98,6 +113,10 @@ function readCommand(args: string[]): Command {
   if (first === "status") {
     const pathArg = args.slice(1).find((arg) => !arg.startsWith("-"));
     return { mode: "status", rootDir: resolve(pathArg ?? ".") };
+  }
+  if (first === "doctor") {
+    const pathArg = args.slice(1).find((arg) => !arg.startsWith("-"));
+    return { mode: "doctor", rootDir: resolve(pathArg ?? "."), json: args.includes("--json") };
   }
   if (first === "prompt") {
     const rootIdx = args.indexOf("--root");
@@ -150,6 +169,7 @@ function printHelp(): void {
       "  repolog --watch [path] Same as watch",
       "  repolog desktop [path] Write a desktop HUD snapshot HTML file",
       "  repolog status [path] --short   Print a one-line status summary",
+      "  repolog doctor [path] [--json]  Explain what was scanned and why state looks empty",
       "  repolog prompt list             List available prompt presets",
       "  repolog prompt <id> [--copy]    Render a prompt; --copy sends to clipboard",
       "",

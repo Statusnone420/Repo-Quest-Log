@@ -68,7 +68,8 @@ class RepoQuestViewProvider {
       recentChanges: this.recentChanges,
       lastTouchedFile: this.recentChanges[0] && this.recentChanges[0].file,
     });
-    const html = modules.renderVSCodeHtml(state, { liveBridge: "vscode" });
+    const presets = await modules.loadPromptPresets(state, { rootDir: this.rootDir });
+    const html = modules.renderVSCodeHtml(state, { liveBridge: "vscode", presets });
 
     if (!this.view.webview.html) {
       this.view.webview.html = html;
@@ -113,11 +114,13 @@ class RepoQuestViewProvider {
         import(pathToFileURL(path.join(repoRoot, "dist", "engine", "scan.js")).href),
         import(pathToFileURL(path.join(repoRoot, "dist", "engine", "watcher.js")).href),
         import(pathToFileURL(path.join(repoRoot, "dist", "web", "render.js")).href),
-      ]).then(([changes, scan, watcher, web]) => ({
+        import(pathToFileURL(path.join(repoRoot, "dist", "engine", "prompts.js")).href),
+      ]).then(([changes, scan, watcher, web, prompts]) => ({
         mergeChanges: changes.mergeChanges,
         scanRepo: scan.scanRepo,
         startWatcher: watcher.startWatcher,
         renderVSCodeHtml: web.renderVSCodeHtml,
+        loadPromptPresets: prompts.loadPromptPresets,
       }));
     }
 

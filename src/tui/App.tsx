@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Box, Text, useApp, useInput, useStdin } from "ink";
 
 import { mergeChanges } from "../engine/changes.js";
-import { buildPromptPresets, type PromptPreset } from "../engine/prompts.js";
+import { buildPromptPresets, loadPromptPresets, type PromptPreset } from "../engine/prompts.js";
 import { scanRepo } from "../engine/scan.js";
 import { startWatcher } from "../engine/watcher.js";
 import type { FileChange, QuestState } from "../engine/types.js";
@@ -165,12 +165,31 @@ export function WatchApp({ rootDir }: WatchAppProps) {
     };
   }, [rootDir]);
 
+  const [externalPresets, setExternalPresets] = useState<PromptPreset[] | null>(null);
+
+  useEffect(() => {
+    if (!state) {
+      return;
+    }
+    let mounted = true;
+    loadPromptPresets(state, { rootDir })
+      .then((loaded) => {
+        if (mounted) setExternalPresets(loaded);
+      })
+      .catch(() => {
+        if (mounted) setExternalPresets(null);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, [state, rootDir]);
+
   const presets = useMemo(() => {
     if (!state) {
       return [];
     }
-    return buildPromptPresets(state);
-  }, [state]);
+    return externalPresets ?? buildPromptPresets(state);
+  }, [state, externalPresets]);
 
   const filteredPresets = useMemo(
     () => filterPromptPresets(presets, paletteQuery),

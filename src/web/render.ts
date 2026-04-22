@@ -1,12 +1,13 @@
-import { buildContextPrompt, buildPromptPresets } from "../engine/prompts.js";
+import { buildContextPrompt, buildPromptPresets, type PromptPreset } from "../engine/prompts.js";
 import type { AgentProfile, BlockedTask, Decision, FileChange, QuestState, Task } from "../engine/types.js";
 
 export interface SurfaceHtmlOptions {
   liveBridge?: "desktop" | "vscode";
+  presets?: PromptPreset[];
 }
 
 export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions = {}): string {
-  const presets = buildPromptPresets(state);
+  const presets = options.presets ?? buildPromptPresets(state);
   const stateJson = JSON.stringify({
     name: state.name,
     branch: state.branch,

@@ -149,7 +149,7 @@ export interface QuestState {
 | Field | Source |
 |---|---|
 | `mission` | First sentence under `## Mission` or first non-heading sentence in `PLAN.md` / `README.md` |
-| `objective.title` (v2) / `activeQuest.title` (v1) | First non-empty line under `## Objective` or `## Active Quest` in `PLAN.md` |
+| `objective.title` (v2) / `activeQuest.title` (v1) | First non-empty line under a heading matching `/active\s+quest\|current\s+objective\|objective\|focus/i` in `PLAN.md` |
 | `objective.progress` | Count `- [x]` vs `- [ ]` under the Objective section |
 | `now` | Unchecked items under headings matching `/current\|now\|in progress\|active/i` |
 | `next` | Unchecked items under headings matching `/next\|upcoming\|queue/i` |

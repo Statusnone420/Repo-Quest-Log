@@ -16,9 +16,13 @@ v0.1 close-out: keep the desktop / VS Code / TUI surfaces aligned to one shared 
 - `npm run build`, `npm run lint`, `npm test` all green (22 tests, 10 files).
 
 ## Resume Note
-> Prompt loader, `repolog prompt` / `repolog status --short`, and the desktop Open-Repo picker all shipped. Next slice: wire the TUI and desktop Ctrl+K palettes to `loadPromptPresets` so external overrides show up in-app, then start `repolog doctor`.
+> Ctrl+K palettes in TUI, desktop (Electron), and VS Code webview now read from `loadPromptPresets` — external `~/.repolog/prompts/*.md` + `<repo>/.repolog/prompts/*.md` overrides show up in-app. Added `presets?: PromptPreset[]` passthrough to `SurfaceHtmlOptions`. Next slice: schema v2 prep (`gitContext`, `agentActivity`, `config`) with v1 compat shim.
 
-Last touched: `apps/desktop/main.cjs`
+Last touched: `src/tui/App.tsx`
+
+## Recent Decisions
+- 2026-04-21 — `repolog doctor` is the trust layer for messy repos: it explains *why* state looks sparse and which exact heading to add. The CLI exits 1 when any warn-level finding fires, so CI can gate on it.
+- 2026-04-21 — Heuristic drift: bare `## Objective` was silently invisible to the scanner even though SCHEMA.md promised it worked. Fixed in `fileset.ts` and SCHEMA extraction table updated to cite the real regex.
 
 ## Recent Decisions
 - TypeScript over Rust for v0.1 (faster iteration, Ink for TUI)

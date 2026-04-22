@@ -59,12 +59,14 @@ async function loadModules() {
       importModule("dist/engine/scan.js"),
       importModule("dist/engine/watcher.js"),
       importModule("dist/web/render.js"),
-    ]).then(([changes, editor, scan, watcher, web]) => ({
+      importModule("dist/engine/prompts.js"),
+    ]).then(([changes, editor, scan, watcher, web, prompts]) => ({
       mergeChanges: changes.mergeChanges,
       formatCodeOpenTarget: editor.formatCodeOpenTarget,
       scanRepo: scan.scanRepo,
       startWatcher: watcher.startWatcher,
       renderDesktopHtml: web.renderDesktopHtml,
+      loadPromptPresets: prompts.loadPromptPresets,
     }));
   }
 
@@ -133,7 +135,7 @@ function revealWindow() {
 }
 
 async function refresh(changes = []) {
-  const { mergeChanges, scanRepo, renderDesktopHtml } = await loadModules();
+  const { mergeChanges, scanRepo, renderDesktopHtml, loadPromptPresets } = await loadModules();
   recentChanges = mergeChanges(changes, recentChanges);
 
   try {
@@ -141,7 +143,8 @@ async function refresh(changes = []) {
       recentChanges,
       lastTouchedFile: recentChanges[0] && recentChanges[0].file,
     });
-    const html = renderDesktopHtml(state, { liveBridge: "desktop" });
+    const presets = await loadPromptPresets(state, { rootDir: targetRoot });
+    const html = renderDesktopHtml(state, { liveBridge: "desktop", presets });
     await pushHtml(html);
   } catch (error) {
     const message = error instanceof Error ? error.stack || error.message : String(error);

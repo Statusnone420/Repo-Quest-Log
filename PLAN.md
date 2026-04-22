@@ -21,8 +21,8 @@ Detailed completion estimates now live in `plan_implementation.md`.
 - [x] Click-to-open doc links verified in every remaining surface (agent: codex, touches: extensions/vscode/)
 - [x] Externalize prompt-palette templates — loader reads `~/.repolog/prompts/*.md` and `<repo>/.repolog/prompts/*.md`, repo wins, built-ins fall through
 - [x] `repolog prompt list` / `repolog prompt <id> [--copy]` / `repolog status --short` CLI commands
-- [ ] Wire TUI and desktop Ctrl+K to the shared `loadPromptPresets` loader so external overrides show up in the palettes (agent: claude, touches: src/tui/App.tsx, src/web/render.ts)
-- [ ] `repolog doctor` — explain scanned files, ignored paths, missing sections, and why each task landed in Now/Next/Blocked (agent: claude, touches: src/engine/doctor.ts, src/cli/index.ts)
+- [x] Wire TUI and desktop Ctrl+K to the shared `loadPromptPresets` loader so external overrides show up in the palettes (agent: claude, touches: src/tui/App.tsx, src/web/render.ts, apps/desktop/main.cjs, extensions/vscode/extension.js)
+- [x] `repolog doctor` [`--json`] — reports scanned files, missing expected docs, malformed config, empty buckets, and suggestions keyed to `docs/SCHEMA.md`
 
 ## Next — v0.2 (agent-integration wedge)
 - [ ] Live git panel — branch, ahead/behind, dirty count, last commit subject + relative time

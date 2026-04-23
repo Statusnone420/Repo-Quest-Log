@@ -51,6 +51,7 @@
     "claude-code",
     "codex"
   ],
+  "author": "Statusnone420",
   "license": "MIT",
   "build": {
     "appId": "com.repoquestlog.app",

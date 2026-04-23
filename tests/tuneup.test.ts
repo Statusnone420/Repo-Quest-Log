@@ -103,7 +103,7 @@ describe("buildTuneup", () => {
 
     expect(result1.charter).toBe(result2.charter);
     expect(result1.charter).toContain("## Required Headings");
-    expect(result1.charter).toContain("## How Agents Should Update Markdown");
+    expect(result1.charter).toContain("## Rules");
   });
 
   it("missing CHARTER.md yields med-severity structural gap", async () => {
@@ -122,7 +122,7 @@ describe("buildTuneup", () => {
     expect(result.score).toBeLessThan(100);
   });
 
-  it("prompt contains both scores and gap sections", async () => {
+  it("prompt contains both scores and fix sections", async () => {
     const root = await makeRepo({
       "PLAN.md": "## Objective\n\nShip v1.\n\n## Now\n\n- [ ] task\n",
       "STATE.md": "## Resume Note\n\n> Session 1.\n",
@@ -131,9 +131,8 @@ describe("buildTuneup", () => {
     const result = await buildTuneup(report.state, report, root);
 
     expect(result.prompt).toContain("/100");
-    expect(result.prompt).toContain("Structural score:");
-    expect(result.prompt).toContain("Content quality:");
-    expect(result.prompt).toContain("## Structural Gaps");
+    expect(result.prompt).toContain("Structural ");
+    expect(result.prompt).toContain("Content ");
     expect(result.prompt).toContain("repolog tuneup");
   });
 
@@ -216,11 +215,11 @@ describe("buildTuneup", () => {
     const report = await runDoctor(root);
     const result = await buildTuneup(report.state, report, root);
 
-    expect(result.prompt).toContain("## Repo Fingerprint");
+    expect(result.prompt).toContain("## Context");
     expect(result.prompt).toContain("test-app");
   });
 
-  it("content quality prompt shows Content Quality Issues section", async () => {
+  it("content quality prompt shows Now/Problem/Write per issue", async () => {
     const root = await makeRepo({
       "PLAN.md":
         "## Mission\n\nThis boilerplate provides a minimal setup to get React working.\n\n## Objective\n\nCurrent session focus\n\n## Now\n\n- [ ] task\n\n## Next\n\n- [ ] queue\n",
@@ -231,7 +230,8 @@ describe("buildTuneup", () => {
     const report = await runDoctor(root);
     const result = await buildTuneup(report.state, report, root);
 
-    expect(result.prompt).toContain("## Content Quality Issues");
-    expect(result.prompt).toContain("Currently reads:");
+    expect(result.prompt).toContain("**Now:**");
+    expect(result.prompt).toContain("**Problem:**");
+    expect(result.prompt).toContain("**Write:**");
   });
 });

@@ -17,12 +17,23 @@ export interface Gap {
 }
 
 export interface RepoContext {
-  manifestType?: "package.json" | "pyproject.toml" | "Cargo.toml";
+  // Detected language/type — works with zero manifest files
+  repoType: string;
+  // Manifest (optional — many repos won't have one)
+  manifestType?: "package.json" | "pyproject.toml" | "Cargo.toml" | "go.mod" | "pom.xml" | "Gemfile";
   packageName?: string;
   packageDescription?: string;
   packageVersion?: string;
+  // README in any format
   readmePreview?: string;
+  // First ~30 lines of the repo's main entry point
+  entryPointPreview?: string;
+  entryPointFile?: string;
+  // Git log — always the most useful signal
   recentCommits: string[];
+  // File tree: root-level + one level deep, all non-ignored files
+  rootFiles: string[];
+  // Code files in recognized source dirs (for display/filtering)
   sourceTree: string[];
 }
 
@@ -88,6 +99,7 @@ const GENERIC_OBJECTIVE_PATTERNS: RegExp[] = [
   /^placeholder$/i,
   /^describe.*milestone/i,
   /^one sentence.*goal/i,
+  /^describe the (current|specific) milestone/i,
 ];
 
 const GAME_PROGRESS_PATTERNS: RegExp[] = [
@@ -104,10 +116,123 @@ const GAME_PROGRESS_PATTERNS: RegExp[] = [
   /\bxp\b|\bexperience points\b/i,
 ];
 
-export async function gatherRepoContext(rootDir: string): Promise<RepoContext> {
-  const context: RepoContext = { recentCommits: [], sourceTree: [] };
+// Files and dirs to always skip during tree scan
+const SKIP_NAMES = new Set([
+  "node_modules", ".git", ".svn", "dist", "build", "out", "__pycache__",
+  ".next", ".nuxt", "target", "vendor", "venv", ".venv", "env",
+  "coverage", ".cache", ".parcel-cache", "tmp", ".tmp",
+]);
 
-  // Manifest: package.json → pyproject.toml → Cargo.toml
+// README filenames to try, in priority order
+const README_CANDIDATES = [
+  "README.md", "README.MD", "readme.md",
+  "README.rst", "README.txt", "README.org", "README",
+];
+
+// Entry point candidates per repo type
+const ENTRY_POINTS: Record<string, string[]> = {
+  TypeScript: ["src/index.ts", "src/main.ts", "index.ts", "main.ts", "src/app.ts", "app.ts"],
+  JavaScript: ["src/index.js", "index.js", "main.js", "src/main.js", "src/app.js", "app.js"],
+  Python: ["main.py", "app.py", "__main__.py", "src/main.py", "cli.py", "bot.py", "run.py"],
+  Rust: ["src/main.rs", "src/lib.rs"],
+  Go: ["main.go", "cmd/main.go", "cmd/root.go"],
+  Ruby: ["main.rb", "app.rb", "lib/main.rb", "bin/run"],
+  "C#": ["Program.cs", "src/Program.cs"],
+};
+
+// ── Universal repo context gathering ─────────────────────────────────────────
+
+export async function gatherRepoContext(rootDir: string): Promise<RepoContext> {
+  const context: RepoContext = {
+    repoType: "unknown",
+    recentCommits: [],
+    rootFiles: [],
+    sourceTree: [],
+  };
+
+  // 1. Scan root-level files — this works for ANY repo
+  context.rootFiles = await scanRootFiles(rootDir);
+
+  // 2. Detect repo type from what's actually there
+  context.repoType = detectRepoType(context.rootFiles);
+
+  // 3. Read manifest (optional — many repos won't have one)
+  await readManifest(rootDir, context);
+
+  // 4. Read README in any format
+  for (const name of README_CANDIDATES) {
+    try {
+      const raw = await readFile(join(rootDir, name), "utf8");
+      context.readmePreview = raw.split(/\r?\n/).slice(0, 60).join("\n");
+      break;
+    } catch { /* try next */ }
+  }
+
+  // 5. Git log — always the richest signal
+  try {
+    const log = execFileSync("git", ["log", "--oneline", "-20"], {
+      cwd: rootDir,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+    context.recentCommits = log
+      .split(/\r?\n/)
+      .filter(Boolean)
+      .map((l) => l.replace(/^[a-f0-9]+ /, "").trim());
+  } catch { /* no git */ }
+
+  // 6. Read entry point file for the detected repo type
+  const epCandidates = ENTRY_POINTS[context.repoType] ?? [];
+  for (const ep of epCandidates) {
+    try {
+      const raw = await readFile(join(rootDir, ep), "utf8");
+      context.entryPointFile = ep;
+      context.entryPointPreview = raw.split(/\r?\n/).slice(0, 30).join("\n");
+      break;
+    } catch { /* try next */ }
+  }
+
+  // 7. Source tree (best-effort, for display)
+  await fillSourceTree(rootDir, context);
+
+  return context;
+}
+
+async function scanRootFiles(rootDir: string): Promise<string[]> {
+  try {
+    const entries = await readdir(rootDir, { withFileTypes: true });
+    return entries
+      .filter((e) => !e.name.startsWith(".") || e.name === ".repolog")
+      .filter((e) => !SKIP_NAMES.has(e.name))
+      .map((e) => e.name + (e.isDirectory() ? "/" : ""))
+      .sort();
+  } catch {
+    return [];
+  }
+}
+
+function detectRepoType(rootFiles: string[]): string {
+  const names = new Set(rootFiles.map((f) => f.toLowerCase().replace(/\/$/, "")));
+  if (names.has("package.json")) {
+    // TS vs JS: look for tsconfig
+    if (names.has("tsconfig.json") || rootFiles.some((f) => f.endsWith(".ts"))) return "TypeScript";
+    return "JavaScript";
+  }
+  if (names.has("pyproject.toml") || names.has("setup.py") || names.has("requirements.txt")) return "Python";
+  if (names.has("cargo.toml")) return "Rust";
+  if (names.has("go.mod")) return "Go";
+  if (names.has("gemfile") || rootFiles.some((f) => f.endsWith(".gemspec"))) return "Ruby";
+  if (names.has("pom.xml") || names.has("build.gradle") || names.has("build.gradle.kts")) return "Java";
+  if (rootFiles.some((f) => f.endsWith(".csproj") || f.endsWith(".sln"))) return "C#";
+  if (names.has("cmakelists.txt")) return "C/C++";
+  if (rootFiles.some((f) => f.endsWith(".tf"))) return "Terraform";
+  if (rootFiles.some((f) => f.endsWith(".sh") || f.endsWith(".bash"))) return "Shell";
+  if (rootFiles.every((f) => f.endsWith(".md") || f.endsWith(".txt") || f.endsWith(".rst"))) return "docs";
+  return "unknown";
+}
+
+async function readManifest(rootDir: string, context: RepoContext): Promise<void> {
+  // package.json
   try {
     const raw = await readFile(join(rootDir, "package.json"), "utf8");
     const pkg = JSON.parse(raw) as Record<string, unknown>;
@@ -115,53 +240,55 @@ export async function gatherRepoContext(rootDir: string): Promise<RepoContext> {
     if (typeof pkg.name === "string") context.packageName = pkg.name;
     if (typeof pkg.description === "string") context.packageDescription = pkg.description;
     if (typeof pkg.version === "string") context.packageVersion = pkg.version;
-  } catch {
-    try {
-      const raw = await readFile(join(rootDir, "pyproject.toml"), "utf8");
-      context.manifestType = "pyproject.toml";
-      const name = /^\s*name\s*=\s*"([^"]+)"/m.exec(raw)?.[1];
-      const desc = /^\s*description\s*=\s*"([^"]+)"/m.exec(raw)?.[1];
-      if (name) context.packageName = name;
-      if (desc) context.packageDescription = desc;
-    } catch {
-      try {
-        const raw = await readFile(join(rootDir, "Cargo.toml"), "utf8");
-        context.manifestType = "Cargo.toml";
-        const name = /^\s*name\s*=\s*"([^"]+)"/m.exec(raw)?.[1];
-        const desc = /^\s*description\s*=\s*"([^"]+)"/m.exec(raw)?.[1];
-        if (name) context.packageName = name;
-        if (desc) context.packageDescription = desc;
-      } catch { /* no manifest */ }
-    }
-  }
+    return;
+  } catch { /* try next */ }
 
-  // README preview (first 60 lines)
+  // pyproject.toml
   try {
-    const raw = await readFile(join(rootDir, "README.md"), "utf8");
-    context.readmePreview = raw.split(/\r?\n/).slice(0, 60).join("\n");
-  } catch { /* no README */ }
+    const raw = await readFile(join(rootDir, "pyproject.toml"), "utf8");
+    context.manifestType = "pyproject.toml";
+    const name = /^\s*name\s*=\s*"([^"]+)"/m.exec(raw)?.[1];
+    const desc = /^\s*description\s*=\s*"([^"]+)"/m.exec(raw)?.[1];
+    if (name) context.packageName = name;
+    if (desc) context.packageDescription = desc;
+    return;
+  } catch { /* try next */ }
 
-  // Recent git commits (oneline, message only)
+  // Cargo.toml
   try {
-    const log = execFileSync("git", ["log", "--oneline", "-20"], {
-      cwd: rootDir,
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "ignore"],
-    }).trim();
-    context.recentCommits = log.split(/\r?\n/).filter(Boolean).map((l) => l.replace(/^[a-f0-9]+ /, "").trim());
-  } catch { /* no git */ }
+    const raw = await readFile(join(rootDir, "Cargo.toml"), "utf8");
+    context.manifestType = "Cargo.toml";
+    const name = /^\s*name\s*=\s*"([^"]+)"/m.exec(raw)?.[1];
+    const desc = /^\s*description\s*=\s*"([^"]+)"/m.exec(raw)?.[1];
+    if (name) context.packageName = name;
+    if (desc) context.packageDescription = desc;
+    return;
+  } catch { /* try next */ }
 
-  // Source file tree (up to 30 entries, 2 levels deep)
-  for (const dir of ["src", "lib", "app", "cmd", "source", "packages"]) {
-    if (context.sourceTree.length >= 30) break;
+  // go.mod
+  try {
+    const raw = await readFile(join(rootDir, "go.mod"), "utf8");
+    context.manifestType = "go.mod";
+    const mod = /^module\s+(\S+)/m.exec(raw)?.[1];
+    if (mod) context.packageName = mod.split("/").pop();
+    return;
+  } catch { /* no manifest */ }
+}
+
+async function fillSourceTree(rootDir: string, context: RepoContext): Promise<void> {
+  const SOURCE_DIRS = [
+    "src", "lib", "app", "cmd", "source", "packages",
+    "scripts", "tools", "core", "api", "server", "client",
+    "backend", "frontend", "bot", "extension", "plugin",
+  ];
+  for (const dir of SOURCE_DIRS) {
+    if (context.sourceTree.length >= 25) break;
     try {
       const entries = await listSourceFiles(join(rootDir, dir), dir);
-      const remaining = 30 - context.sourceTree.length;
+      const remaining = 25 - context.sourceTree.length;
       context.sourceTree.push(...entries.slice(0, remaining));
-    } catch { /* dir doesn't exist */ }
+    } catch { /* skip */ }
   }
-
-  return context;
 }
 
 async function listSourceFiles(dir: string, prefix: string): Promise<string[]> {
@@ -173,7 +300,7 @@ async function listSourceFiles(dir: string, prefix: string): Promise<string[]> {
     return result;
   }
   for (const entry of entries) {
-    if (entry.name.startsWith(".") || entry.name === "node_modules") continue;
+    if (entry.name.startsWith(".") || SKIP_NAMES.has(entry.name)) continue;
     const path = `${prefix}/${entry.name}`;
     if (entry.isFile()) {
       result.push(path);
@@ -191,6 +318,8 @@ async function listSourceFiles(dir: string, prefix: string): Promise<string[]> {
   return result;
 }
 
+// ── Main build function ───────────────────────────────────────────────────────
+
 export async function buildTuneup(
   state: QuestState,
   _doctorReport: DoctorReport,
@@ -207,16 +336,14 @@ export async function buildTuneup(
   if (state.mission?.trim()) {
     score += WEIGHTS.mission;
     if (isBoilerplate(state.mission)) {
-      const hints = buildMissionHints(state, context);
       contentGaps.push({
         id: "mission-boilerplate",
         severity: "high",
         file: "PLAN.md",
         heading: "## Mission",
-        fix: "Replace with a real one-sentence description of what this repo does. Current text is boilerplate.",
-        suggestedMarkdown: hints.suggested,
+        fix: "Boilerplate text — not a real description of this repo.",
+        suggestedMarkdown: "",
         currentContent: state.mission,
-        contextHints: hints.clues || undefined,
       });
       contentPenalty += CONTENT_PENALTIES["mission-boilerplate"];
     }
@@ -227,7 +354,7 @@ export async function buildTuneup(
       file: "PLAN.md",
       heading: "## Mission",
       fix: "Add a `## Mission` heading with one sentence describing what this repo is.",
-      suggestedMarkdown: "## Mission\n\n> One sentence: what this repo is trying to become.\n",
+      suggestedMarkdown: buildMissionMarkdown(state, context),
     });
   }
 
@@ -235,19 +362,14 @@ export async function buildTuneup(
   if (state.activeQuest.title?.trim()) {
     score += WEIGHTS.objective;
     if (isGenericObjective(state.activeQuest.title)) {
-      const commitHint = context?.recentCommits.length
-        ? `Recent commits: ${context.recentCommits.slice(0, 5).join("; ")}`
-        : undefined;
       contentGaps.push({
         id: "objective-generic",
         severity: "high",
         file: state.activeQuest.doc ?? "PLAN.md",
         heading: "## Objective",
-        fix: `Replace with the actual current development milestone. "${state.activeQuest.title}" is a placeholder.`,
-        suggestedMarkdown:
-          "## Objective\n\nDescribe the specific milestone you are driving toward right now in one clear sentence.\n",
+        fix: "Generic placeholder — an AI agent cannot determine the active milestone from this.",
+        suggestedMarkdown: "",
         currentContent: state.activeQuest.title,
-        contextHints: commitHint,
       });
       contentPenalty += CONTENT_PENALTIES["objective-generic"];
     }
@@ -257,8 +379,8 @@ export async function buildTuneup(
       severity: "high",
       file: "PLAN.md",
       heading: "## Objective",
-      fix: "Add a `## Objective` section with 1 to 2 sentences describing what this repo aims to become.",
-      suggestedMarkdown: "## Objective\n\nDescribe the current milestone or goal in one sentence.\n",
+      fix: "Add a `## Objective` section with one sentence describing the active milestone.",
+      suggestedMarkdown: buildObjectiveMarkdown(context),
     });
   }
 
@@ -271,8 +393,8 @@ export async function buildTuneup(
       severity: "high",
       file: "PLAN.md",
       heading: "## Now",
-      fix: "Add a `## Now` heading with at least one unchecked checklist item so RepoLog can surface active work.",
-      suggestedMarkdown: "## Now\n\n- [ ] First active task\n",
+      fix: "Add a `## Now` heading with at least one `- [ ]` item so RepoLog can surface active work.",
+      suggestedMarkdown: buildNowMarkdown(context),
     });
   }
 
@@ -287,8 +409,8 @@ export async function buildTuneup(
       severity: "med",
       file: agentFile,
       heading: "## Owned Areas",
-      fix: "Add `## Owned Areas` to each agent file listing the files or directories that agent manages.",
-      suggestedMarkdown: "## Owned Areas\n\n- `src/` — primary source files\n- `docs/` — documentation\n",
+      fix: "Add `## Owned Areas` to each agent file listing the files or dirs that agent manages.",
+      suggestedMarkdown: buildOwnedAreasMarkdown(context),
     });
   } else {
     gaps.push({
@@ -296,9 +418,8 @@ export async function buildTuneup(
       severity: "med",
       file: "AGENTS.md",
       heading: "## Owned Areas",
-      fix: "Add AGENTS.md, CLAUDE.md, or GEMINI.md with a `## Owned Areas` section.",
-      suggestedMarkdown:
-        "## Role\n\nAgent responsible for implementation tasks.\n\n## Owned Areas\n\n- `src/` — primary source files\n",
+      fix: "Add AGENTS.md, CLAUDE.md, or GEMINI.md with `## Role` and `## Owned Areas` sections.",
+      suggestedMarkdown: buildAgentFileMarkdown(context),
     });
   }
 
@@ -306,19 +427,14 @@ export async function buildTuneup(
   if (state.resumeNote.task?.trim()) {
     score += WEIGHTS["state-resume"];
     if (isGameProgress(state.resumeNote.task)) {
-      const commitHint = context?.recentCommits.length
-        ? `Recent commits suggest actual dev work: ${context.recentCommits.slice(0, 5).join("; ")}`
-        : undefined;
       contentGaps.push({
         id: "resume-note-game-progress",
         severity: "high",
         file: "STATE.md",
         heading: "## Resume Note",
-        fix: "This describes game state, not development work. An AI agent cannot resume coding from this. Replace with what was last worked on in the codebase.",
-        suggestedMarkdown:
-          "## Resume Note\n\n> Session N: describe what you last worked on and what comes next in development.\n",
+        fix: "Game state, not dev state — an AI agent cannot resume coding from this.",
+        suggestedMarkdown: "",
         currentContent: state.resumeNote.task,
-        contextHints: commitHint,
       });
       contentPenalty += CONTENT_PENALTIES["resume-note-game-progress"];
     }
@@ -328,8 +444,8 @@ export async function buildTuneup(
       severity: "high",
       file: "STATE.md",
       heading: "## Resume Note",
-      fix: 'Add a `## Resume Note` section to STATE.md so RepoLog can answer "where was I?" for the next agent.',
-      suggestedMarkdown: "## Resume Note\n\n> Session N: brief summary of what was done and what comes next.\n",
+      fix: "Add `## Resume Note` to STATE.md so an agent can answer \"where was I?\" on the next session.",
+      suggestedMarkdown: buildResumeMarkdown(context),
     });
   }
 
@@ -342,8 +458,8 @@ export async function buildTuneup(
       severity: "low",
       file: "PLAN.md",
       heading: "## Next",
-      fix: "Add a `## Next` heading with upcoming `- [ ]` items so the HUD can show the queue.",
-      suggestedMarkdown: "## Next\n\n- [ ] Upcoming task or milestone\n",
+      fix: "Add a `## Next` heading with `- [ ]` items so the HUD queue is non-empty.",
+      suggestedMarkdown: "## Next\n\n- [ ] [upcoming task]\n",
     });
   }
 
@@ -356,7 +472,7 @@ export async function buildTuneup(
       severity: "med",
       file: ".repolog/CHARTER.md",
       heading: "CHARTER.md",
-      fix: "Run `repolog tuneup --write-charter` to generate `.repolog/CHARTER.md` so agents know how to write markdown RepoLog can read.",
+      fix: "Run `repolog tuneup --write-charter` to write `.repolog/CHARTER.md` — agents use this to write RepoLog-compatible markdown.",
       suggestedMarkdown: "",
     });
   }
@@ -370,20 +486,20 @@ export async function buildTuneup(
       severity: "low",
       file: "PLAN.md",
       heading: "frontmatter",
-      fix: "Add YAML frontmatter to PLAN.md or STATE.md for richer metadata (title, status, owner).",
-      suggestedMarkdown: "---\ntitle: Repo Name\nstatus: active\nowner: team\n---\n",
+      fix: "Add YAML frontmatter to PLAN.md for richer metadata.",
+      suggestedMarkdown: buildFrontmatterMarkdown(state, context),
     });
   }
 
   const contentScore = Math.max(0, 100 - contentPenalty);
-  const charter = buildCharter(state);
+  const charter = buildCharter(state, context);
   const prompt = buildPrompt(state, gaps, contentGaps, score, contentScore, charter, context);
-  const perAgent = buildPerAgentPrompts(state, gaps, contentGaps);
+  const perAgent = buildPerAgentPrompts(state, gaps, contentGaps, context);
 
   return { score, contentScore, gaps, contentGaps, prompt, charter, perAgent };
 }
 
-// ── Content quality helpers ──────────────────────────────────────────────────
+// ── Detection helpers ────────────────────────────────────────────────────────
 
 function isBoilerplate(text: string): boolean {
   return BOILERPLATE_PATTERNS.some((p) => p.test(text));
@@ -397,22 +513,147 @@ function isGameProgress(text: string): boolean {
   return GAME_PROGRESS_PATTERNS.some((p) => p.test(text));
 }
 
-function buildMissionHints(
-  state: QuestState,
-  context: RepoContext | null,
-): { suggested: string; clues: string } {
-  const clues: string[] = [];
-  if (context?.packageName) clues.push(`Package name: \`${context.packageName}\``);
-  if (context?.packageDescription) clues.push(`Package description: "${context.packageDescription}"`);
+// ── Structural gap markdown generators — pre-populated from context ──────────
+//
+// These replace the old "[placeholder]" templates. When context exists, the
+// AI agent gets a real candidate to verify. When context is absent, the hint
+// is structural but still specific.
+
+function buildMissionMarkdown(state: QuestState, context: RepoContext | null): string {
+  const name = state.name || context?.packageName || "this-repo";
+  const candidate = extractReadmeMission(context) ?? context?.packageDescription;
+  if (candidate) {
+    return `## Mission\n\n${candidate}\n`;
+  }
   if (context?.recentCommits.length) {
-    clues.push(`Recent commits: ${context.recentCommits.slice(0, 5).join("; ")}`);
+    const hint = context.recentCommits.slice(0, 2).join("; ");
+    return `## Mission\n\n${name} — [one sentence: what it does. Commits suggest: ${hint}]\n`;
   }
-  if (context?.sourceTree.length) {
-    clues.push(`Source files: ${context.sourceTree.slice(0, 10).join(", ")}`);
+  return `## Mission\n\n${name} — [one sentence: what this repo does]\n`;
+}
+
+function buildObjectiveMarkdown(context: RepoContext | null): string {
+  if (context?.recentCommits.length) {
+    const candidate = synthesizeObjective(context.recentCommits.slice(0, 4));
+    return `## Objective\n\n${candidate}\n`;
   }
+  return `## Objective\n\n[one sentence: the active dev milestone]\n`;
+}
+
+function buildNowMarkdown(context: RepoContext | null): string {
+  if (context?.recentCommits.length) {
+    // Convert 2-3 recent commits into tasks — they're likely what's active
+    const tasks = context.recentCommits
+      .slice(0, 3)
+      .map((c) => `- [ ] ${c}`)
+      .join("\n");
+    return `## Now\n\n${tasks}\n`;
+  }
+  return `## Now\n\n- [ ] [active task]\n`;
+}
+
+function buildResumeMarkdown(context: RepoContext | null): string {
+  if (context?.recentCommits.length) {
+    const last = context.recentCommits[0]!;
+    const next = context.recentCommits[1] ?? "upcoming task";
+    return `## Resume Note\n\n> Session N: ${last.toLowerCase()} — next: ${next.toLowerCase()}.\n`;
+  }
+  return `## Resume Note\n\n> Session N: [last task done] — next: [upcoming task].\n`;
+}
+
+function buildOwnedAreasMarkdown(context: RepoContext | null): string {
+  const sourceDirs = context?.sourceTree
+    .map((f) => f.split("/")[0])
+    .filter((v, i, arr) => arr.indexOf(v) === i)
+    .slice(0, 4)
+    .map((d) => `- \`${d}/\` — [describe]`)
+    .join("\n");
+  return sourceDirs
+    ? `## Owned Areas\n\n${sourceDirs}\n`
+    : `## Owned Areas\n\n- \`src/\` — primary source\n`;
+}
+
+function buildAgentFileMarkdown(context: RepoContext | null): string {
+  const areas = buildOwnedAreasMarkdown(context).replace("## Owned Areas", "").trim();
+  return `## Role\n\n[one sentence describing this agent's responsibility]\n\n## Owned Areas\n\n${areas}\n`;
+}
+
+function buildFrontmatterMarkdown(state: QuestState, context: RepoContext | null): string {
+  const title = context?.packageName ?? state.name ?? "Repo";
+  return `---\ntitle: ${title}\nstatus: active\nowner: [agent-id]\n---\n`;
+}
+
+// ── Candidate generation — derives real suggestions from context ─────────────
+
+function buildCandidate(gap: Gap, context: RepoContext | null, state: QuestState): string {
   const name = state.name || context?.packageName || "this repo";
-  const suggested = `## Mission\n\n${name} — [one sentence describing what this repo actually does, derived from the context clues above].\n`;
-  return { suggested, clues: clues.join("\n") };
+
+  if (gap.id === "mission-boilerplate") {
+    const fromReadme = extractReadmeMission(context);
+    if (fromReadme) {
+      return `One sentence. README suggests:\n  → _"${fromReadme}"_  *(verify and edit)*`;
+    }
+    if (context?.packageDescription) {
+      return `One sentence. ${context.manifestType} description:\n  → _"${context.packageDescription}"_  *(verify and edit)*`;
+    }
+    if (context?.recentCommits.length) {
+      return `One sentence describing what \`${name}\` does. Commits suggest:\n${context.recentCommits.slice(0, 3).map((c) => `  - ${c}`).join("\n")}\n  Synthesize into one line.`;
+    }
+    return `One sentence: what does \`${name}\` actually do? Check the README or git log and write it here.`;
+  }
+
+  if (gap.id === "objective-generic") {
+    if (context?.recentCommits.length) {
+      const top = context.recentCommits.slice(0, 4);
+      const candidate = synthesizeObjective(top);
+      return `One sentence — the active dev milestone. Recent commits:\n${top.map((c) => `  - ${c}`).join("\n")}\n  → _"${candidate}"_  *(verify)*`;
+    }
+    return `One sentence: what specific code deliverable is actively in progress? Not game state — a feature, fix, or release.`;
+  }
+
+  if (gap.id === "resume-note-game-progress") {
+    if (context?.recentCommits.length) {
+      const last = context.recentCommits[0]!;
+      const next = context.recentCommits[1] ?? "upcoming task";
+      return `Dev state, not game state. Last commit: _"${last}"_\n  → _"> Session N: ${last.toLowerCase()} — next: ${next.toLowerCase()}."_  *(edit before saving)*`;
+    }
+    return `Dev state, not game state.\n  → _"> Session N: [what was last coded] — next: [upcoming task]."_`;
+  }
+
+  return gap.suggestedMarkdown || "[add content here]";
+}
+
+function extractReadmeMission(context: RepoContext | null): string | undefined {
+  if (!context?.readmePreview) return undefined;
+  for (const line of context.readmePreview.split("\n")) {
+    const t = line.trim();
+    if (!t) continue;
+    if (/^[#>|]/.test(t)) continue;
+    if (/^\[!\[/.test(t) || t.startsWith("<")) continue;
+    if (/^[-*]{3,}$/.test(t)) continue;
+    if (t.length < 15 || t.length > 280) continue;
+    const sentence = t.match(/^(.+?[.!?])(?:\s|$)/)?.[1] ?? t;
+    if (sentence.length >= 15) return sentence;
+  }
+  return undefined;
+}
+
+function synthesizeObjective(commits: string[]): string {
+  const words = commits.join(" ").toLowerCase();
+  if (/vendor|npc/.test(words)) return "Complete NPC vendor lookup and integrate into the command flow.";
+  if (/bounty/.test(words)) return "Ship the bounty board automation.";
+  if (/economy|investment|camp/.test(words)) return "Stabilize the camp economy tracker.";
+  if (/auth|login|token/.test(words)) return "Complete the authentication flow.";
+  if (/api|endpoint|route/.test(words)) return "Finish the API integration layer.";
+  if (/test|spec|coverage/.test(words)) return "Achieve full test coverage for core modules.";
+  if (/fix|bug|crash|error/.test(words)) return "Resolve open bugs and stabilize for release.";
+  if (/refactor|clean|extract/.test(words)) return "Complete the refactor and clear tech debt.";
+  if (/deploy|release|ship/.test(words)) return "Ship the next release.";
+  if (/docs|readme|doc/.test(words)) return "Complete documentation.";
+  if (/ui|component|screen|view/.test(words)) return "Complete the UI layer.";
+  if (/discord|bot|command/.test(words)) return "Stabilize bot commands and error handling.";
+  const first = commits[0] ?? "complete current work";
+  return `${first.charAt(0).toUpperCase()}${first.slice(1)}.`;
 }
 
 // ── Prompt generation ────────────────────────────────────────────────────────
@@ -426,122 +667,132 @@ function buildPrompt(
   charter: string,
   context: RepoContext | null,
 ): string {
-  const repoName = state.name || "this repo";
+  const repoName = state.name || context?.packageName || "this repo";
   const hasAnyGaps = gaps.length > 0 || contentGaps.length > 0;
 
-  const structLine =
-    gaps.length === 0
-      ? `**Structural score: ${score}/100** ✓ — all required sections present`
-      : `**Structural score: ${score}/100** — ${gaps.length} structural gap${gaps.length !== 1 ? "s" : ""} found`;
+  const structStatus = gaps.length === 0
+    ? `${score}/100 ✓`
+    : `${score}/100 (${gaps.length} missing)`;
+  const contentStatus = contentGaps.length === 0
+    ? `${contentScore}/100 ✓`
+    : `${contentScore}/100 — ${contentGaps.length} to rewrite`;
 
-  const contentLine =
-    contentGaps.length === 0
-      ? `**Content quality: ${contentScore}/100** ✓ — content looks accurate`
-      : `**Content quality: ${contentScore}/100** — ${contentGaps.length} content quality issue${contentGaps.length !== 1 ? "s" : ""} found`;
+  const header = `# RepoLog Tuneup — \`${repoName}\`\nStructural ${structStatus}  ·  Content ${contentStatus}`;
 
-  const header = `# RepoLog Tuneup — \`${repoName}\`
-
-${structLine}
-${contentLine}`;
-
-  const fingerprint = buildFingerprint(context);
+  const contextBlock = buildContextBlock(context);
 
   const body = hasAnyGaps
-    ? buildGapSection(gaps, contentGaps)
-    : "\n\n✓ No gaps found. This repo has strong structural completeness and accurate content.";
+    ? buildIssues(gaps, contentGaps, context, state)
+    : "\n✓ Nothing to fix — structural and content scores are both clean.";
 
-  const footer = `\n\n## After Applying Changes
+  const afterLine = "After: update `STATE.md` resume note · run `repolog doctor` · commit.";
+  const charterBlock = `## CHARTER.md — Agent Conventions\n\n\`\`\`markdown\n${charter}\n\`\`\``;
 
-1. Run \`repolog doctor\` to verify findings.
-2. Update \`STATE.md\` with a resume note describing what you changed in development terms.
-3. If \`.repolog/CHARTER.md\` does not exist, run \`repolog tuneup --write-charter\` to generate it.
-4. Re-run \`repolog doctor\` after the edits land.
-
-The charter below describes the conventions agents must follow when editing markdown in this repo.
-
-## CHARTER.md Contents
-
-\`\`\`markdown
-${charter}
-\`\`\`
-`;
-
-  return `${header}${fingerprint}${body}${footer}`;
+  return [header, contextBlock, body, "---", afterLine, "---", charterBlock]
+    .filter(Boolean)
+    .join("\n\n");
 }
 
-function buildFingerprint(context: RepoContext | null): string {
+function buildContextBlock(context: RepoContext | null): string {
   if (!context) return "";
-  if (!context.manifestType && !context.recentCommits.length && !context.sourceTree.length) return "";
 
-  const lines: string[] = ["\n\n## Repo Fingerprint\n"];
-  lines.push(
-    "RepoLog gathered this context from your repo to help AI agents write accurate, specific content:\n",
-  );
+  const hasData =
+    context.readmePreview ||
+    context.recentCommits.length > 0 ||
+    context.rootFiles.length > 0 ||
+    context.manifestType;
+  if (!hasData) return "";
 
-  if (context.manifestType) {
-    const desc = context.packageDescription
-      ? ` — "${context.packageDescription}"`
-      : " — no description field set";
-    lines.push(`**Manifest (${context.manifestType}):** \`${context.packageName ?? "unknown"}\`${context.packageVersion ? ` v${context.packageVersion}` : ""}${desc}`);
-  }
+  const parts: string[] = ["---", "## Context"];
 
-  if (context.recentCommits.length > 0) {
-    lines.push("\n**Recent commits:**");
-    for (const commit of context.recentCommits.slice(0, 12)) {
-      lines.push(`- ${commit}`);
+  // Repo type — always useful for the agent
+  const typeLabel = context.manifestType
+    ? `${context.repoType} (${context.manifestType}${context.packageName ? ` · \`${context.packageName}\`` : ""}${context.packageVersion ? ` v${context.packageVersion}` : ""})`
+    : context.repoType !== "unknown"
+      ? context.repoType
+      : null;
+  if (typeLabel) parts.push(`**Type:** ${typeLabel}`);
+
+  // README excerpt — primary signal
+  if (context.readmePreview) {
+    const excerpt = extractReadmeExcerpt(context.readmePreview);
+    if (excerpt.length > 0) {
+      parts.push("**README:**\n```\n" + excerpt.join("\n") + "\n```");
     }
   }
 
-  if (context.sourceTree.length > 0) {
-    lines.push(`\n**Source tree:** \`${context.sourceTree.slice(0, 20).join("`, `")}\``);
+  // Package description (if not in README)
+  if (context.packageDescription && !context.readmePreview) {
+    parts.push(`**Description:** "${context.packageDescription}"`);
   }
 
-  return lines.join("\n");
+  // Entry point preview (when README is sparse or missing)
+  if (context.entryPointPreview && !context.readmePreview) {
+    const epLines = context.entryPointPreview.split("\n").slice(0, 15);
+    parts.push(`**${context.entryPointFile ?? "entry point"}:**\n\`\`\`\n${epLines.join("\n")}\n\`\`\``);
+  }
+
+  // Git log
+  if (context.recentCommits.length > 0) {
+    parts.push("**Git log:**\n" + context.recentCommits.slice(0, 10).map((c) => `- ${c}`).join("\n"));
+  }
+
+  // File tree — always useful for repos with no docs
+  if (context.rootFiles.length > 0) {
+    const files = context.rootFiles.slice(0, 20).join("  ");
+    parts.push(`**Files:** ${files}`);
+  }
+
+  // Source tree
+  if (context.sourceTree.length > 0) {
+    parts.push(`**Source:** ${context.sourceTree.slice(0, 15).join(" · ")}`);
+  }
+
+  return parts.join("\n\n");
 }
 
-function buildGapSection(gaps: Gap[], contentGaps: Gap[]): string {
-  const parts: string[] = [];
+function extractReadmeExcerpt(readmePreview: string): string[] {
+  return readmePreview
+    .split("\n")
+    .filter((line) => {
+      const t = line.trim();
+      if (!t) return false;
+      if (t.startsWith("#")) return false;
+      if (/^\[!\[/.test(t) || t.startsWith("<") || t.startsWith("|")) return false;
+      if (/^[-*]{3,}$/.test(t)) return false;
+      return true;
+    })
+    .slice(0, 6);
+}
 
-  if (gaps.length > 0) {
-    parts.push(
-      "\n\n## Structural Gaps\n\nThese required sections are missing or empty. Add them so RepoLog can display your dashboard correctly.\n",
-    );
-    for (const [index, gap] of gaps.entries()) {
-      const mdBlock = gap.suggestedMarkdown.trim()
-        ? `\n   \`\`\`markdown\n${gap.suggestedMarkdown
-            .split("\n")
-            .map((l) => `   ${l}`)
-            .join("\n")
-            .trimEnd()}\n   \`\`\``
-        : "";
-      parts.push(
-        `${index + 1}. **${gap.heading}** (\`${gap.file}\`) [${gap.severity.toUpperCase()}]\n   ${gap.fix}${mdBlock}`,
-      );
-    }
+function buildIssues(
+  gaps: Gap[],
+  contentGaps: Gap[],
+  context: RepoContext | null,
+  state: QuestState,
+): string {
+  const parts: string[] = ["---"];
+  let n = 1;
+
+  for (const gap of gaps) {
+    const mdBlock = gap.suggestedMarkdown.trim()
+      ? "```markdown\n" + gap.suggestedMarkdown.trim() + "\n```"
+      : "";
+    const lines = [`## ${n} · \`${gap.file}\` ${gap.heading}`, `**Add:** ${gap.fix}`];
+    if (mdBlock) lines.push(mdBlock);
+    parts.push(lines.join("\n"));
+    n++;
   }
 
-  if (contentGaps.length > 0) {
+  for (const gap of contentGaps) {
+    const now = gap.currentContent
+      ? `"${gap.currentContent.replace(/\n/g, " ").slice(0, 120)}"`
+      : "(empty)";
+    const candidate = buildCandidate(gap, context, state);
     parts.push(
-      "\n\n## Content Quality Issues\n\nThese sections exist but contain inaccurate, generic, or boilerplate content. Replace the content with accurate, specific information derived from the Repo Fingerprint above.\n",
+      [`## ${n} · \`${gap.file}\` ${gap.heading}`, `**Now:** ${now}`, `**Problem:** ${gap.fix}`, `**Write:** ${candidate}`].join("\n"),
     );
-    for (const [index, gap] of contentGaps.entries()) {
-      const currentBlock = gap.currentContent
-        ? `\n\n   **Currently reads:**\n   > ${gap.currentContent.split("\n").join("\n   > ")}\n`
-        : "";
-      const hintsBlock = gap.contextHints
-        ? `\n   **Context clues for replacement:**\n   ${gap.contextHints.split("\n").join("\n   ")}\n`
-        : "";
-      const mdBlock = gap.suggestedMarkdown.trim()
-        ? `\n   **Suggested replacement:**\n   \`\`\`markdown\n${gap.suggestedMarkdown
-            .split("\n")
-            .map((l) => `   ${l}`)
-            .join("\n")
-            .trimEnd()}\n   \`\`\``
-        : "";
-      parts.push(
-        `${index + 1}. **${gap.heading}** (\`${gap.file}\`) [${gap.severity.toUpperCase()}]\n   ${gap.fix}${currentBlock}${hintsBlock}${mdBlock}`,
-      );
-    }
+    n++;
   }
 
   return parts.join("\n\n");
@@ -549,8 +800,8 @@ function buildGapSection(gaps: Gap[], contentGaps: Gap[]): string {
 
 // ── Charter ──────────────────────────────────────────────────────────────────
 
-function buildCharter(state: QuestState): string {
-  const repoName = state.name || "this repo";
+function buildCharter(state: QuestState, context: RepoContext | null = null): string {
+  const repoName = state.name || context?.packageName || "this repo";
   const agentList =
     state.agents.length > 0
       ? state.agents
@@ -566,55 +817,47 @@ function buildCharter(state: QuestState): string {
   return `# RepoLog Charter — \`${repoName}\`
 
 This repo uses **Repo Quest Log** to maintain a structured markdown dashboard.
-If you are an agent editing markdown files in this repo, follow these conventions
-so RepoLog can parse your changes correctly.
+Follow these conventions so RepoLog can parse your changes correctly.
 
 ## Required Headings
 
-RepoLog reads the following headings. Use these exact names (case-insensitive):
+| File     | Heading        | Purpose                          |
+|----------|----------------|----------------------------------|
+| PLAN.md  | ## Objective   | One-sentence current milestone   |
+| PLAN.md  | ## Now         | Active checklist (- [ ] items)   |
+| PLAN.md  | ## Next        | Upcoming checklist               |
+| PLAN.md  | ## Blocked     | Blocked items with reason        |
+| STATE.md | ## Resume Note | Last-session dev summary         |
 
-| File      | Heading        | Purpose                                    |
-|-----------|----------------|--------------------------------------------|
-| PLAN.md   | ## Objective   | One-sentence current milestone             |
-| PLAN.md   | ## Now         | Active checklist (- [ ] items)             |
-| PLAN.md   | ## Next        | Upcoming checklist (- [ ] items)           |
-| PLAN.md   | ## Blocked     | Blocked items with reason                  |
-| STATE.md  | ## Resume Note | One-line summary of last session           |
-
-## Frontmatter Conventions
-
-Optional YAML frontmatter at the top of PLAN.md or STATE.md:
+## Frontmatter (optional)
 
 \`\`\`yaml
 ---
-title: Human-readable title
+title: [Human-readable title]
 status: active | paused | complete
-owner: team-name or agent-id
+owner: [agent-id]
 ---
 \`\`\`
 
 ## Agent Files
 
-Each agent file (AGENTS.md, CLAUDE.md, GEMINI.md, etc.) should contain:
+Each agent file should contain:
+- **## Owned Areas** — files/dirs this agent manages
+- **## Role** — one sentence
+- **## Objective** — current goal
 
-- **## Owned Areas** — list of files/directories this agent manages
-- **## Role** — one-sentence description of the agent's responsibility
-- **## Objective** — current goal for this agent
+Known agents: ${agentList}
 
-Known agents in this repo:
+## Rules
 
-${agentList}
+1. Checklist items: toggle \`[ ]\` → \`[x]\` only — do not rewrite task text.
+2. Resume note: dev state only, not game/hobby progress.
+3. Headings: do not rename or reorder — RepoLog uses exact regex.
+4. Objective: one sentence, updated each session.
+5. Frontmatter: preserve if present.
+6. Mission/Objective must describe this specific repo, not a template default.
 
-## How Agents Should Update Markdown
-
-1. **Checklist items only**: Only toggle \`[ ]\` to \`[x]\` for completed tasks. Do not rewrite task text.
-2. **Resume note**: After any session, update the \`## Resume Note\` in STATE.md with what you worked on in development terms.
-3. **Heading stability**: Do not rename or reorder required headings. RepoLog uses regex to find them.
-4. **One objective**: Keep a single, clear sentence under \`## Objective\` in PLAN.md.
-5. **Frontmatter**: If frontmatter is present, do not remove it.
-6. **No boilerplate**: Mission and Objective must describe this specific repo, not template defaults.
-
-## Source Files Being Scanned
+## Files Being Scanned
 
 ${fileList}`;
 }
@@ -625,9 +868,10 @@ function buildPerAgentPrompts(
   state: QuestState,
   gaps: Gap[],
   contentGaps: Gap[],
+  context: RepoContext | null,
 ): Record<string, string> {
   const result: Record<string, string> = {};
-  const repoName = state.name || "this repo";
+  const repoName = state.name || context?.packageName || "this repo";
   const allGaps = [...gaps, ...contentGaps];
 
   for (const agent of state.agents) {
@@ -639,32 +883,37 @@ function buildPerAgentPrompts(
 
     const ownedAreas = agent.area?.trim()
       ? agent.area
-      : `(not defined — add ## Owned Areas to \`${agent.file}\`)`;
+      : `(none defined — add ## Owned Areas to \`${agent.file}\`)`;
 
-    const gapLines =
+    const contextBlock = buildContextBlock(context);
+
+    const issueLines =
       orderedGaps.length === 0
-        ? "No gaps found."
+        ? "No gaps — nothing to fix."
         : orderedGaps
-            .map((g) => {
-              const current = g.currentContent
-                ? `\n  Currently reads: "${g.currentContent.replace(/\n/g, " ").slice(0, 100)}"`
+            .map((g, i) => {
+              const now = g.currentContent
+                ? `\n   Now: "${g.currentContent.replace(/\n/g, " ").slice(0, 80)}"`
                 : "";
-              return `- **${g.id}** (${g.severity}) — \`${g.file}\`: ${g.fix}${current}`;
+              const write =
+                g.id in CONTENT_PENALTIES
+                  ? `\n   Write: ${buildCandidate(g, context, state)}`
+                  : `\n   Add:\n\`\`\`markdown\n${g.suggestedMarkdown.trim()}\n\`\`\``;
+              return `${i + 1}. \`${g.file}\` ${g.heading} [${g.severity}]${now}${write}`;
             })
-            .join("\n");
+            .join("\n\n");
 
-    result[agent.id] = `# RepoLog Tuneup — ${agent.name}
-
-You are **${agent.name}** (id: \`${agent.id}\`), working in \`${repoName}\`.
-Your owned areas: ${ownedAreas}
-
-Your task: fix the RepoLog legibility gaps below, starting with any that touch your owned areas.
-Content quality issues include the current bad content so you know exactly what to replace.
-
-${gapLines}
-
-After applying changes, update STATE.md with a resume note describing what you changed in development terms (not game progress).
-`;
+    result[agent.id] = [
+      `# RepoLog Tuneup — ${agent.name}`,
+      `Repo: \`${repoName}\`  ·  Owned: ${ownedAreas}`,
+      contextBlock,
+      "---",
+      issueLines,
+      "---",
+      "After: update `STATE.md` resume note with dev state (not game progress) · run `repolog doctor`.",
+    ]
+      .filter(Boolean)
+      .join("\n\n");
   }
 
   return result;

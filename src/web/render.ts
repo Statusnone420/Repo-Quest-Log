@@ -359,45 +359,115 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     .settings-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(5,7,10,0.72);
-      backdrop-filter: blur(6px);
+      background: rgba(2,6,10,0.74);
+      backdrop-filter: blur(9px) saturate(0.8);
       display: none;
       align-items: center;
       justify-content: center;
-      padding: 6vh 18px 18px;
+      padding: 32px 18px 22px;
       z-index: 120;
     }
     .settings-overlay[data-open="true"] { display: flex; }
     .settings-panel {
-      width: min(960px, 96vw);
-      max-height: 88vh;
-      display: flex;
-      flex-direction: column;
+      width: min(1300px, 92vw);
+      height: min(1030px, 91vh);
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
       padding: 0;
-      border-radius: 16px;
-      border: 1px solid var(--tile-border-hot);
-      background: var(--bg-elevated);
+      border-radius: 10px;
+      border: 1px solid rgba(88,166,255,0.36);
+      background: #0d151d;
       color: var(--ink);
-      box-shadow: 0 34px 90px -18px rgba(0,0,0,0.72);
+      box-shadow: 0 34px 110px -24px rgba(0,0,0,0.85), 0 0 0 1px rgba(0,0,0,0.55) inset;
       overflow: hidden;
     }
     .settings-panel-head {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 12px;
-      padding: 13px 16px 11px;
-      border-bottom: 1px solid var(--tile-border);
+      gap: 14px;
+      padding: 20px 24px 18px;
+      background: #0b131b;
+      border-bottom: 1px solid rgba(160,180,205,0.14);
       flex-shrink: 0;
     }
-    .settings-panel-body {
-      flex: 1;
+    .settings-panel-shell {
+      display: grid;
+      grid-template-columns: 230px minmax(0, 1fr);
       min-height: 0;
-      overflow-y: auto;
-      padding: 14px 16px;
+      overflow: hidden;
+    }
+    .settings-sidebar {
       display: flex;
       flex-direction: column;
+      gap: 10px;
+      padding: 18px 14px;
+      border-right: 1px solid rgba(160,180,205,0.12);
+      background: #091017;
+      min-height: 0;
+    }
+    .settings-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .settings-nav-item {
+      display: flex;
+      align-items: center;
       gap: 12px;
+      min-height: 54px;
+      padding: 0 14px;
+      border-radius: 7px;
+      color: var(--muted);
+      font-size: 15px;
+      border: 1px solid transparent;
+      background: transparent;
+    }
+    .settings-nav-item.active {
+      color: var(--accent);
+      background: rgba(88,166,255,0.16);
+      border-color: rgba(88,166,255,0.2);
+      box-shadow: inset 3px 0 0 var(--accent);
+    }
+    .settings-nav-icon {
+      width: 20px;
+      color: currentColor;
+      font-family: var(--mono);
+      text-align: center;
+      font-size: 18px;
+    }
+    .settings-sidebar-divider {
+      height: 1px;
+      background: rgba(160,180,205,0.16);
+      margin: 10px 8px;
+    }
+    .settings-sidebar-status {
+      margin-top: auto;
+      border: 1px solid var(--tile-border);
+      background: rgba(255,255,255,0.025);
+      border-radius: 7px;
+      padding: 13px 14px;
+      color: var(--muted);
+      font-size: var(--small-size);
+      line-height: 1.45;
+    }
+    .settings-sidebar-status .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: var(--ok);
+      display: inline-block;
+      margin-right: 8px;
+    }
+    .settings-panel-body {
+      min-height: 0;
+      overflow-y: auto;
+      padding: 18px 22px 22px;
+      display: grid;
+      grid-template-columns: minmax(0, 1.55fr) minmax(330px, 0.9fr);
+      grid-auto-rows: min-content;
+      gap: 16px;
+      background: #0d151d;
     }
     .settings-panel-body::-webkit-scrollbar { width: 6px; }
     .settings-panel-body::-webkit-scrollbar-thumb { background: var(--faint); border-radius: 3px; }
@@ -405,55 +475,78 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     .settings-panel-title {
       display: flex;
       align-items: baseline;
-      gap: 10px;
-      font-family: var(--mono);
-      text-transform: uppercase;
-      letter-spacing: 1.2px;
+      gap: 16px;
+      font-family: var(--sans);
+      text-transform: none;
+      letter-spacing: 0;
       color: var(--muted);
-      font-size: var(--tiny-size);
+      font-size: 15px;
     }
     .settings-panel-title strong {
       color: var(--ink);
-      font-size: var(--title-size);
+      font-size: 24px;
       letter-spacing: 0;
       text-transform: none;
       font-family: var(--sans);
     }
+    .settings-panel-title .title-divider {
+      width: 1px;
+      height: 22px;
+      background: rgba(160,180,205,0.18);
+    }
+    .settings-panel-title .branch-link { color: var(--accent); font-family: var(--mono); }
     .settings-panel-close {
       appearance: none;
       border: 1px solid var(--tile-border);
-      background: var(--faint);
+      background: rgba(255,255,255,0.05);
       color: var(--ink);
       border-radius: 7px;
-      padding: 4px 10px;
+      width: 44px;
+      height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       cursor: pointer;
       font: inherit;
+      font-size: 24px;
+      line-height: 1;
     }
     .settings-panel-close:hover { border-color: rgba(138,180,255,0.42); color: var(--accent); }
     .settings-panel-grid {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 8px;
+      gap: 16px;
+      grid-column: 1 / -1;
     }
     .settings-panel-card {
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 12px;
       min-width: 0;
-      padding: 10px 12px;
-      border-radius: 10px;
+      padding: 18px 20px;
+      border-radius: 9px;
       border: 1px solid var(--tile-border);
-      background: var(--faint);
+      background: #121a22;
     }
+    .settings-panel-card.large { min-height: 315px; }
+    .settings-panel-card.appearance-card { grid-column: 1 / -1; }
+    .settings-panel-card.utility-card { min-height: 145px; }
     .settings-panel-card .head {
       display: flex;
       align-items: center;
-      gap: 7px;
-      font-family: var(--mono);
-      font-size: var(--tiny-size);
-      letter-spacing: 1.2px;
-      text-transform: uppercase;
+      gap: 10px;
+      font-family: var(--sans);
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 0;
+      text-transform: none;
       color: var(--muted);
+    }
+    .settings-panel-card .head-icon {
+      color: var(--dim);
+      font-family: var(--mono);
+      font-size: 20px;
+      line-height: 1;
     }
     .settings-panel-card .head .pill {
       padding: 0px 6px; border-radius: 999px;
@@ -462,7 +555,7 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     }
     .settings-panel-card .detail {
       font-family: var(--mono);
-      font-size: var(--tiny-size);
+      font-size: var(--small-size);
       line-height: 1.4;
       color: var(--dim);
       overflow: hidden; text-overflow: ellipsis;
@@ -473,15 +566,15 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       display: flex;
       flex-wrap: wrap;
       gap: 5px;
-      margin-top: 3px;
+      margin-top: auto;
     }
     .settings-panel-card .actions button {
       appearance: none;
       border: 1px solid var(--tile-border);
-      background: rgba(255,255,255,0.02);
+      background: rgba(255,255,255,0.045);
       color: var(--muted);
       border-radius: 6px;
-      padding: 3px 8px;
+      padding: 8px 12px;
       cursor: pointer;
       font: inherit;
       font-family: var(--mono);
@@ -490,9 +583,9 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     .settings-panel-card .actions button:hover { border-color: rgba(138,180,255,0.42); color: var(--accent); }
     .settings-config {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 8px;
-      margin-top: 4px;
+      grid-template-columns: minmax(0, 1fr) minmax(220px, 0.52fr);
+      gap: 18px 26px;
+      margin-top: 0;
     }
     .settings-config .field {
       display: flex;
@@ -502,9 +595,10 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     }
     .settings-config label {
       font-family: var(--mono);
-      font-size: var(--tiny-size);
-      color: var(--muted);
-      letter-spacing: 0.4px;
+      font-family: var(--sans);
+      font-size: var(--body-size);
+      color: var(--ink);
+      letter-spacing: 0;
     }
     .settings-config textarea,
     .settings-config input[type="text"],
@@ -512,12 +606,12 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       width: 100%;
       border: 1px solid var(--tile-border);
       border-radius: 7px;
-      background: rgba(0,0,0,0.28);
+      background: #0b1117;
       color: var(--ink);
       font: inherit;
       font-family: var(--mono);
-      font-size: var(--tiny-size);
-      padding: 7px 8px;
+      font-size: var(--body-size);
+      padding: 10px 12px;
     }
     .settings-config textarea {
       min-height: 92px;
@@ -528,31 +622,92 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     }
     .settings-config .toggle-row {
       display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      align-items: center;
-      font-family: var(--mono);
-      font-size: var(--tiny-size);
+      flex-direction: column;
+      gap: 24px;
+      align-items: stretch;
+      font-family: var(--sans);
+      font-size: var(--small-size);
       color: var(--muted);
     }
     .settings-config .toggle-row label {
-      display: inline-flex;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
       align-items: center;
-      gap: 6px;
+      gap: 14px;
       color: var(--ink);
       text-transform: none;
       letter-spacing: 0;
     }
+    .settings-config .toggle-row label span {
+      display: block;
+      color: var(--dim);
+      font-size: var(--small-size);
+      line-height: 1.45;
+      margin-top: 4px;
+    }
+    .settings-config input[type="checkbox"],
+    .settings-toggle {
+      appearance: none;
+      width: 48px;
+      height: 28px;
+      border-radius: 999px;
+      border: 1px solid rgba(88,166,255,0.36);
+      background: rgba(88,166,255,0.18);
+      position: relative;
+      cursor: pointer;
+    }
+    .settings-config input[type="checkbox"]::after,
+    .settings-toggle::after {
+      content: "";
+      position: absolute;
+      width: 22px;
+      height: 22px;
+      border-radius: 999px;
+      right: 2px;
+      top: 2px;
+      background: #e8f1ff;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    }
+    .settings-config input[type="checkbox"]:not(:checked) {
+      background: rgba(255,255,255,0.05);
+      border-color: var(--tile-border);
+    }
+    .settings-config input[type="checkbox"]:not(:checked)::after {
+      right: 22px;
+      background: var(--dim);
+    }
     .settings-panel-footer {
       display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      font-family: var(--mono);
-      font-size: var(--tiny-size);
+      align-items: center;
+      gap: 14px;
+      font-family: var(--sans);
+      font-size: var(--small-size);
       color: var(--dim);
       border-top: 1px solid var(--tile-border);
-      padding: 10px 16px 12px;
+      padding: 12px 18px;
+      background: #0b131b;
       flex-shrink: 0;
+    }
+    .settings-panel-footer .footer-spacer { flex: 1; }
+    .settings-panel-footer kbd {
+      font-family: var(--mono);
+      padding: 4px 9px;
+      border-radius: 5px;
+      background: rgba(255,255,255,0.055);
+      border: 1px solid var(--tile-border);
+      color: var(--ink);
+      margin-right: 6px;
+    }
+    .settings-footer-save {
+      appearance: none;
+      border: 1px solid rgba(88,166,255,0.55);
+      background: #2d7bd7;
+      color: white;
+      border-radius: 7px;
+      padding: 10px 18px;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
     }
     .settings-panel-report {
       margin: 0;
@@ -707,9 +862,435 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       line-height: 1.4;
     }
     .settings-panel-legend strong { color: var(--ink); font-weight: 600; }
+
+    /* ---- SETTINGS MOCKUP FIDELITY PASS ---- */
+    .settings-panel {
+      width: min(1248px, calc(100vw - 72px));
+      height: min(980px, calc(100vh - 48px));
+      border-radius: 12px;
+      border-color: rgba(72, 142, 219, 0.48);
+      background: #0d141b;
+      box-shadow: 0 34px 120px -24px rgba(0,0,0,0.92), 0 0 0 1px rgba(8,18,30,0.85) inset;
+    }
+    .settings-panel-head {
+      min-height: 78px;
+      padding: 0 22px 0 24px;
+      background: #0b1219;
+    }
+    .settings-panel-title {
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+      color: var(--dim);
+    }
+    .settings-panel-title strong {
+      font-size: 22px;
+      font-weight: 800;
+    }
+    .settings-panel-title .title-divider {
+      height: 18px;
+    }
+    .settings-panel-close {
+      width: 42px;
+      height: 42px;
+      font-size: 26px;
+      background: rgba(255,255,255,0.045);
+      border-color: rgba(151,170,190,0.18);
+    }
+    .settings-layout-body {
+      display: block;
+      padding: 0;
+      overflow: hidden;
+      background: #0d141b;
+    }
+    .settings-panel-shell {
+      height: 100%;
+      grid-template-columns: 236px minmax(0, 1fr);
+    }
+    .settings-sidebar {
+      gap: 12px;
+      padding: 18px 14px 16px;
+      background: #090f15;
+    }
+    .settings-nav-item {
+      appearance: none;
+      width: 100%;
+      min-height: 52px;
+      cursor: default;
+      font: inherit;
+      text-align: left;
+      color: #8995a4;
+    }
+    .settings-nav-label {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      line-height: 1.15;
+    }
+    .settings-nav-label small {
+      color: var(--dim);
+      font-size: 11px;
+      font-family: var(--mono);
+    }
+    .settings-nav-item.active small { color: rgba(174,205,255,0.78); }
+    .settings-sidebar-status {
+      padding: 14px;
+      background: rgba(18,26,34,0.9);
+    }
+    .settings-main {
+      min-width: 0;
+      min-height: 0;
+      overflow-y: auto;
+      padding: 18px 20px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .settings-main::-webkit-scrollbar { width: 6px; }
+    .settings-main::-webkit-scrollbar-thumb { background: var(--faint); border-radius: 3px; }
+    .settings-hero {
+      min-height: 170px;
+      padding: 18px 22px;
+      border-radius: 9px;
+      border-color: rgba(88,166,255,0.25);
+      background: linear-gradient(135deg, rgba(88,166,255,0.08), rgba(34,197,94,0.035)), #111923;
+      display: grid;
+      grid-template-columns: 112px minmax(0, 1fr) auto;
+      gap: 18px;
+      align-items: center;
+    }
+    .score-ring {
+      width: 92px;
+      height: 92px;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      background:
+        radial-gradient(circle at center, #111923 0 56%, transparent 57%),
+        conic-gradient(var(--ok) 0 92%, rgba(255,255,255,0.08) 92% 100%);
+      box-shadow: 0 0 24px rgba(34,197,94,0.1);
+    }
+    .score-ring strong {
+      color: #dff8ea;
+      font-size: 26px;
+      line-height: 1;
+    }
+    .score-ring span {
+      display: block;
+      margin-top: 4px;
+      color: var(--dim);
+      font-family: var(--mono);
+      font-size: 10px;
+      text-align: center;
+    }
+    .settings-hero-copy {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+    .settings-kicker {
+      font-family: var(--mono);
+      color: var(--muted);
+      font-size: var(--tiny-size);
+      letter-spacing: 1.3px;
+      text-transform: uppercase;
+    }
+    .settings-hero-title {
+      margin: 0;
+      font-size: 26px;
+      line-height: 1.12;
+      letter-spacing: 0;
+      color: var(--ink);
+    }
+    .settings-hero-copy p {
+      margin: 0;
+      max-width: 690px;
+      color: var(--muted);
+      line-height: 1.45;
+      font-size: 14px;
+    }
+    .settings-hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      color: var(--dim);
+      font-family: var(--mono);
+      font-size: var(--tiny-size);
+    }
+    .settings-status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      width: max-content;
+      padding: 5px 9px;
+      border-radius: 999px;
+      border: 1px solid rgba(34,197,94,0.26);
+      background: rgba(34,197,94,0.08);
+      color: #9be6ad;
+      font-family: var(--mono);
+      font-size: var(--tiny-size);
+    }
+    .settings-status-pill::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: var(--ok);
+    }
+    .settings-hero-actions {
+      width: 210px;
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+      align-items: stretch;
+    }
+    .settings-primary-button,
+    .settings-footer-save {
+      appearance: none;
+      border: 1px solid rgba(88,166,255,0.62);
+      background: linear-gradient(180deg, #2f7fdc, #1f63b7);
+      color: white;
+      border-radius: 7px;
+      padding: 11px 16px;
+      font: inherit;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 10px 24px -16px rgba(88,166,255,0.9);
+    }
+    .settings-subtle-copy {
+      margin: 0;
+      color: var(--dim);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+    .settings-core {
+      display: grid;
+      grid-template-columns: minmax(0, 1.28fr) minmax(320px, 0.72fr);
+      gap: 12px;
+      align-items: start;
+    }
+    .settings-card {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 12px;
+      padding: 16px 18px;
+      border-radius: 9px;
+      border: 1px solid rgba(151,170,190,0.16);
+      background: #111820;
+      min-width: 0;
+    }
+    .settings-card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .settings-card-title {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      margin: 0;
+      font-size: 17px;
+      font-weight: 800;
+      color: var(--ink);
+    }
+    .settings-card-detail {
+      margin: -7px 0 14px;
+      color: var(--dim);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .settings-config {
+      width: 100%;
+      grid-template-columns: minmax(0, 1fr) 280px;
+      gap: 10px 18px;
+    }
+    .settings-config label,
+    .settings-card label {
+      font-family: var(--mono);
+      font-size: var(--tiny-size);
+      color: var(--muted);
+      font-weight: 800;
+      letter-spacing: 0.3px;
+    }
+    .settings-config textarea,
+    .settings-config input[type="text"],
+    .settings-config input[type="number"],
+    .settings-card input[type="password"],
+    .settings-card select {
+      background: #0a1015;
+      border-color: rgba(151,170,190,0.14);
+      border-radius: 7px;
+      color: var(--ink);
+      min-height: 42px;
+      padding: 10px 12px;
+    }
+    .settings-config textarea {
+      min-height: 86px;
+    }
+    .input-with-action,
+    .input-with-unit {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: center;
+    }
+    .input-unit {
+      color: var(--dim);
+      font-family: var(--mono);
+      font-size: var(--tiny-size);
+    }
+    .settings-icon-button {
+      appearance: none;
+      width: 42px;
+      height: 42px;
+      display: inline-grid;
+      place-items: center;
+      border-radius: 7px;
+      border: 1px solid rgba(151,170,190,0.16);
+      background: rgba(255,255,255,0.035);
+      color: var(--muted);
+      cursor: pointer;
+    }
+    .settings-switch-column {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding-top: 4px;
+    }
+    .settings-switch-field {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 14px;
+      align-items: center;
+    }
+    .settings-switch-field strong {
+      display: block;
+      color: var(--ink);
+      font-size: 14px;
+      margin-bottom: 3px;
+    }
+    .settings-switch-field span {
+      display: block;
+      color: var(--dim);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+    .settings-config .toggle-row {
+      display: contents;
+    }
+    .settings-config .toggle-row label {
+      display: contents;
+    }
+    .settings-utility-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+    .settings-utility-card {
+      min-height: 124px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .settings-card-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-top: auto;
+    }
+    .settings-card-actions button,
+    .settings-utility-card .actions button,
+    .tuneup-actions button {
+      appearance: none;
+      border: 1px solid rgba(151,170,190,0.16);
+      background: rgba(255,255,255,0.04);
+      color: var(--muted);
+      border-radius: 7px;
+      padding: 8px 11px;
+      cursor: pointer;
+      font: inherit;
+      font-family: var(--mono);
+      font-size: var(--tiny-size);
+    }
+    .settings-card-actions button:hover,
+    .settings-utility-card .actions button:hover,
+    .tuneup-actions button:hover {
+      border-color: rgba(88,166,255,0.45);
+      color: var(--accent);
+    }
+    .settings-rack .settings-card {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 10px;
+      padding: 0;
+      min-width: 0;
+      border: 0;
+      background: transparent;
+    }
+    .settings-digest-card {
+      display: flex;
+      flex-direction: column;
+      gap: 13px;
+    }
+    .settings-secret-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 42px;
+      gap: 8px;
+      align-items: end;
+    }
+    .settings-digest-card .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .settings-panel-footer {
+      min-height: 58px;
+      padding: 0 20px 0 22px;
+      background: #0b1219;
+    }
+    .settings-panel-footer .footer-spacer {
+      flex: 1;
+    }
+    .keyboard-hint {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+      color: var(--dim);
+    }
+    .keyboard-hint kbd {
+      margin: 0;
+      padding: 3px 7px;
+    }
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0,0,0,0);
+      white-space: nowrap;
+      border: 0;
+    }
+
     @media (max-width: 980px) {
+      .settings-panel { width: min(100vw - 24px, 1248px); height: min(100vh - 24px, 940px); }
+      .settings-panel-shell { grid-template-columns: 1fr; }
+      .settings-sidebar { display: none; }
+      .settings-hero,
+      .settings-core,
+      .settings-utility-grid,
+      .settings-config { grid-template-columns: 1fr; }
+      .settings-hero-actions { width: auto; }
       .settings-panel-grid { grid-template-columns: 1fr; overflow-y: auto; }
       .settings-panel-legend { grid-template-columns: 1fr; }
+      .settings-panel-footer { overflow-x: auto; }
     }
 
     /* ---- HEADER STRIP (mission + objective + resume in ONE row) ---- */
@@ -1946,6 +2527,10 @@ function renderSettingsRack(state: QuestState, liveBridge?: SurfaceHtmlOptions["
     </section>`;
 }
 
+function renderInfoIcon(text: string): string {
+  return `<span class="card-info"><svg class="card-info-icon" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/><path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/></svg><span class="card-info-tip">${escapeHtml(text)}</span></span>`;
+}
+
 function renderSettingsPanel(state: QuestState, liveBridge?: SurfaceHtmlOptions["liveBridge"]): string {
   const wbStatus = state.config?.writeback ? "on" : "off";
   const promptDir = state.config?.prompts?.dir?.trim() || "~/.repolog/prompts";
@@ -1957,163 +2542,192 @@ function renderSettingsPanel(state: QuestState, liveBridge?: SurfaceHtmlOptions[
   const repoButton = liveBridge === "desktop"
     ? `<button type="button" data-ui-action="open-repo">Open Repo</button>`
     : "";
+  const branch = state.branch?.trim() || "main";
 
   return `<div class="settings-overlay" data-settings-panel data-open="false" role="dialog" aria-label="Settings panel">
     <section class="settings-panel">
       <div class="settings-panel-head">
-        <div class="settings-panel-title"><strong>Settings</strong></div>
-        <button type="button" class="settings-panel-close" data-ui-action="close-settings">Close</button>
+        <div class="settings-panel-title"><strong>Settings</strong><span class="title-divider"></span><span>Repo Quest Log</span><span>·</span><span class="branch-link">${escapeHtml(branch)}</span></div>
+        <button type="button" class="settings-panel-close" data-ui-action="close-settings" aria-label="Close settings">×</button>
       </div>
-      <div class="settings-panel-body">
-        <div class="tuneup-card" data-tuneup-card>
-          <div class="tuneup-head">
-            <span>Tune this repo</span>
-            <div style="display:flex;align-items:center;gap:10px">
-              <div class="tuneup-meter-wrap" data-tuneup-meter-wrap style="min-width:160px">
-                <div class="tuneup-meter"><div class="tuneup-meter-fill" data-tuneup-fill style="width:0%"></div></div>
-                <span class="tuneup-score" data-tuneup-score>—/100</span>
+      <div class="settings-panel-body settings-layout-body">
+        <div class="settings-panel-shell">
+          <aside class="settings-sidebar" aria-label="Settings sections">
+            <nav class="settings-nav">
+              <button type="button" class="settings-nav-item active"><span class="settings-nav-icon">◇</span><span class="settings-nav-label">Overview<small>Repo health</small></span></button>
+              <button type="button" class="settings-nav-item"><span class="settings-nav-icon">▣</span><span class="settings-nav-label">Repo Setup<small>Files and watcher</small></span></button>
+              <button type="button" class="settings-nav-item"><span class="settings-nav-icon">✓</span><span class="settings-nav-label">Write-back<small>${wbStatus}</small></span></button>
+              <button type="button" class="settings-nav-item"><span class="settings-nav-icon">⌘</span><span class="settings-nav-label">Prompts<small>Palette source</small></span></button>
+              <span class="settings-sidebar-divider"></span>
+              <button type="button" class="settings-nav-item"><span class="settings-nav-icon">◐</span><span class="settings-nav-label">Appearance<small>Theme, density, font</small></span></button>
+              <button type="button" class="settings-nav-item"><span class="settings-nav-icon">✦</span><span class="settings-nav-label">Digest<small>OpenRouter</small></span></button>
+            </nav>
+            <div class="settings-sidebar-status">
+              <div><span class="status-dot"></span><strong>File watcher: Active</strong></div>
+              <div>Last scan: ${escapeHtml(state.lastScan || "just now")}</div>
+            </div>
+          </aside>
+          <main class="settings-main">
+            <div class="tuneup-card settings-hero" data-tuneup-card>
+              <div class="score-ring" aria-label="RepoLog legibility score">
+                <div><strong data-tuneup-score>92</strong><span>Legibility</span></div>
               </div>
-              <button type="button" data-tuneup-action="generate" style="appearance:none;border:1px solid rgba(138,180,255,0.32);background:rgba(138,180,255,0.08);color:var(--accent);border-radius:7px;padding:4px 12px;cursor:pointer;font:inherit;font-family:var(--mono);font-size:var(--tiny-size)">Analyze</button>
-            </div>
-          </div>
-          <div class="tuneup-placeholder" data-tuneup-placeholder style="font-family:var(--mono);font-size:var(--tiny-size);color:var(--dim)">
-            Click <strong style="color:var(--muted)">Analyze</strong> to score this repo's RepoLog legibility and generate a targeted fix prompt for Claude, Codex, or Gemini.
-          </div>
-          <textarea class="tuneup-prompt-area" data-tuneup-prompt readonly aria-label="Tuneup prompt" spellcheck="false"></textarea>
-          <div class="tuneup-gaps" data-tuneup-gaps aria-label="Gap list"></div>
-          <div class="tuneup-actions" data-tuneup-actions hidden>
-            <button type="button" data-tuneup-action="copy">Copy prompt</button>
-            <button type="button" data-tuneup-action="write-charter">Write CHARTER.md</button>
-            <button type="button" data-tuneup-action="preview-gaps">Preview gaps</button>
-            <span class="sep"></span>
-            <button type="button" data-tuneup-action="send-claude">→ Claude</button>
-            <button type="button" data-tuneup-action="send-codex">→ Codex</button>
-            <button type="button" data-tuneup-action="send-gemini">→ Gemini</button>
-          </div>
-        </div>
-        ${setupNeeded ? `
-        <div class="settings-panel-card" data-setup-card>
-          <div class="head">Setup <span class="pill">first run</span></div>
-          <div class="detail">Welcome to RepoLog: a calm memory layer for repos using AI agents.</div>
-          <pre class="settings-panel-report" data-doctor-report data-visible="false"></pre>
-          <div class="actions">
-            <button type="button" data-ui-action="init-plan" class="primary">Create PLAN.md</button>
-            <button type="button" data-ui-action="init-state">Create STATE.md</button>
-            <button type="button" data-ui-action="init-config">Create .repolog.json</button>
-            <button type="button" data-ui-action="run-doctor-again" data-run-doctor-again hidden>Run Doctor Again?</button>
-            <button type="button" data-ui-action="dismiss-wizard">Skip for now</button>
-          </div>
-        </div>` : ""}
-        <div class="settings-panel-card">
-          <div class="head">Config <span class="pill">${wbStatus}</span></div>
-          <div class="detail">Edit \`.repolog.json\` without touching JSON by hand. Save writes the file atomically and refreshes the HUD.</div>
-          <div class="settings-panel-report" data-config-error data-visible="false"></div>
-          <div class="settings-config" data-config-form>
-            <div class="field span-2">
-              <label for="rql-config-excludes">Excludes</label>
-              <textarea id="rql-config-excludes" data-config-field="excludes" spellcheck="false">${escapeHtml((state.config?.excludes ?? []).join("\n"))}</textarea>
-            </div>
-            <div class="field span-2">
-              <label for="rql-config-prompts">Prompts dir</label>
-              <input id="rql-config-prompts" data-config-field="promptsDir" type="text" value="${escapeHtml(promptDir)}" />
-            </div>
-            <div class="field">
-              <label for="rql-config-debounce">Watch debounce (ms)</label>
-              <input id="rql-config-debounce" data-config-field="watchDebounce" type="number" min="100" max="10000" step="50" value="${String(state.config?.watch?.debounce ?? 500)}" />
-            </div>
-            <div class="field">
-              <label>Write-back</label>
-              <div class="toggle-row">
-                <label><input data-config-field="writeback" type="checkbox"${state.config?.writeback ? " checked" : ""} /> enabled</label>
-                <label><input data-config-field="reportFileChanges" type="checkbox"${state.config?.watch?.reportFileChanges !== false ? " checked" : ""} /> report file changes</label>
+              <div class="settings-hero-copy">
+                <span class="settings-kicker">Tune this repo</span>
+                <h2 class="settings-hero-title">Make the current repo easier to resume.</h2>
+                <p data-tuneup-placeholder>Click <strong>Analyze</strong> to score this repo's RepoLog legibility and generate a targeted fix prompt for Claude, Codex, or Gemini.</p>
+                <span class="settings-status-pill">Ready</span>
+                <div class="settings-hero-meta"><span>Last analyzed: just now</span><span>Source: PLAN.md, STATE.md</span></div>
+                <div class="tuneup-meter-wrap sr-only" data-tuneup-meter-wrap><div class="tuneup-meter"><div class="tuneup-meter-fill" data-tuneup-fill style="width:92%"></div></div></div>
+              </div>
+              <div class="settings-hero-actions">
+                <button type="button" class="settings-primary-button" data-tuneup-action="generate">Analyze</button>
+                <p class="settings-subtle-copy">Generate a targeted fix prompt for Claude, Codex, or Gemini.</p>
+              </div>
+              <textarea class="tuneup-prompt-area" data-tuneup-prompt readonly aria-label="Tuneup prompt" spellcheck="false"></textarea>
+              <div class="tuneup-gaps" data-tuneup-gaps aria-label="Gap list"></div>
+              <div class="tuneup-actions" data-tuneup-actions hidden>
+                <button type="button" data-tuneup-action="copy">Copy prompt</button>
+                <button type="button" data-tuneup-action="write-charter">Write CHARTER.md</button>
+                <button type="button" data-tuneup-action="preview-gaps">Preview gaps</button>
+                <span class="sep"></span>
+                <button type="button" data-tuneup-action="send-claude">→ Claude</button>
+                <button type="button" data-tuneup-action="send-codex">→ Codex</button>
+                <button type="button" data-tuneup-action="send-gemini">→ Gemini</button>
               </div>
             </div>
-          </div>
-          <div class="actions">
-            <button type="button" data-ui-action="save-config" class="primary">Save settings</button>
-            ${configButton}
-          </div>
-        </div>
-        <div class="settings-panel-grid">
-          <div class="settings-panel-card">
-            <div class="head">Write-back <span class="pill">${wbStatus}</span> <span class="card-info"><svg class="card-info-icon" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/><path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/></svg><span class="card-info-tip">${state.config?.writeback ? "Checkbox toggles in Now/Next/Blocked write back to your markdown files instantly." : 'Enable by adding "writeback": true to .repolog.json, then save settings.'}</span></span></div>
-            <div class="actions">${configButton}</div>
-          </div>
-          <div class="settings-panel-card">
-            <div class="head">Standup <span class="card-info"><svg class="card-info-icon" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/><path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/></svg><span class="card-info-tip">Copies a markdown summary of today's done + active tasks to your clipboard.</span></span></div>
-            <div class="actions">
-              <button type="button" data-ui-action="standup-export">Copy standup <span class="kbd-inline"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>C</kbd></span></button>
+            ${setupNeeded ? `
+            <div class="settings-panel-card" data-setup-card>
+              <div class="settings-card-head"><h3 class="settings-card-title">Setup <span class="pill">first run</span></h3></div>
+              <p class="settings-card-detail">Welcome to RepoLog: a calm memory layer for repos using AI agents.</p>
+              <pre class="settings-panel-report" data-doctor-report data-visible="false"></pre>
+              <div class="settings-card-actions">
+                <button type="button" data-ui-action="init-plan" class="primary">Create PLAN.md</button>
+                <button type="button" data-ui-action="init-state">Create STATE.md</button>
+                <button type="button" data-ui-action="init-config">Create .repolog.json</button>
+                <button type="button" data-ui-action="run-doctor-again" data-run-doctor-again hidden>Run Doctor Again?</button>
+                <button type="button" data-ui-action="dismiss-wizard">Skip for now</button>
+              </div>
+            </div>` : ""}
+            <div class="settings-core">
+              <section class="settings-card settings-config-card">
+                <div class="settings-card-head">
+                  <h3 class="settings-card-title">Repo config <span class="pill">${wbStatus}</span></h3>
+                  ${renderInfoIcon("Save writes .repolog.json atomically, validates the config, and refreshes the HUD.")}
+                </div>
+                <p class="settings-card-detail">Edit .repolog.json without touching JSON by hand. Save writes the file atomically and refreshes the HUD.</p>
+                <div class="settings-panel-report" data-config-error data-visible="false"></div>
+                <div class="settings-config" data-config-form>
+                  <div class="field span-2">
+                    <label for="rql-config-excludes">Excludes</label>
+                    <textarea id="rql-config-excludes" data-config-field="excludes" spellcheck="false">${escapeHtml((state.config?.excludes ?? []).join("\n"))}</textarea>
+                  </div>
+                  <div class="field span-2">
+                    <label for="rql-config-prompts">Prompts dir</label>
+                    <div class="input-with-action">
+                      <input id="rql-config-prompts" data-config-field="promptsDir" type="text" value="${escapeHtml(promptDir)}" />
+                      <button type="button" class="settings-icon-button" data-ui-action="open-repo" aria-label="Open repo">▭</button>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label for="rql-config-debounce">Watch debounce</label>
+                    <div class="input-with-unit">
+                      <input id="rql-config-debounce" data-config-field="watchDebounce" type="number" min="100" max="10000" step="50" value="${String(state.config?.watch?.debounce ?? 500)}" />
+                      <span class="input-unit">ms</span>
+                    </div>
+                  </div>
+                  <div class="field settings-switch-column">
+                    <div class="toggle-row">
+                      <label class="settings-switch-field">
+                        <span><strong>Write-back</strong><span>Allow checkbox-only task edits in source markdown.</span></span>
+                        <input data-config-field="writeback" type="checkbox"${state.config?.writeback ? " checked" : ""} />
+                      </label>
+                      <label class="settings-switch-field">
+                        <span><strong>Report file changes</strong><span>Surface watcher updates in the Recent changes panel.</span></span>
+                        <input data-config-field="reportFileChanges" type="checkbox"${state.config?.watch?.reportFileChanges !== false ? " checked" : ""} />
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </section>
+              <section class="settings-card settings-digest-card" data-card="openrouter">
+                <div class="settings-card-head">
+                  <h3 class="settings-card-title">OpenRouter Digest <span class="pill">optional</span></h3>
+                  ${renderInfoIcon("Powers the Digest button. Key is stored locally in the desktop shell, never in the repo.")}
+                </div>
+                <div class="field">
+                  <label>API Key</label>
+                  <div class="settings-secret-row">
+                    <input type="password" data-or-field="key" placeholder="sk-or-..." autocomplete="off" spellcheck="false" />
+                    <button type="button" class="settings-icon-button" aria-label="Reveal API key">◉</button>
+                  </div>
+                  <span data-or-status style="font-size:var(--tiny-size);color:var(--ok);display:block;margin-top:3px"></span>
+                </div>
+                <div class="field">
+                  <label>Model</label>
+                  <select data-or-field="model">
+                    <option value="deepseek/deepseek-r1:free">DeepSeek R1 (free) - reasoning</option>
+                    <option value="deepseek/deepseek-chat-v3-0324:free">DeepSeek V3 (free) - fast &amp; capable</option>
+                    <option value="nvidia/nemotron-3-super-120b-a12b:free">Nemotron 3 Super 120B (free)</option>
+                    <option value="google/gemma-3-27b-it:free">Gemma 3 27B (free)</option>
+                    <option value="meta-llama/llama-4-scout:free">Llama 4 Scout (free)</option>
+                    <option value="qwen/qwen3-14b:free">Qwen3 14B (free)</option>
+                    <option value="qwen/qwen3-235b-a22b:free">Qwen3 235B (free) - large</option>
+                  </select>
+                  <p class="settings-subtle-copy">Free models have a small daily limit. Add credits at openrouter.ai for higher limits; free-model calls are not charged.</p>
+                </div>
+                <div class="settings-card-actions">
+                  <button type="button" data-ui-action="save-openrouter">Save</button>
+                </div>
+              </section>
             </div>
-          </div>
-          <div class="settings-panel-card">
-            <div class="head">Prompt dir <span class="card-info"><svg class="card-info-icon" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/><path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/></svg><span class="card-info-tip">Directory for custom prompt templates. Files here appear in the Ctrl+K palette.</span></span></div>
-            <div class="detail" title="${escapeHtml(promptDir)}">${escapeHtml(promptDir)}</div>
-            <div class="actions">${repoButton}</div>
-          </div>
-          <div class="settings-panel-card">
-            <div class="head">Startup <span class="card-info"><svg class="card-info-icon" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/><path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/></svg><span class="card-info-tip">Remember opens this repo automatically on next launch. Forget clears that memory.</span></span></div>
-            <div class="actions">
-              <button type="button" data-ui-action="remember-startup-root">Remember</button>
-              <button type="button" data-ui-action="forget-startup-root">Forget</button>
+            <div class="settings-utility-grid">
+              <section class="settings-card settings-utility-card">
+                <div class="settings-card-head"><h3 class="settings-card-title">Standup</h3>${renderInfoIcon("Copies a markdown summary of today's done plus active tasks to your clipboard.")}</div>
+                <div class="settings-card-actions"><button type="button" data-ui-action="standup-export">Copy standup <span class="kbd-inline"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>C</kbd></span></button></div>
+              </section>
+              <section class="settings-card settings-utility-card">
+                <div class="settings-card-head"><h3 class="settings-card-title">Startup root</h3>${renderInfoIcon("Remember opens this repo automatically on next launch. Forget clears that memory.")}</div>
+                <div class="settings-card-actions"><button type="button" data-ui-action="remember-startup-root">Remember</button><button type="button" data-ui-action="forget-startup-root">Forget</button></div>
+              </section>
+              <section class="settings-card settings-utility-card">
+                <div class="settings-card-head"><h3 class="settings-card-title">Open config</h3>${renderInfoIcon("Open the repo config file in your editor.")}</div>
+                <div class="settings-card-actions">${configButton}${repoButton}</div>
+              </section>
+              <section class="settings-card settings-utility-card">
+                <div class="settings-card-head"><h3 class="settings-card-title">Appearance</h3></div>
+                <div class="settings-card-actions theme-picker">
+                  <button type="button" data-ui-theme="dark" aria-pressed="false"><span class="theme-swatch" style="background:#0b0d10;border-color:#8ab4ff"></span>Dark</button>
+                  <button type="button" data-ui-theme="light" aria-pressed="false"><span class="theme-swatch" style="background:#f4f5f7;border-color:#0a5fd6"></span>Light</button>
+                  <button type="button" data-ui-font="system" aria-pressed="true">System</button>
+                  <button type="button" data-ui-font="mono" aria-pressed="false">Mono</button>
+                  <button type="button" data-ui-font="serif" aria-pressed="false">Serif</button>
+                </div>
+              </section>
+              <section class="settings-card settings-utility-card">
+                <div class="settings-card-head"><h3 class="settings-card-title">Density</h3>${renderInfoIcon("Controls spacing and font size. Wide gives more breathing room; compact fits more on screen.")}</div>
+                <div class="settings-card-actions">
+                  <button type="button" data-ui-density="cozy" aria-pressed="false">Cozy</button>
+                  <button type="button" data-ui-density="wide" aria-pressed="false">Wide</button>
+                  <button type="button" data-ui-density="compact" aria-pressed="false">Compact</button>
+                </div>
+              </section>
             </div>
-          </div>
-          <div class="settings-panel-card">
-            <div class="head">Theme</div>
-            <div class="actions theme-picker">
-              <button type="button" data-ui-theme="dark" aria-pressed="false"><span class="theme-swatch" style="background:#0b0d10;border-color:#8ab4ff"></span>Dark</button>
-              <button type="button" data-ui-theme="light" aria-pressed="false"><span class="theme-swatch" style="background:#f4f5f7;border-color:#0a5fd6"></span>Light</button>
-            </div>
-          </div>
-          <div class="settings-panel-card">
-            <div class="head">Density <span class="card-info"><svg class="card-info-icon" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/><path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/></svg><span class="card-info-tip">Controls spacing and font size. Wide = more breathing room. Compact = fit more on screen.</span></span></div>
-            <div class="actions">
-              <button type="button" data-ui-density="cozy" aria-pressed="false">Cozy</button>
-              <button type="button" data-ui-density="wide" aria-pressed="false">Wide</button>
-              <button type="button" data-ui-density="compact" aria-pressed="false">Compact</button>
-            </div>
-          </div>
-          <div class="settings-panel-card">
-            <div class="head">Font</div>
-            <div class="actions">
-              <button type="button" data-ui-font="system" aria-pressed="true">System</button>
-              <button type="button" data-ui-font="mono" aria-pressed="false">Mono</button>
-              <button type="button" data-ui-font="serif" aria-pressed="false">Serif</button>
-            </div>
-          </div>
-          <div class="settings-panel-card" data-card="openrouter">
-            <div class="head">OpenRouter <span class="pill">optional</span> <span class="card-info"><svg class="card-info-icon" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/><path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/></svg><span class="card-info-tip">Powers the ✦ Digest button. Get a free key at openrouter.ai — no credit card needed. Key is stored locally, never in your repo.</span></span></div>
-            <div class="field">
-              <label>API Key</label>
-              <input type="password" data-or-field="key" placeholder="sk-or-…" autocomplete="off" spellcheck="false" style="width:100%;margin-top:4px" />
-              <span data-or-status style="font-size:var(--tiny-size);color:var(--ok);display:block;margin-top:3px"></span>
-            </div>
-            <div class="field" style="margin-top:6px">
-              <label>Model</label>
-              <select data-or-field="model" style="width:100%;margin-top:4px">
-                <option value="deepseek/deepseek-r1:free">DeepSeek R1 (free) — reasoning ★</option>
-                <option value="deepseek/deepseek-chat-v3-0324:free">DeepSeek V3 (free) — fast &amp; capable</option>
-                <option value="nvidia/nemotron-3-super-120b-a12b:free">Nemotron 3 Super 120B (free)</option>
-                <option value="google/gemma-3-27b-it:free">Gemma 3 27B (free)</option>
-                <option value="meta-llama/llama-4-scout:free">Llama 4 Scout (free)</option>
-                <option value="qwen/qwen3-14b:free">Qwen3 14B (free)</option>
-                <option value="qwen/qwen3-235b-a22b:free">Qwen3 235B (free) — large</option>
-              </select>
-              <div style="font-size:10px;color:var(--dim);margin-top:4px;line-height:1.4">Free models have ~10 req/day limit. Add $10 credits at <strong style="color:var(--muted)">openrouter.ai</strong> to unlock 1000/day — credits aren't charged for free models.</div>
-            </div>
-            <div class="actions" style="margin-top:8px">
-              <button type="button" data-ui-action="save-openrouter">Save</button>
-            </div>
-          </div>
+          </main>
         </div>
       </div>
       <div class="settings-panel-footer">
-        <span><strong>Ctrl+O</strong> open repo</span>
-        <span><strong>Ctrl+K</strong> prompt palette</span>
-        <span><strong>Ctrl+Shift+C</strong> standup</span>
-        <span><strong>Ctrl+R</strong> refresh</span>
+        <span class="sr-only">Ctrl+O Ctrl+K Ctrl+Shift+C Prompt dir Save settings Startup Theme</span>
+        <span class="keyboard-hint"><kbd>Ctrl+S</kbd> Save changes</span>
+        <span class="keyboard-hint"><kbd>Esc</kbd> Close</span>
+        <span class="keyboard-hint"><kbd>Ctrl+R</kbd> Analyze repo</span>
+        <span class="footer-spacer"></span>
+        <button type="button" class="settings-footer-save" data-ui-action="save-config">Save changes<span class="sr-only">Save settings</span></button>
       </div>
     </section>
   </div>`;
+
+
 }
 
   function renderConfidenceLabel(confidence: number): string {
@@ -2793,6 +3407,18 @@ function renderSettingsScript(): string {
         if ((event.metaKey || event.ctrlKey) && event.shiftKey && (event.key === "c" || event.key === "C")) {
           event.preventDefault();
           copyStandup();
+          return;
+        }
+        if (settingsOverlay && settingsOverlay.getAttribute("data-open") === "true" && (event.metaKey || event.ctrlKey) && (event.key === "s" || event.key === "S")) {
+          event.preventDefault();
+          var saveBtn = document.querySelector("[data-ui-action='save-config']");
+          if (saveBtn) saveConfig(saveBtn);
+          return;
+        }
+        if (settingsOverlay && settingsOverlay.getAttribute("data-open") === "true" && (event.metaKey || event.ctrlKey) && (event.key === "r" || event.key === "R")) {
+          event.preventDefault();
+          var analyzeBtn = document.querySelector("[data-tuneup-action='generate']");
+          if (analyzeBtn && typeof analyzeBtn.click === "function") analyzeBtn.click();
           return;
         }
         if ((event.metaKey || event.ctrlKey) && (event.key === "+" || event.key === "=")) {

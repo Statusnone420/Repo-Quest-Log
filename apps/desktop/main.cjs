@@ -88,6 +88,23 @@ function firstRunStateFile() {
   }
 }
 
+function openRouterConfigFile() {
+  try {
+    return path.join(app.getPath("userData"), "openrouter.json");
+  } catch {
+    return path.join(repoRoot, ".repolog", "openrouter.json");
+  }
+}
+
+let openrouterConfig = { key: "", model: "nvidia/nemotron-3-super-120b-a12b:free" };
+try {
+  const orPath = openRouterConfigFile();
+  if (fs.existsSync(orPath)) {
+    const parsed = JSON.parse(fs.readFileSync(orPath, "utf8"));
+    openrouterConfig = { key: parsed.key || "", model: parsed.model || "nvidia/nemotron-3-super-120b-a12b:free" };
+  }
+} catch { /* best-effort */ }
+
 function readFirstRunState() {
   try {
     const raw = fs.readFileSync(firstRunStateFile(), "utf8");
@@ -266,7 +283,7 @@ async function refresh(changes = []) {
       lastTouchedFile: recentChanges[0] && recentChanges[0].file,
     });
     const presets = await loadPromptPresets(currentState, { rootDir: targetRoot });
-    const html = renderDesktopHtml(currentState, { liveBridge: "desktop", presets, appVersion });
+    const html = renderDesktopHtml(currentState, { liveBridge: "desktop", presets, appVersion, openrouterConfigured: !!(openrouterConfig.key) });
     await pushHtml(html);
   } catch (error) {
     const message = error instanceof Error ? error.stack || error.message : String(error);
@@ -571,6 +588,114 @@ ipcMain.handle("repolog:write-tuneup-charter", async (_event, charter) => {
   fs.mkdirSync(charterDir, { recursive: true });
   fs.writeFileSync(path.join(charterDir, "CHARTER.md"), typeof charter === "string" ? charter : "", "utf8");
   return { ok: true };
+});
+
+ipcMain.handle("repolog:save-openrouter-config", async (_event, payload = {}) => {
+  const key = typeof payload.key === "string" ? payload.key.trim() : "";
+  const model = typeof payload.model === "string" && payload.model.trim()
+    ? payload.model.trim()
+    : "nvidia/nemotron-3-super-120b-a12b:free";
+  openrouterConfig = { key, model };
+  try {
+    const orPath = openRouterConfigFile();
+    fs.mkdirSync(path.dirname(orPath), { recursive: true });
+    fs.writeFileSync(orPath, JSON.stringify({ key, model }, null, 2), "utf8");
+  } catch { /* best-effort */ }
+  return { success: true };
+});
+
+ipcMain.handle("repolog:get-openrouter-config", async () => {
+  return {
+    configured: !!(openrouterConfig.key),
+    model: openrouterConfig.model || "nvidia/nemotron-3-super-120b-a12b:free",
+    keyPreview: openrouterConfig.key
+      ? "sk-or-••••••" + openrouterConfig.key.slice(-4)
+      : "",
+  };
+});
+
+ipcMain.handle("repolog:run-digest", async () => {
+  if (!openrouterConfig.key) return { error: "No OpenRouter API key configured. Add one in Settings." };
+  if (!targetRoot) return { error: "No repo open." };
+
+  const read = (f) => {
+    try { return fs.readFileSync(path.join(targetRoot, f), "utf8"); }
+    catch { return "(not found)"; }
+  };
+
+  const agentFiles = ["CLAUDE.md", "AGENTS.md", "GEMINI.md", "CODEX.md"]
+    .map((f) => { const c = read(f); return c !== "(not found)" ? `### ${f}\n${c}` : null; })
+    .filter(Boolean).join("\n\n");
+
+  let gitLog = "(unavailable)";
+  try {
+    gitLog = require("node:child_process").execSync(
+      'git log --format="%h %s (%ar)" --since=7.days --max-count=20',
+      { cwd: targetRoot, encoding: "utf8", timeout: 8000 }
+    ).trim() || "(no recent commits)";
+  } catch { /* non-git repo or timeout */ }
+
+  const contextPrompt = `You are analyzing a software repo's planning documents. Return ONLY a JSON object — no markdown, no explanation.
+
+## PLAN.md
+${read("PLAN.md")}
+
+## STATE.md
+${read("STATE.md")}
+
+## Agent Files
+${agentFiles || "(none)"}
+
+## Recent git commits (last 7 days)
+${gitLog}
+
+Return exactly this JSON shape:
+{"summary":"2-3 sentences on where things stand","stuck":"what is blocked or needs attention (one sentence, or 'Nothing blocked')","next":"the single most logical next action (one sentence)"}`;
+
+  try {
+    const resp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${openrouterConfig.key}`,
+        "Content-Type": "application/json",
+        "HTTP-Referer": "https://github.com/statusnone420/repo-quest-log",
+        "X-Title": "RepoLog",
+      },
+      body: JSON.stringify({
+        model: openrouterConfig.model || "nvidia/nemotron-3-super-120b-a12b:free",
+        messages: [{ role: "user", content: contextPrompt }],
+        response_format: { type: "json_object" },
+        max_tokens: 400,
+        temperature: 0.3,
+      }),
+    });
+
+    if (!resp.ok) {
+      const errText = await resp.text().catch(() => "");
+      return { error: `OpenRouter ${resp.status}: ${errText.slice(0, 160)}` };
+    }
+
+    const data = await resp.json();
+    const rawContent = data.choices?.[0]?.message?.content ?? "{}";
+    let parsed = {};
+    try { parsed = JSON.parse(rawContent); } catch { parsed = {}; }
+
+    const result = {
+      summary: typeof parsed.summary === "string" ? parsed.summary : "No summary returned.",
+      stuck: typeof parsed.stuck === "string" ? parsed.stuck : "Unknown.",
+      next: typeof parsed.next === "string" ? parsed.next : "Unknown.",
+      generatedAt: new Date().toISOString(),
+      model: openrouterConfig.model || "nvidia/nemotron-3-super-120b-a12b:free",
+    };
+
+    const digestDir = path.join(targetRoot, ".repolog");
+    fs.mkdirSync(digestDir, { recursive: true });
+    fs.writeFileSync(path.join(digestDir, "digest.json"), JSON.stringify(result, null, 2), "utf8");
+
+    return { result };
+  } catch (err) {
+    return { error: `Digest failed: ${err.message || String(err)}` };
+  }
 });
 
 ipcMain.on("repolog:remember-startup-root", () => {

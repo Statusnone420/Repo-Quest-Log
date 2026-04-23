@@ -24,7 +24,7 @@ describe("web renderers", () => {
     expect(html).toContain("data-writeback-toggle");
     expect(html).toContain("Theme");
     expect(html).toContain("likely working");
-    expect(html).toContain("heuristic feed");
+    expect(html).toContain("run-digest");
     expect(html).toContain("source: STATE.md resume note");
     expect(html).toContain("source: PLAN.md");
     expect(html).toContain("window.repologDesktop");

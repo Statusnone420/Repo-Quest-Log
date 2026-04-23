@@ -9,11 +9,11 @@ owner: claude
 Live "where we are." Update this as work progresses. The normalizer reads this to build the Resume Note.
 
 ## Current Focus
-v0.4 diamond gate closeout is complete. First-run wizard, doctor clarity, settings save flow, watcher/write-back hardening, repo-root startup parsing, and release notes are aligned. 67 tests green.
+v0.5 pass complete. Agents section rebuilt (honest status from .md content, Digest button + OpenRouter integration). Theme simplified to Light/Dark, font picker added, font size cap raised to 150%. 67 tests green.
 
 ## Resume Note
 
-> Session 2026-04-23: Closed all 6 v0.4 diamond gates. Fixed setup rendering to show only when PLAN.md is missing, added per-repo wizard dismiss state, immediate busy states, sanitized setup errors, and "Run Doctor Again?" in-place doctor output. Doctor findings now include `why` and `fix` and sort by impact. Settings save validates debounce before IPC and reports inline errors; VS Code returns `configSaved` or `error`. Watcher now handles config add/change, logs contextual errors, emits config-changed, and desktop shows "File watch lost sync; re-scanning." Write-back now queues same-file writes and returns the exact stale-line re-scan message. `--repo-root` startup parsing and desktop `--version` landed. Added `CHANGELOG.md` v0.4.0 notes. Final verification: `npm run build && npm run lint && npm test` passes with 67 tests across 17 files.
+> Session 2026-04-23 (v0.5): Rewrote Agents tile — removed mtime heuristics and fake confidence feed entirely. Agent status now sourced from `## Current Task` / `## Last Task` in each agent .md. Added `DigestResult` type and `lastDigest` to `QuestState`; scan.ts loads `.repolog/digest.json` on startup. Added on-demand Digest button: bundles PLAN.md + STATE.md + agent files + 7-day git log → POST to OpenRouter (default: nemotron-free) → shows 3-part summary in Agents panel. API key stored in Electron userData (`openrouter.json`), never in repo. Theme simplified to Dark/Light only; `normalizeTheme()` maps slate/dim → dark. Font picker (System/Mono/Serif) with `--rql-font` CSS var. Density clamp raised from 1.32 → 1.5 (fixes 126% ceiling bug). Stale test assertion updated (`heuristic feed` → `run-digest`). `npm run build && npm run lint && npm test` passes with 67 tests across 17 files.
 
 ## Last Session — UI polish pass (2026-04-22)
 - **Settings rack**: Removed filler description copy and Ctrl+ chip row; removed Standup button and extra Refresh from the rack. Rack now shows only Open Settings + Open Repo.

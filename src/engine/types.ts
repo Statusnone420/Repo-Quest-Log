@@ -47,6 +47,7 @@ export interface AgentProfile {
   objective: string;
   constraints: string[];
   status: "active" | "working" | "idle";
+  currentTask?: string;
   lastTask?: string;
 }
 
@@ -69,6 +70,14 @@ export interface Decision {
   text: string;
   doc: string;
   line?: number;
+}
+
+export interface DigestResult {
+  summary: string;
+  stuck: string;
+  next: string;
+  generatedAt: string;   // ISO timestamp
+  model: string;
 }
 
 export interface Objective {
@@ -128,4 +137,5 @@ export interface QuestState {
   gitContext?: GitContext;
   agentActivity: AgentActivity[];
   config: RepoConfigSnapshot;
+  lastDigest?: DigestResult;
 }

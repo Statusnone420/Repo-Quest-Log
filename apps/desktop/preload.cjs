@@ -67,4 +67,13 @@ contextBridge.exposeInMainWorld("repologDesktop", {
   windowAction(action) {
     ipcRenderer.send("repolog:window-action", action);
   },
+  saveOpenRouterConfig(payload) {
+    return ipcRenderer.invoke("repolog:save-openrouter-config", payload);
+  },
+  getOpenRouterConfig() {
+    return ipcRenderer.invoke("repolog:get-openrouter-config");
+  },
+  runDigest() {
+    return ipcRenderer.invoke("repolog:run-digest");
+  },
 });

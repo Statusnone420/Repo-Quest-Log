@@ -5,6 +5,7 @@ export interface SurfaceHtmlOptions {
   liveBridge?: "desktop" | "vscode";
   presets?: PromptPreset[];
   appVersion?: string;
+  openrouterConfigured?: boolean;
 }
 
 export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions = {}): string {
@@ -29,58 +30,77 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>${escapeHtml(state.name)} - Repo Quest Log</title>
   <style>
-    :root {
-      --bg: #0b0d10;
-      --bg-grid: rgba(120,140,180,0.035);
-      --rql-density: 1.02;
-      --pad-x: calc(15px * var(--rql-density));
-      --pad-y: calc(11px * var(--rql-density));
-      --tile-pad: calc(14px * var(--rql-density));
-      --tile-gap: calc(12px * var(--rql-density));
-      --row-gap: calc(6px * var(--rql-density));
-      --body-size: calc(12.75px * var(--rql-density));
-      --small-size: calc(11.5px * var(--rql-density));
-      --tiny-size: calc(9.75px * var(--rql-density));
-      --title-size: calc(13.75px * var(--rql-density));
-      --headline-size: calc(15.5px * var(--rql-density));
-      --tile: rgba(18,22,28,0.78);
-      --tile-border: rgba(100,120,150,0.14);
-      --tile-border-hot: rgba(140,170,220,0.32);
-      --ink: #e6ecf2;
-      --muted: rgba(220,230,245,0.52);
-      --dim: rgba(220,230,245,0.34);
-      --faint: rgba(220,230,245,0.14);
-      --accent: #8ab4ff;
-      --accent-soft: rgba(138,180,255,0.14);
-      --warn: #e9b973;
-      --warn-soft: rgba(233,185,115,0.12);
-      --ok: #8ad6a8;
-      --danger: #f48471;
-      --mono: "JetBrains Mono", "SF Mono", ui-monospace, Menlo, Consolas, monospace;
-      --sans: Inter, "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
-    }
-    [data-theme="slate"] {
-      --bg: #0d1117;
-      --bg-grid: rgba(100,130,180,0.03);
-      --tile: rgba(22,27,34,0.85);
-      --tile-border: rgba(80,110,150,0.18);
-      --accent: #79c0ff;
-      --accent-soft: rgba(121,192,255,0.13);
-    }
-    [data-theme="dim"] {
-      --bg: #12110f;
-      --bg-grid: rgba(180,150,100,0.03);
-      --tile: rgba(26,22,18,0.85);
-      --tile-border: rgba(150,120,80,0.16);
-      --accent: #d2a679;
-      --accent-soft: rgba(210,166,121,0.13);
-      --warn: #c9a85c;
-    }
+     :root {
+       --bg: #0b0d10;
+       --bg-grid: rgba(120,140,180,0.035);
+       --rql-density: 1.02;
+       --pad-x: calc(15px * var(--rql-density));
+       --pad-y: calc(11px * var(--rql-density));
+       --tile-pad: calc(14px * var(--rql-density));
+       --tile-gap: calc(12px * var(--rql-density));
+       --row-gap: calc(6px * var(--rql-density));
+       --body-size: calc(12.75px * var(--rql-density));
+       --small-size: calc(11.5px * var(--rql-density));
+       --tiny-size: calc(9.75px * var(--rql-density));
+       --title-size: calc(13.75px * var(--rql-density));
+       --headline-size: calc(15.5px * var(--rql-density));
+       --tile: rgba(18,22,28,0.78);
+       --tile-border: rgba(100,120,150,0.14);
+       --tile-border-hot: rgba(140,170,220,0.32);
+       --ink: #e6ecf2;
+       --muted: rgba(220,230,245,0.52);
+       --dim: rgba(220,230,245,0.34);
+       --faint: rgba(220,230,245,0.14);
+       --accent: #8ab4ff;
+       --accent-soft: rgba(138,180,255,0.14);
+       --warn: #e9b973;
+       --warn-soft: rgba(233,185,115,0.12);
+       --ok: #8ad6a8;
+       --danger: #f48471;
+       --bg-elevated: #1a1d23;
+       --dot-idle: rgba(220,230,245,0.28);
+       --mono: "JetBrains Mono", "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+       --sans: Inter, "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+       --rql-font: Inter, "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+     }
+     [data-theme="slate"] {
+       --bg: #0d1117;
+       --bg-grid: rgba(100,130,180,0.03);
+       --tile: rgba(22,27,34,0.85);
+       --tile-border: rgba(80,110,150,0.18);
+       --accent: #79c0ff;
+       --accent-soft: rgba(121,192,255,0.13);
+       --bg-elevated: #161b22;
+     }
+     [data-theme="dim"] {
+       --bg: #12110f;
+       --bg-grid: rgba(180,150,100,0.03);
+       --tile: rgba(26,22,18,0.85);
+       --tile-border: rgba(150,120,80,0.16);
+       --accent: #d2a679;
+       --accent-soft: rgba(210,166,121,0.13);
+       --warn: #c9a85c;
+       --bg-elevated: #1c1a17;
+     }
+     [data-theme="light"] {
+       --bg: #f4f5f7;
+       --tile: #ffffff;
+       --tile-border: rgba(0,0,0,0.08);
+       --accent: #0a5fd6;
+       --accent-soft: rgba(10,95,214,0.09);
+       --ink: #111318;
+       --muted: rgba(0,0,0,0.54);
+       --dim: rgba(0,0,0,0.36);
+       --faint: rgba(0,0,0,0.08);
+       --warn: #b45309;
+       --bg-elevated: #ffffff;
+       --dot-idle: rgba(0,0,0,0.22);
+     }
 
     * { box-sizing: border-box; }
     html, body { margin: 0; width: 100%; height: 100%; background: var(--bg); color: var(--ink); overflow: hidden; }
     body {
-      font-family: var(--sans);
+      font-family: var(--rql-font);
       font-size: var(--body-size);
       line-height: 1.35;
       background:
@@ -1023,6 +1043,27 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       font-family: var(--mono); font-size: var(--tiny-size); color: var(--dim);
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
+    .digest-btn {
+      background: none; border: 1px solid var(--tile-border); border-radius: 4px;
+      color: var(--accent); font-size: var(--tiny-size); padding: 2px 8px;
+      cursor: pointer; flex-shrink: 0;
+    }
+    .digest-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .digest-btn:not(:disabled):hover { background: var(--accent-soft); }
+    .digest-panel {
+      margin-top: 8px; padding: 8px 10px;
+      background: var(--faint); border-radius: 4px; border-left: 2px solid var(--accent);
+    }
+    .digest-label { font-size: var(--tiny-size); color: var(--dim); display: block; margin-bottom: 4px; }
+    .digest-summary { margin: 0 0 4px; font-size: var(--small-size); color: var(--ink); }
+    .digest-detail { margin: 0 0 2px; font-size: var(--small-size); color: var(--muted); }
+    .digest-model { font-size: var(--tiny-size); color: var(--dim); }
+    .digest-empty { font-size: var(--small-size); color: var(--dim); margin: 8px 0 0; font-style: italic; }
+    .pill {
+      display: inline-block; font-size: var(--tiny-size); padding: 1px 5px;
+      background: var(--faint); border-radius: 3px; color: var(--muted);
+      vertical-align: middle; margin-left: 4px;
+    }
 
     /* ---- CHANGE ROWS ---- */
     .change-row {
@@ -1116,10 +1157,10 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       z-index: 100;
     }
     .palette-overlay[data-open="true"] { display: flex; }
-    .palette {
-      width: min(560px, 92vw);
-      background: #11141a;
-      border: 1px solid var(--tile-border-hot);
+     .palette {
+       width: min(560px, 92vw);
+       background: var(--bg-elevated);
+       border: 1px solid var(--tile-border-hot);
       border-radius: 12px;
       box-shadow: 0 30px 80px -10px rgba(0,0,0,0.7);
       overflow: hidden;
@@ -1165,11 +1206,11 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     }
 
     /* ---- TOAST ---- */
-    .toast {
-      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
-      background: #11141a; border: 1px solid var(--ok);
-      color: var(--ok); font-family: var(--mono); font-size: 12px;
-      padding: 10px 16px; border-radius: 8px;
+     .toast {
+       position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+       background: var(--bg-elevated); border: 1px solid var(--tile-border);
+       color: var(--ok); font-family: var(--mono); font-size: 12px;
+       padding: 10px 16px; border-radius: 8px;
       box-shadow: 0 10px 30px -5px rgba(0,0,0,0.6);
       opacity: 0; pointer-events: none;
       transition: opacity 0.18s, transform 0.18s;
@@ -1282,7 +1323,7 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
         ${renderChangesTile(state.recentChanges)}
       </div>
       <div class="col">
-          ${renderAgentsTile(state)}
+           ${renderAgentsTile(state, options.openrouterConfigured ?? false)}
           ${renderDecisionsTile(state.decisions)}
         </div>
       </section>
@@ -1384,11 +1425,11 @@ export function renderVSCodeHtml(state: QuestState, options: SurfaceHtmlOptions 
       color: var(--ink); background: var(--chrome);
     }
     .chevron { font-size: 9px; color: var(--muted); width: 10px; }
-    .badge {
-      margin-left: 6px; background: #3f3f41; color: #fff; font-size: 10px;
-      padding: 0 6px; border-radius: 8px; font-weight: 600; letter-spacing: 0;
-      font-family: var(--mono);
-    }
+     .badge {
+       margin-left: 6px; background: var(--faint); color: #fff; font-size: 10px;
+       padding: 0 6px; border-radius: 8px; font-weight: 600; letter-spacing: 0;
+       font-family: var(--mono);
+     }
     .section-body { padding: 4px 0; }
     .row {
       padding: 2px 24px; display: flex; align-items: flex-start; gap: 6px;
@@ -1595,41 +1636,48 @@ function renderBlockedTile(tasks: BlockedTask[], writebackEnabled: boolean, live
     </section>`;
   }
 
-  function renderAgentsTile(state: QuestState): string {
-    const agents = state.agents;
-    const activity = (state.agentActivity ?? []).slice(0, 4);
-    return `<section class="tile" data-area="agents">
-      <div class="tile-header">
-        <h3 class="tile-title agents"><span class="accent-bar"></span>Agents</h3>
-        <span class="tile-meta">${agents.length} registered · heuristic feed</span>
+function renderAgentsTile(state: QuestState, hasKey: boolean): string {
+  const agents = state.agents;
+  return `<section class="tile" data-area="agents">
+    <div class="tile-header">
+      <h3 class="tile-title agents"><span class="accent-bar"></span>Agents</h3>
+      <span class="tile-meta">${agents.length} registered</span>
+      <button class="digest-btn" data-action="run-digest" 
+              title="${hasKey ? 'Run AI digest of current repo state' : 'Add OpenRouter key in Settings to enable'}">
+        ✦ Digest
+      </button>
+    </div>
+  <div class="tile-body">
+    ${agents.length === 0 ? `<div class="agent-card"><div class="agent-objective">No agent profiles discovered.</div></div>` : agents.map((agent) => {
+      const status = agent.status;
+      const blurb = agent.currentTask ?? agent.objective ?? "";
+      const trimmedBlurb = blurb.length > 120 ? blurb.substring(0, 120) + "…" : blurb;
+      return `
+      <div class="agent-card">
+        <div class="agent-head">
+          ${renderAgentChip(agent.id)}
+          <span class="agent-name">${escapeHtml(agent.name)}</span>
+          <span class="agent-role">${escapeHtml(agent.role)}</span>
+          <span class="agent-status ${escapeHtml(status)}" title="Status from agent's ## Current Task section" data-agent-id="${escapeHtml(agent.id)}"><span class="dot"></span>${escapeHtml(renderAgentStatusLabel(status))}</span>
+        </div>
+        <div class="agent-objective">${escapeHtml(trimmedBlurb)}</div>
+        <div class="agent-meta">${escapeHtml(agent.file)} · ${escapeHtml(agent.area)}</div>
       </div>
-    <div class="tile-body">
-        ${activity.length > 0 ? `<div class="settings-copy">Recent activity is inferred from file mtimes and owned areas, not direct authorship.</div>` : ""}
-        ${agents.length === 0 ? `<div class="agent-card"><div class="agent-objective">No agent profiles discovered.</div></div>` : agents.map((agent) => {
-          const status = resolveAgentStatus(agent, activity);
-          const pulse = isAgentActive(agent.id, activity);
-          const lastTask = resolveAgentTask(agent, activity);
-          return `
-          <div class="agent-card">
-            <div class="agent-head">
-              ${renderAgentChip(agent.id)}
-              <span class="agent-name">${escapeHtml(agent.name)}</span>
-              <span class="agent-role">${escapeHtml(agent.role)}</span>
-              <span class="agent-status ${escapeHtml(status)}" title="Heuristic status from file activity, not live presence" data-pulse="${pulse ? "true" : "false"}" data-agent-id="${escapeHtml(agent.id)}" data-last-task="${escapeHtml(lastTask)}"><span class="dot"></span>${escapeHtml(renderAgentStatusLabel(status))}</span>
-            </div>
-            <div class="agent-objective">${escapeHtml(agent.objective)}</div>
-            <div class="agent-meta">${escapeHtml(agent.file)} · ${escapeHtml(agent.area)}</div>
-          </div>
-        `;}).join("")}
-        ${activity.length > 0 ? `<div class="activity-list">${activity.map((entry) => `
-          <div class="activity-row">
-            <span class="file">Likely ${escapeHtml(entry.agent)} · ${escapeHtml(entry.file)}</span>
-            <span class="ago">${escapeHtml(entry.at)} · ${renderConfidenceLabel(entry.confidence)}</span>
-          </div>
-        `).join("")}</div>` : ""}
-      </div>
-    </section>`;
-  }
+    `;}).join("")}
+    ${state.lastDigest ? `
+    <div class="digest-panel">
+      <span class="digest-label">Last digest · ${digestAge(state.lastDigest.generatedAt)}</span>
+      <p class="digest-summary">${escapeHtml(state.lastDigest.summary)}</p>
+      <p class="digest-detail"><strong>Stuck:</strong> ${escapeHtml(state.lastDigest.stuck)}</p>
+      <p class="digest-detail"><strong>Next:</strong> ${escapeHtml(state.lastDigest.next)}</p>
+      <span class="digest-model">${escapeHtml(state.lastDigest.model)}</span>
+    </div>
+    ` : `
+    <p class="digest-empty">Press Digest for an AI summary · requires OpenRouter key in Settings</p>
+    `}
+  </div>
+  </section>`;
+}
 
   function renderGitStrip(state: QuestState): string {
     const git = state.gitContext;
@@ -1791,8 +1839,7 @@ function renderSettingsPanel(state: QuestState, liveBridge?: SurfaceHtmlOptions[
             <div class="detail">Choose a color scheme for the HUD.</div>
             <div class="actions theme-picker">
               <button type="button" data-ui-theme="dark" aria-pressed="false" title="Dark (default)"><span class="theme-swatch" style="background:#0b0d10;border-color:#8ab4ff"></span>Dark</button>
-              <button type="button" data-ui-theme="slate" aria-pressed="false" title="Slate"><span class="theme-swatch" style="background:#0d1117;border-color:#79c0ff"></span>Slate</button>
-              <button type="button" data-ui-theme="dim" aria-pressed="false" title="Dim"><span class="theme-swatch" style="background:#12110f;border-color:#d2a679"></span>Dim</button>
+              <button type="button" data-ui-theme="light" aria-pressed="false" title="Light"><span class="theme-swatch" style="background:#f4f5f7;border-color:#0a5fd6"></span>Light</button>
             </div>
           </div>
           <div class="settings-panel-card">
@@ -1802,6 +1849,31 @@ function renderSettingsPanel(state: QuestState, liveBridge?: SurfaceHtmlOptions[
               <button type="button" data-ui-density="cozy" aria-pressed="false">Cozy</button>
               <button type="button" data-ui-density="wide" aria-pressed="false">Wide</button>
               <button type="button" data-ui-density="compact" aria-pressed="false">Compact</button>
+            </div>
+          </div>
+          <div class="settings-panel-card">
+            <div class="head">Font</div>
+            <div class="detail">Applied across the entire HUD.</div>
+            <div class="actions">
+              <button type="button" data-ui-font="system" aria-pressed="true">System</button>
+              <button type="button" data-ui-font="mono" aria-pressed="false">Mono</button>
+              <button type="button" data-ui-font="serif" aria-pressed="false">Serif</button>
+            </div>
+          </div>
+          <div class="settings-panel-card" data-card="openrouter">
+            <div class="head">OpenRouter <span class="pill">optional</span></div>
+            <div class="detail">Powers the Digest button. Free key at <strong>openrouter.ai</strong>.</div>
+            <div class="field">
+              <label>API Key</label>
+              <input type="password" data-or-field="key" placeholder="sk-or-…" autocomplete="off" spellcheck="false" style="width:100%;margin-top:4px" />
+            </div>
+            <div class="field" style="margin-top:6px">
+              <label>Model</label>
+              <input type="text" data-or-field="model" placeholder="nvidia/nemotron-3-super-120b-a12b:free" spellcheck="false" style="width:100%;margin-top:4px" />
+            </div>
+            <div class="actions" style="margin-top:8px">
+              <button type="button" data-action="save-openrouter">Save key</button>
+              <span class="or-status" data-or-status style="font-size:var(--tiny-size);color:var(--ok);margin-left:8px"></span>
             </div>
           </div>
         </div>
@@ -2030,7 +2102,7 @@ function renderSettingsScript(): string {
   return `<script>
     (function () {
       var KEY = "repolog-surface-settings";
-      var defaults = { scale: 1.08, density: "cozy", theme: "dark" };
+      var defaults = { scale: 1.08, density: "cozy", theme: "dark", font: "system" };
       var settingsOverlay = document.querySelector("[data-settings-panel]");
       var vscode = typeof acquireVsCodeApi === "function" ? acquireVsCodeApi() : null;
       var setupCard = document.querySelector("[data-setup-card]");
@@ -2049,10 +2121,18 @@ function renderSettingsScript(): string {
         return "compact";
       }
       function normalizeTheme(value) {
-        if (value === "slate") return "slate";
-        if (value === "dim") return "dim";
-        return "dark";
+        return (value === "light") ? "light" : "dark";
       }
+      function normalizeFont(value) {
+        if (value === "mono") return "mono";
+        if (value === "serif") return "serif";
+        return "system";
+      }
+      var fontMap = {
+        system: 'Inter, "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif',
+        mono: '"Cascadia Code", "JetBrains Mono", "Consolas", monospace',
+        serif: 'Georgia, "Times New Roman", serif'
+      };
       function densityMultiplier(value) {
         if (value === "wide") return 1.1;
         if (value === "cozy") return 1;
@@ -2069,16 +2149,17 @@ function renderSettingsScript(): string {
         try {
           var parsed = JSON.parse(localStorage.getItem(KEY) || "{}");
           var scale = typeof parsed.scale === "number" ? parsed.scale : defaults.scale;
-          return { scale: clamp(scale, 0.92, 1.5), density: normalizeDensity(parsed.density || defaults.density), theme: normalizeTheme(parsed.theme) };
+          return { scale: clamp(scale, 0.92, 1.5), density: normalizeDensity(parsed.density || defaults.density), theme: normalizeTheme(parsed.theme), font: normalizeFont(parsed.font) };
         } catch (_) { return defaults; }
       }
       function save(next) { localStorage.setItem(KEY, JSON.stringify(next)); }
       function apply() {
         var prefs = read();
-        var density = clamp(densityMultiplier(prefs.density) * prefs.scale * viewportMultiplier(), 0.9, 1.32);
+        var density = clamp(densityMultiplier(prefs.density) * prefs.scale * viewportMultiplier(), 0.9, 1.5);
         document.documentElement.dataset.density = prefs.density;
         document.documentElement.style.setProperty("--rql-density", density.toFixed(3));
         document.documentElement.dataset.theme = prefs.theme || "dark";
+        document.documentElement.style.setProperty("--rql-font", fontMap[prefs.font] || fontMap.system);
         var scaleLabel = document.querySelector("[data-ui-scale-label]");
         if (scaleLabel) scaleLabel.textContent = Math.round(prefs.scale * 100) + "%";
         var densityButtons = document.querySelectorAll("[data-ui-density]");
@@ -2091,6 +2172,11 @@ function renderSettingsScript(): string {
           var tbtn = themeButtons[j];
           tbtn.setAttribute("aria-pressed", tbtn.getAttribute("data-ui-theme") === (prefs.theme || "dark") ? "true" : "false");
         }
+        var fontButtons = document.querySelectorAll("[data-ui-font]");
+        for (var k = 0; k < fontButtons.length; k += 1) {
+          var fbtn = fontButtons[k];
+          fbtn.setAttribute("aria-pressed", fbtn.getAttribute("data-ui-font") === (prefs.font || "system") ? "true" : "false");
+        }
       }
       function update(patch) {
         var current = read();
@@ -2098,12 +2184,23 @@ function renderSettingsScript(): string {
           scale: typeof patch.scale === "number" ? clamp(patch.scale, 0.92, 1.5) : current.scale,
           density: patch.density ? normalizeDensity(patch.density) : current.density,
           theme: patch.theme ? normalizeTheme(patch.theme) : (current.theme || "dark"),
+          font: patch.font ? normalizeFont(patch.font) : (current.font || "system"),
         };
         save(next);
         apply();
       }
       function openSettings() {
         if (settingsOverlay) settingsOverlay.setAttribute("data-open", "true");
+        if (window.repologDesktop && typeof window.repologDesktop.getOpenRouterConfig === "function") {
+          window.repologDesktop.getOpenRouterConfig().then(function(cfg) {
+            var keyField = document.querySelector("[data-or-field='key']");
+            var modelField = document.querySelector("[data-or-field='model']");
+            var orStatus = document.querySelector("[data-or-status]");
+            if (keyField) keyField.value = cfg.keyPreview || "";
+            if (modelField) modelField.value = cfg.model || "";
+            if (orStatus) orStatus.textContent = cfg.configured ? "✓ Configured" : "";
+          }).catch(function() {});
+        }
       }
       function closeSettings() {
         if (settingsOverlay) settingsOverlay.setAttribute("data-open", "false");
@@ -2399,6 +2496,55 @@ function renderSettingsScript(): string {
           }
           if (button.hasAttribute("data-ui-theme")) {
             update({ theme: button.getAttribute("data-ui-theme") || "dark" });
+          }
+          if (button.hasAttribute("data-ui-font")) {
+            update({ font: button.getAttribute("data-ui-font") || "system" });
+          }
+          if (action === "save-openrouter") {
+            var keyField = document.querySelector("[data-or-field='key']");
+            var modelField = document.querySelector("[data-or-field='model']");
+            var orStatus = document.querySelector("[data-or-status]");
+            var key = keyField ? keyField.value.trim() : "";
+            var model = (modelField ? modelField.value.trim() : "") || "nvidia/nemotron-3-super-120b-a12b:free";
+            if (window.repologDesktop && typeof window.repologDesktop.saveOpenRouterConfig === "function") {
+              window.repologDesktop.saveOpenRouterConfig({ key: key, model: model }).then(function() {
+                if (orStatus) { orStatus.textContent = key ? "✓ Saved" : "Cleared"; }
+                var digestBtns = document.querySelectorAll("[data-action='run-digest']");
+                for (var d = 0; d < digestBtns.length; d++) {
+                  digestBtns[d].disabled = !key;
+                  digestBtns[d].title = key ? "Run AI digest of current repo state" : "Add OpenRouter key in Settings to enable";
+                }
+              }).catch(function(err) {
+                if (orStatus) orStatus.textContent = "Error: " + String(err).slice(0, 40);
+              });
+            } else {
+              if (orStatus) orStatus.textContent = "Only available in desktop shell";
+            }
+          }
+          if (action === "run-digest") {
+            var digestBtn = event.target.closest("[data-action='run-digest']");
+            if (!digestBtn || digestBtn.disabled) return;
+            digestBtn.disabled = true;
+            digestBtn.textContent = "⏳ Running…";
+            if (window.repologDesktop && typeof window.repologDesktop.runDigest === "function") {
+              window.repologDesktop.runDigest().then(function(res) {
+                digestBtn.disabled = false;
+                digestBtn.textContent = "✦ Digest";
+                if (res && res.error) {
+                  if (window.__rqlToast) window.__rqlToast(res.error);
+                } else {
+                  window.repologDesktop.requestRefresh();
+                }
+              }).catch(function(err) {
+                digestBtn.disabled = false;
+                digestBtn.textContent = "✦ Digest";
+                if (window.__rqlToast) window.__rqlToast("Digest failed: " + String(err).slice(0, 60));
+              });
+            } else {
+              digestBtn.disabled = false;
+              digestBtn.textContent = "✦ Digest";
+              if (window.__rqlToast) window.__rqlToast("Digest is only available in the desktop shell");
+            }
           }
         } catch (error) {
           if (window.__rqlToast) window.__rqlToast("Click handler error: " + String(error).slice(0, 50));
@@ -2814,6 +2960,18 @@ function isEmptyRepo(state: QuestState): boolean {
     if (status === "working") return "likely working";
     if (status === "active") return "likely active";
     return "idle";
+  }
+
+  function digestAge(iso: string): string {
+    try {
+      const ms = Date.now() - new Date(iso).getTime();
+      const mins = Math.floor(ms / 60000);
+      if (mins < 1) return "just now";
+      if (mins < 60) return `${mins}m ago`;
+      const hrs = Math.floor(mins / 60);
+      if (hrs < 24) return `${hrs}h ago`;
+      return `${Math.floor(hrs / 24)}d ago`;
+    } catch { return "unknown"; }
   }
 
   function isResumeFresh(since: string): boolean {

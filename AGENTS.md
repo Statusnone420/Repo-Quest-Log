@@ -37,11 +37,11 @@ Instructions for any coding agent working in this repo (Codex, generic agents, C
 
 ## Current Objective
 
-Ship v0.4 as a diamond release: a user downloads the exe, opens a messy repo, and the app earns their trust in the first 5 minutes without confusing them or breaking. Do not add features. Close the 6 quality gates in order.
+Ship v0.5: honest Agents roster (status from .md content), on-demand LLM Digest via OpenRouter, Light/Dark theme, font picker, font size fix. See `plan_implementation.md` for execution spec.
 
 ## Current Task
 
-All 6 diamond gates closed. Ready for release.
+v0.5 pass complete. Agents section honest, Digest button wired, OpenRouter IPC handlers live, Light theme and font picker in settings. 67 tests green.
 
 ---
 

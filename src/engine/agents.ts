@@ -28,6 +28,7 @@ export function extractAgentProfiles(docs: readonly ParsedDoc[]): AgentProfile[]
       ),
       constraints: collectChecklistTexts(findSectionByHeading(doc.sections, /^(do not|constraints)$/i)),
       status: normalizeAgentStatus(frontmatter.status, agentMeta.id),
+      currentTask: String(frontmatter.currentTask ?? sectionSummary(doc.sections, /current task/i) ?? "") || undefined,
       lastTask: String(frontmatter.lastTask ?? sectionSummary(doc.sections, /last task/i) ?? "") || undefined,
     });
   }

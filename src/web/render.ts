@@ -31,33 +31,35 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
   <title>${escapeHtml(state.name)} - Repo Quest Log</title>
   <style>
      :root {
-       --bg: #0b0d10;
-       --bg-grid: rgba(120,140,180,0.035);
+       --bg: #070d12;
+       --chrome: #060b10;
+       --bg-grid: rgba(120,140,180,0.02);
        --rql-density: 1.02;
-       --pad-x: calc(15px * var(--rql-density));
-       --pad-y: calc(11px * var(--rql-density));
-       --tile-pad: calc(14px * var(--rql-density));
-       --tile-gap: calc(12px * var(--rql-density));
-       --row-gap: calc(6px * var(--rql-density));
-       --body-size: calc(12.75px * var(--rql-density));
+       --pad-x: calc(16px * var(--rql-density));
+       --pad-y: calc(10px * var(--rql-density));
+       --tile-pad: calc(13px * var(--rql-density));
+       --tile-gap: calc(10px * var(--rql-density));
+       --row-gap: calc(4px * var(--rql-density));
+       --body-size: calc(13px * var(--rql-density));
        --small-size: calc(11.5px * var(--rql-density));
-       --tiny-size: calc(9.75px * var(--rql-density));
-       --title-size: calc(13.75px * var(--rql-density));
-       --headline-size: calc(15.5px * var(--rql-density));
-       --tile: rgba(18,22,28,0.78);
-       --tile-border: rgba(100,120,150,0.14);
-       --tile-border-hot: rgba(140,170,220,0.32);
-       --ink: #e6ecf2;
-       --muted: rgba(220,230,245,0.52);
-       --dim: rgba(220,230,245,0.34);
-       --faint: rgba(220,230,245,0.14);
-       --accent: #8ab4ff;
-       --accent-soft: rgba(138,180,255,0.14);
-       --warn: #e9b973;
-       --warn-soft: rgba(233,185,115,0.12);
-       --ok: #8ad6a8;
-       --danger: #f48471;
-       --bg-elevated: #1a1d23;
+       --tiny-size: calc(10px * var(--rql-density));
+       --title-size: calc(13.5px * var(--rql-density));
+       --headline-size: calc(17px * var(--rql-density));
+       --tile: #10181d;
+       --tile-2: #141b20;
+       --tile-border: rgba(120,135,150,0.18);
+       --tile-border-hot: rgba(76,152,255,0.36);
+       --ink: #e8edf2;
+       --muted: rgba(226,234,242,0.68);
+       --dim: rgba(226,234,242,0.42);
+       --faint: rgba(226,234,242,0.12);
+       --accent: #58a6ff;
+       --accent-soft: rgba(88,166,255,0.14);
+       --warn: #e6bf45;
+       --warn-soft: rgba(230,191,69,0.12);
+       --ok: #73df73;
+       --danger: #ff5555;
+       --bg-elevated: #141a1f;
        --dot-idle: rgba(220,230,245,0.28);
        --mono: "JetBrains Mono", "SF Mono", ui-monospace, Menlo, Consolas, monospace;
        --sans: Inter, "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
@@ -108,65 +110,75 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       font-family: var(--rql-font);
       font-size: var(--body-size);
       line-height: 1.35;
-      background:
-        radial-gradient(circle at 20% 0%, rgba(138,180,255,0.06), transparent 45%),
-        radial-gradient(circle at 80% 100%, rgba(217,119,87,0.04), transparent 45%),
-        linear-gradient(var(--bg-grid) 1px, transparent 1px),
-        linear-gradient(90deg, var(--bg-grid) 1px, transparent 1px),
-        var(--bg);
-      background-size: auto, auto, 32px 32px, 32px 32px, auto;
+      background: var(--bg);
     }
 
     .shell {
       width: 100vw; height: 100vh;
       display: grid;
-      grid-template-rows: auto auto auto auto auto minmax(0, 1fr);
+      grid-template-rows: auto auto auto auto minmax(0, 1fr);
       overflow: hidden;
+      border: 1px solid rgba(88,166,255,0.18);
+      background: var(--bg);
     }
 
     /* ---- TOP BAR ---- */
     .topbar {
       display: flex; align-items: center; gap: 14px;
-      padding: var(--pad-y) var(--pad-x);
+      min-height: 62px;
+      padding: 0 var(--pad-x);
       border-bottom: 1px solid var(--tile-border);
       min-width: 0;
+      background: var(--chrome);
     }
     .brand {
-      display: flex; align-items: center; gap: 8px;
-      font-family: var(--mono); color: var(--muted);
-      font-size: var(--small-size); letter-spacing: 0.4px; text-transform: lowercase;
+      display: flex; align-items: center; gap: 10px;
+      color: var(--ink);
+      font-size: calc(20px * var(--rql-density));
+      font-weight: 700;
+      letter-spacing: 0;
+      text-transform: none;
+    }
+    .brand svg {
+      width: 32px;
+      height: 32px;
+      padding: 7px;
+      border-radius: 6px;
+      background: rgba(88,166,255,0.18);
+      border: 1px solid rgba(88,166,255,0.22);
     }
     .divider { width: 1px; height: 14px; background: var(--tile-border); }
-    .repo-meta { display: flex; align-items: baseline; gap: 8px; font-family: var(--mono); font-size: var(--body-size); }
-    .repo-meta .branch { color: var(--accent); }
+    .repo-meta { display: flex; align-items: baseline; gap: 10px; font-size: var(--body-size); color: var(--muted); min-width: 0; }
+    .repo-meta .repo-path { max-width: 28vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .repo-meta .branch { color: var(--muted); display: inline-flex; align-items: center; gap: 6px; }
+    .repo-meta .branch::before { content: "⌘"; color: var(--dim); font-family: var(--mono); }
     .app-version {
       display: inline-flex; align-items: center;
-      padding: 2px 7px; border-radius: 999px;
-      font-family: var(--mono); font-size: var(--tiny-size);
-      color: var(--muted); background: rgba(255,255,255,0.03);
-      border: 1px solid var(--tile-border);
+      margin-left: auto;
+      font-family: var(--mono); font-size: var(--small-size);
+      color: var(--muted);
     }
     .kbd-hint {
-      margin-left: auto;
       display: inline-flex; align-items: center; gap: 6px;
-      font-family: var(--mono); font-size: var(--tiny-size);
+      font-family: var(--sans); font-size: var(--small-size);
       color: var(--muted); cursor: pointer;
-      padding: 3px 8px; border: 1px solid var(--tile-border); border-radius: 6px;
-      background: rgba(255,255,255,0.02);
+      padding: 8px 13px; border: 1px solid var(--tile-border); border-radius: 8px;
+      background: rgba(255,255,255,0.055);
     }
     .kbd-hint:hover { border-color: rgba(138,180,255,0.42); color: var(--accent); }
     .kbd-hint kbd {
       font-family: var(--mono); font-size: var(--tiny-size);
-      padding: 1px 5px; border: 1px solid var(--tile-border); border-radius: 3px;
+      padding: 1px 5px; border: 1px solid rgba(88,166,255,0.35); border-radius: 4px;
       background: rgba(255,255,255,0.04); color: var(--ink);
     }
     .watch-meta {
       display: flex; align-items: center; gap: 6px;
-      font-family: var(--mono); font-size: var(--tiny-size); color: var(--muted);
+      font-size: var(--small-size); color: var(--ok);
+      white-space: nowrap;
     }
     .surface-controls {
       display: inline-flex; align-items: center; gap: 4px;
-      font-family: var(--mono); font-size: var(--tiny-size);
+      font-family: var(--mono); font-size: var(--small-size);
     }
     .window-controls {
       display: inline-flex; align-items: center; gap: 4px;
@@ -175,7 +187,7 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     .surface-controls button {
       appearance: none; border: 1px solid var(--tile-border);
       background: rgba(255,255,255,0.02); color: var(--ink);
-      border-radius: 5px; padding: 2px 7px; cursor: pointer;
+      border-radius: 6px; padding: 6px 8px; cursor: pointer;
       font: inherit;
     }
     .surface-controls button:hover { border-color: rgba(138,180,255,0.42); }
@@ -200,26 +212,34 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       color: var(--ink);
       border-color: rgba(244,132,113,0.45);
     }
-    .surface-controls .label { color: var(--muted); letter-spacing: 0.8px; text-transform: uppercase; margin-left: 4px; }
+    .surface-controls .label { display: none; }
+    .surface-controls [data-ui-scale-label] {
+      min-width: 42px;
+      text-align: center;
+      color: var(--ink);
+      font-weight: 700;
+    }
     .dot { width: 6px; height: 6px; border-radius: 999px; background: var(--ok); display: inline-block; }
 
     /* ---- SETTINGS RACK ---- */
     .settings-rack {
       display: grid;
-      grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.9fr);
-      gap: var(--tile-gap);
-      padding: var(--pad-y) var(--pad-x) 0;
+      grid-template-columns: auto auto auto minmax(0, 1fr);
+      gap: 8px;
+      padding: 10px var(--pad-x);
       min-width: 0;
+      border-bottom: 1px solid var(--tile-border);
+      background: #0b1217;
     }
     .settings-card {
       display: flex;
-      flex-direction: column;
-      gap: 6px;
-      padding: 8px 10px;
+      flex-direction: row;
+      align-items: center;
+      gap: 10px;
+      padding: 0;
       min-width: 0;
-      border-radius: 10px;
-      border: 1px solid var(--tile-border);
-      background: rgba(18,22,28,0.72);
+      border: 0;
+      background: transparent;
     }
     .settings-head {
       display: flex;
@@ -230,6 +250,7 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       letter-spacing: 1.2px;
       text-transform: uppercase;
       color: var(--muted);
+      display: none;
     }
     .settings-head .pill {
       display: inline-flex;
@@ -246,6 +267,7 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       font-size: var(--small-size);
       color: var(--muted);
       line-height: 1.28;
+      display: none;
     }
     .settings-copy strong { color: var(--ink); font-weight: 600; }
     .settings-actions {
@@ -257,26 +279,33 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     .settings-actions button {
       appearance: none;
       border: 1px solid var(--tile-border);
-      background: rgba(255,255,255,0.02);
+      background: rgba(255,255,255,0.055);
       color: var(--ink);
       border-radius: 7px;
-      padding: 5px 9px;
+      padding: 10px 14px;
       cursor: pointer;
       font: inherit;
       display: inline-flex;
       align-items: center;
       gap: 7px;
+      min-height: 38px;
     }
     .settings-actions button:hover {
       border-color: rgba(138,180,255,0.42);
       color: var(--accent);
     }
     .settings-actions button.primary {
-      border-color: rgba(138,180,255,0.32);
-      background: rgba(138,180,255,0.08);
+      border-color: var(--tile-border);
+      background: rgba(255,255,255,0.055);
     }
     .settings-actions button[data-ui-action="open-settings"] {
-      border-color: rgba(138,180,255,0.24);
+      border-color: var(--tile-border);
+    }
+    .settings-actions button[data-ui-action="writeback-status"] {
+      color: var(--warn);
+      border-color: rgba(230,191,69,0.22);
+      background: rgba(230,191,69,0.08);
+      pointer-events: none;
     }
     .settings-actions button .kbd-inline {
       display: inline-flex;
@@ -686,64 +715,113 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     /* ---- HEADER STRIP (mission + objective + resume in ONE row) ---- */
     .header-strip {
       display: grid;
-      grid-template-columns: minmax(0, 1.35fr) minmax(0, 0.96fr) minmax(0, 1.44fr);
-      gap: calc(var(--tile-gap) * 0.85);
-      padding: calc(var(--pad-y) * 0.42) var(--pad-x) 0;
+      grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr) minmax(0, 1.03fr);
+      gap: 14px;
+      padding: 10px var(--pad-x) 8px;
       min-width: 0;
       align-items: start;
     }
     .strip-cell {
       position: relative;
-      padding: calc(var(--tile-pad) * 0.56);
-      background: var(--tile);
+      padding: 15px 18px;
+      background: var(--tile-2);
       border: 1px solid var(--tile-border);
-      border-radius: 10px;
-      min-height: 72px;
+      border-radius: 7px;
+      min-height: 120px;
       min-width: 0;
-      display: flex; flex-direction: column; gap: 1px;
+      display: flex; flex-direction: column; gap: 4px;
       overflow: hidden;
       align-self: start;
+      justify-content: center;
+    }
+    .strip-cell.objective {
+      background: #0f1a22;
+      border-color: rgba(88,166,255,0.3);
     }
     .strip-cell.mission::before,
     .strip-cell.objective::before,
     .strip-cell.resume::before {
-      content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+      content: "";
+      position: absolute;
+      left: 18px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      border: 2px solid var(--accent);
     }
-    .strip-cell.mission::before { background: var(--accent); }
-    .strip-cell.objective::before { background: var(--ok); }
-    .strip-cell.resume::before { background: var(--warn); }
+    .strip-cell.objective::before {
+      width: 13px;
+      height: 13px;
+      box-shadow: 0 18px 0 -1px var(--accent);
+    }
+    .strip-cell.resume::before { display: none; }
     .kicker {
-      font-family: var(--mono); font-size: var(--tiny-size); letter-spacing: 1.2px;
-      text-transform: uppercase; color: var(--muted);
+      font-family: var(--mono); font-size: var(--body-size); letter-spacing: 0;
+      text-transform: none; color: var(--muted);
       display: flex; align-items: center; gap: 8px;
+      padding-left: 42px;
     }
-    .kicker .meta { color: var(--dim); letter-spacing: 0.6px; }
+    .strip-cell.resume .kicker,
+    .strip-cell.resume .strip-headline,
+    .strip-cell.resume .strip-subline,
+    .strip-cell.resume .strip-why,
+    .strip-cell.resume .resume-freshline { padding-left: 0; }
+    .kicker .meta { display: none; }
     .strip-headline {
-      font-size: var(--headline-size); font-weight: 500; line-height: 1.14;
+      font-size: var(--headline-size); font-weight: 700; line-height: 1.22;
       overflow: hidden; text-overflow: ellipsis;
       display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+      padding-left: 42px;
     }
     .strip-subline {
       font-family: var(--mono); font-size: var(--small-size); color: var(--muted);
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      padding-left: 42px;
     }
     .strip-why {
-      font-family: var(--mono); font-size: var(--tiny-size); color: var(--dim);
+      font-family: var(--sans); font-size: var(--small-size); color: var(--muted);
       overflow: hidden; text-overflow: ellipsis;
       display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+      padding-left: 42px;
+    }
+    .strip-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      padding-left: 42px;
+      margin-top: 7px;
+    }
+    .strip-tag {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 9px;
+      border: 1px solid rgba(88,166,255,0.42);
+      color: var(--accent);
+      background: rgba(88,166,255,0.08);
+      border-radius: 7px;
+      font-family: var(--mono);
+      font-size: var(--small-size);
+      white-space: nowrap;
     }
     .strip-actions {
-      position: absolute; top: 8px; right: 10px;
+      position: absolute; right: 16px; bottom: 12px;
       display: flex; gap: 6px;
     }
     .icon-btn {
       appearance: none; background: transparent; border: 1px solid var(--tile-border);
-      color: var(--muted); border-radius: 5px; padding: 3px 5px; cursor: pointer;
+      color: var(--muted); border-radius: 7px; padding: 8px 12px; cursor: pointer;
       display: inline-flex; align-items: center; gap: 4px;
       font-family: var(--mono); font-size: var(--tiny-size);
     }
     .icon-btn:hover { color: var(--accent); border-color: rgba(138,180,255,0.42); }
-    .icon-btn.warn:hover { color: var(--warn); border-color: rgba(233,185,115,0.4); }
+    .icon-btn.warn {
+      color: #fff;
+      background: #0d5db3;
+      border-color: rgba(88,166,255,0.65);
+    }
+    .icon-btn.warn:hover { color: #fff; border-color: rgba(88,166,255,0.9); }
 
     .strip-cell.resume { min-height: 84px; }
     .strip-cell.resume.fresh {
@@ -787,22 +865,47 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     /* ---- GIT STRIP ---- */
     .git-strip {
       display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
-      padding: calc(var(--pad-y) * 0.42) var(--pad-x);
+      margin: 0 var(--pad-x);
+      padding: 10px 14px;
       font-family: var(--mono); font-size: var(--small-size);
       color: var(--muted);
-      border-bottom: 1px solid var(--tile-border);
+      border: 1px solid var(--tile-border);
+      border-radius: 7px;
+      background: var(--tile-2);
     }
     .git-strip .git-chip {
       display: inline-flex; align-items: center; gap: 6px;
-      padding: 2px 8px; border-radius: 999px;
-      background: var(--faint); color: var(--ink);
+      padding: 0; border-radius: 0;
+      background: transparent; color: var(--muted);
     }
-    .git-strip .git-chip.dirty { color: var(--warn); }
-    .git-strip .git-chip.ahead { color: var(--accent); }
+    .git-strip .git-chip.branch::before {
+      content: "Git";
+      color: var(--ink);
+      font-family: var(--sans);
+      font-size: var(--body-size);
+      margin-right: 10px;
+    }
+    .git-strip .git-chip.dirty { color: var(--dim); }
+    .git-strip .git-chip.ahead { color: var(--ok); }
     .git-strip .git-chip.behind { color: var(--warn); }
     .git-strip .git-subject { color: var(--dim); flex: 1; min-width: 0;
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .git-strip .git-sha { color: var(--muted); font-family: var(--mono); }
+    .git-health {
+      margin-left: auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    .git-health .ok-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      background: var(--ok);
+      box-shadow: 0 0 0 2px rgba(115,223,115,0.1);
+    }
 
     /* ---- WRITE-BACK BANNER ---- */
     .wb-banner {
@@ -834,8 +937,8 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     .activity-row .file { color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; flex: 1; }
     .activity-row .ago { color: var(--dim); }
     .task-note {
-      margin: 2px 0 8px 26px;
-      font-family: var(--mono); font-size: var(--tiny-size);
+      margin: -2px 0 8px 32px;
+      font-family: var(--sans); font-size: var(--small-size); font-style: italic;
       color: var(--dim);
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
@@ -843,10 +946,10 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     /* ---- BOARD (3 cols, single row, fits viewport) ---- */
     .board {
       display: grid;
-      grid-template-columns: minmax(0, 0.88fr) minmax(0, 1fr) minmax(0, 1.12fr);
+      grid-template-columns: minmax(0, 0.96fr) minmax(0, 1fr) minmax(0, 1fr);
       grid-template-rows: minmax(0, 1fr);
-      gap: var(--tile-gap);
-      padding: var(--tile-gap) var(--pad-x) var(--pad-x);
+      gap: 10px;
+      padding: 10px var(--pad-x) var(--pad-x);
       min-height: 0;
       overflow: hidden;
     }
@@ -872,40 +975,47 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     .tile {
       background: var(--tile);
       border: 1px solid var(--tile-border);
-      border-radius: 10px;
-      padding: var(--tile-pad);
+      border-radius: 7px;
+      padding: 0;
       display: flex; flex-direction: column; gap: 8px;
       min-height: 0; min-width: 0;
-      backdrop-filter: blur(8px);
-      box-shadow: 0 1px 0 rgba(255,255,255,0.03) inset, 0 20px 40px -20px rgba(0,0,0,0.6);
+      box-shadow: none;
       flex: 1 1 0;
     }
     .tile.tight { flex: 0 1 auto; }
     .tile.hot { border-color: var(--tile-border-hot); }
 
     .tile-header {
-      display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
       flex-shrink: 0;
+      min-height: 44px;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--tile-border);
     }
     .tile-title {
-      margin: 0; font-family: var(--mono); font-size: var(--tiny-size); font-weight: 600;
-      color: var(--ink); letter-spacing: 1.4px; text-transform: uppercase;
+      margin: 0; font-family: var(--sans); font-size: calc(17px * var(--rql-density)); font-weight: 700;
+      color: var(--ink); letter-spacing: 0; text-transform: none;
       display: inline-flex; align-items: center; gap: 8px;
     }
     .tile-title .accent-bar {
-      display: inline-block; width: 10px; height: 2px; border-radius: 1px;
+      display: inline-block; width: 10px; height: 10px; border-radius: 999px;
     }
-    .tile-title.now .accent-bar { background: var(--accent); }
-    .tile-title.next .accent-bar { background: var(--muted); }
-    .tile-title.blocked .accent-bar { background: var(--warn); }
+    .tile-title.now .accent-bar { background: var(--ok); }
+    .tile-title.next .accent-bar { background: var(--accent); }
+    .tile-title.blocked .accent-bar { background: var(--danger); }
     .tile-title.agents .accent-bar { background: var(--ok); }
     .tile-title.changes .accent-bar { background: var(--dim); }
-    .tile-meta { font-family: var(--mono); font-size: var(--tiny-size); color: var(--dim); }
+    .tile-meta {
+      font-family: var(--mono); font-size: var(--small-size); color: var(--muted);
+      min-width: 28px; height: 24px; display: inline-flex; align-items: center; justify-content: center;
+      padding: 0 8px; border: 1px solid var(--tile-border); border-radius: 6px; background: rgba(255,255,255,0.04);
+    }
     .tile-body {
       display: flex; flex-direction: column; gap: calc(var(--row-gap) + 2px);
       min-height: 0; min-width: 0;
       overflow-y: auto; overflow-x: hidden;
       scrollbar-gutter: stable;
+      padding: 10px 12px;
     }
     .tile-body::-webkit-scrollbar { width: 6px; }
     .tile-body::-webkit-scrollbar-thumb { background: var(--faint); border-radius: 3px; }
@@ -914,9 +1024,9 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     /* ---- TASK ROWS (cockpit-style, not Word-doc) ---- */
     .item {
       display: grid;
-      grid-template-columns: 3px 16px 20px 20px minmax(0, 1fr) auto;
-      gap: 8px; align-items: start;
-      padding: 6px 0 6px 6px;
+      grid-template-columns: 16px minmax(0, 1fr) auto;
+      gap: 10px; align-items: start;
+      padding: 6px 5px;
       border-radius: 4px;
       min-width: 0;
       cursor: default;
@@ -933,18 +1043,17 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     }
     .item.clickable:hover::after,
     .item.clickable:focus-visible::after {
-      content: "→";
-      position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
-      color: var(--dim); font-family: var(--mono); font-size: var(--tiny-size);
-      pointer-events: none;
+      content: none;
     }
-    .item .bar { width: 3px; align-self: stretch; border-radius: 2px; }
+    .item .bar,
+    .item-num,
+    .sigil { display: none; }
     .task-toggle {
       appearance: none;
-      border: 1px solid var(--tile-border);
-      background: rgba(255,255,255,0.02);
-      color: var(--ink);
-      border-radius: 5px;
+      border: 2px solid rgba(226,234,242,0.55);
+      background: transparent;
+      color: var(--ok);
+      border-radius: 4px;
       width: 16px;
       height: 16px;
       padding: 0;
@@ -964,46 +1073,46 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       border-color: var(--tile-border);
       opacity: 0.7;
     }
-    .item.p-now .bar { background: var(--accent); }
+    .item.p-now .bar { background: var(--ok); }
     .item.p-next .bar { background: var(--muted); opacity: 0.5; }
     .item.p-blocked .bar { background: var(--warn); }
     .item.p-change .bar { background: var(--dim); opacity: 0.4; }
-    .item-num {
-      font-family: var(--mono); font-size: var(--tiny-size); color: var(--dim);
-      text-align: right;
-    }
-    .sigil {
-      font-family: var(--mono); font-size: var(--tiny-size);
-      letter-spacing: 1px; width: 12px; display: inline-block;
-      color: var(--dim); cursor: help;
-    }
-    .sigil .on { color: var(--muted); }
-    .sigil .off { color: var(--dim); opacity: 0.4; }
     .item-text {
       min-width: 0;
       overflow: hidden; text-overflow: ellipsis;
-      font-size: var(--body-size); line-height: 1.35;
+      font-size: var(--body-size); line-height: 1.35; color: var(--ink);
       display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
     }
     .item-text.wrap { white-space: normal; overflow: visible; text-overflow: clip; }
     .item-aside {
       display: inline-flex; align-items: flex-start; gap: 6px;
       font-family: var(--mono); font-size: var(--tiny-size); color: var(--dim);
-      padding-top: 1px;
+      padding-top: 0;
     }
     .chip {
       display: inline-flex; align-items: center; justify-content: center;
-      padding: 1px 6px; border-radius: 999px;
+      padding: 3px 8px; border-radius: 6px;
       font-family: var(--mono); font-size: var(--tiny-size);
       border: 1px solid var(--faint); background: rgba(255,255,255,0.02);
     }
     .chip.agent-codex { background: rgba(118,186,143,0.12); color: #8fd0a9; border-color: rgba(118,186,143,0.3); }
     .chip.agent-claude { background: rgba(217,119,87,0.12); color: #e6a888; border-color: rgba(217,119,87,0.3); }
     .chip.agent-gemini { background: rgba(138,180,255,0.12); color: #a8c3f0; border-color: rgba(138,180,255,0.3); }
-    .chip.doc { color: var(--dim); border-color: transparent; background: transparent; padding: 0; }
+    .chip.doc {
+      color: #a8d5b5;
+      border-color: rgba(115,223,115,0.18);
+      background: rgba(115,223,115,0.07);
+      padding: 3px 8px;
+      white-space: nowrap;
+    }
+    .chip.doc::after {
+      content: "↗";
+      color: var(--dim);
+      margin-left: 5px;
+    }
 
     .blocked-reason {
-      padding-left: 32px; font-family: var(--mono); font-size: var(--tiny-size); color: var(--muted);
+      padding-left: 32px; font-family: var(--sans); font-style: italic; font-size: var(--small-size); color: var(--dim);
       margin-top: -2px; margin-bottom: 4px;
       overflow: hidden; text-overflow: ellipsis;
       display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
@@ -1011,27 +1120,37 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
 
     /* ---- AGENT CARDS ---- */
     .agent-card {
-      padding: 10px; background: rgba(255,255,255,0.02);
-      border: 1px solid var(--faint); border-radius: 6px;
-      display: flex; flex-direction: column; gap: 6px;
+      padding: 15px 14px; background: transparent;
+      border: 1px solid var(--faint); border-radius: 7px;
+      display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; gap: 12px;
       min-width: 0;
     }
+    .agent-avatar {
+      width: 58px; height: 58px; border-radius: 999px;
+      display: inline-flex; align-items: center; justify-content: center;
+      background: #05090c; color: var(--ink);
+      border: 1px solid rgba(255,255,255,0.08);
+      font-size: 22px; font-weight: 800; letter-spacing: 0;
+    }
+    .agent-avatar.claude { background: #c97855; color: #141414; }
+    .agent-avatar.gemini { background: #f4f7ff; color: #5f82ff; }
     .agent-head { display: flex; align-items: center; gap: 8px; min-width: 0; }
-    .agent-name { font-size: var(--body-size); font-weight: 600; }
+    .agent-main { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+    .agent-name { font-size: calc(15px * var(--rql-density)); font-weight: 700; }
     .agent-role {
-      font-family: var(--mono); font-size: var(--tiny-size); color: var(--dim);
+      font-family: var(--sans); font-size: var(--small-size); color: var(--muted);
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
     }
     .agent-status {
-      margin-left: auto; display: inline-flex; align-items: center; gap: 4px;
-      font-family: var(--mono); font-size: var(--tiny-size); letter-spacing: 0.4px;
+      margin-left: 0; display: inline-flex; align-items: center; gap: 5px;
+      font-family: var(--sans); font-size: var(--small-size); letter-spacing: 0;
     }
     .agent-status { position: relative; }
     .agent-status .dot {
       transition: opacity 400ms ease, filter 400ms ease, background 400ms ease;
     }
-    .agent-status.active { color: var(--accent); }
-    .agent-status.active .dot { background: var(--accent); }
+    .agent-status.active { color: var(--ok); }
+    .agent-status.active .dot { background: var(--ok); }
     .agent-status.working { color: var(--ok); }
     .agent-status.working .dot { background: var(--ok); }
     .agent-status.idle { color: var(--dim); }
@@ -1049,26 +1168,38 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       .agent-status[data-pulse="true"] .dot { animation: none; }
     }
     .agent-objective {
-      font-size: var(--small-size); line-height: 1.35; color: var(--muted);
+      font-size: var(--small-size); line-height: 1.35; color: var(--muted); font-style: italic;
       overflow: hidden; text-overflow: ellipsis;
       display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
     }
     .agent-meta {
-      font-family: var(--mono); font-size: var(--tiny-size); color: var(--dim);
+      font-family: var(--sans); font-size: var(--small-size); color: var(--dim); font-style: italic;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
+    .agent-docs {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      align-items: flex-end;
+      min-width: 120px;
+    }
+    .agent-docs .chip.doc {
+      color: var(--muted);
+      background: rgba(255,255,255,0.04);
+      border-color: var(--tile-border);
+    }
     .digest-btn {
-      background: none; border: 1px solid var(--tile-border); border-radius: 4px;
-      color: var(--accent); font-size: var(--tiny-size); padding: 2px 8px;
+      background: rgba(255,255,255,0.04); border: 1px solid var(--tile-border); border-radius: 7px;
+      color: var(--ink); font-size: var(--body-size); padding: 7px 12px;
       cursor: pointer; flex-shrink: 0;
     }
     .digest-btn:disabled { opacity: 0.4; cursor: not-allowed; }
     .digest-btn:not(:disabled):hover { background: var(--accent-soft); }
     .digest-panel {
-      margin-top: 8px; padding: 8px 10px;
-      background: var(--faint); border-radius: 4px; border-left: 2px solid var(--accent);
+      margin-top: 8px; padding: 12px 14px;
+      background: rgba(255,255,255,0.035); border-radius: 7px; border: 1px solid rgba(230,191,69,0.16);
     }
-    .digest-label { font-size: var(--tiny-size); color: var(--dim); display: block; margin-bottom: 4px; }
+    .digest-label { font-size: var(--small-size); color: var(--muted); display: block; margin-bottom: 8px; }
     .digest-summary { margin: 0 0 4px; font-size: var(--small-size); color: var(--ink); }
     .digest-detail { margin: 0 0 2px; font-size: var(--small-size); color: var(--muted); }
     .digest-model { font-size: var(--tiny-size); color: var(--dim); }
@@ -1285,17 +1416,16 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
 <body>
   <div class="shell">
     <header class="topbar">
-      <div class="brand">
+      <div class="brand" aria-label="repo quest log">
         <svg width="16" height="16" viewBox="0 0 18 18" fill="none" aria-hidden="true">
           <rect x="1.5" y="1.5" width="15" height="15" rx="3" stroke="#8ab4ff" stroke-width="1.3"></rect>
           <path d="M5.5 9L8 11.5L12.5 6.5" stroke="#8ab4ff" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"></path>
         </svg>
-        <span>repo quest log</span>
+        <span>RepoLog</span>
       </div>
       <span class="divider"></span>
       <div class="repo-meta">
-        <span>${escapeHtml(state.name)}</span>
-        <span style="color: var(--dim)">/</span>
+        <span class="repo-path">${escapeHtml(state.name)}</span>
         <span class="branch">${escapeHtml(state.branch)}</span>
       </div>
       ${options.appVersion ? `<span class="app-version">v${escapeHtml(options.appVersion)}</span>` : ""}
@@ -1304,7 +1434,7 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       </button>
       <div class="watch-meta">
         <span class="dot"></span>
-        <span>${state.scannedFiles.length} files</span>
+        <span>File watcher: Active</span>
         <span style="color: var(--dim)">· ${escapeHtml(state.lastScan)}</span>
       </div>
       <div class="surface-controls" aria-label="Display controls">
@@ -1326,8 +1456,11 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
         <div class="strip-cell objective">
           <div class="kicker">Objective <span class="meta">${state.activeQuest.progress.done}/${state.activeQuest.progress.total} · source: PLAN.md</span></div>
           <div class="strip-headline">${escapeHtml(state.activeQuest.title)}</div>
-          <div class="strip-subline">${escapeHtml(state.activeQuest.doc)}${state.activeQuest.line ? `:${state.activeQuest.line}` : ""}</div>
-          <div class="strip-why">Why now: ${escapeHtml(getWhyNowLine(state))}</div>
+          <div class="strip-tags">
+            <span class="strip-tag">${state.activeQuest.progress.done}/${state.activeQuest.progress.total} complete</span>
+            <span class="strip-tag">${state.now.length} Now</span>
+            <span class="strip-tag">${state.next.length} Next</span>
+          </div>
         </div>
         <div class="strip-cell resume${isResumeFresh(state.resumeNote.since) ? " fresh" : ""}">
         ${isResumeFresh(state.resumeNote.since) ? `<div class="resume-freshline"><span class="pulse"></span>fresh · last touch ${escapeHtml(state.resumeNote.lastTouched)} · ${escapeHtml(state.resumeNote.since)}</div>` : ""}
@@ -1340,22 +1473,12 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
             ⌘K
           </button>
         </div>
-          <div class="kicker">Current focus <span class="meta">· idle ${escapeHtml(state.resumeNote.since)} · source: STATE.md resume note</span></div>
+          <div class="kicker">Current focus / Resume <span class="meta">· idle ${escapeHtml(state.resumeNote.since)} · source: STATE.md resume note</span></div>
           <div class="strip-headline">${escapeHtml(state.resumeNote.task)}</div>
           <div class="strip-subline">↳ ${escapeHtml(state.resumeNote.lastTouched)} · ${escapeHtml(state.resumeNote.doc)}</div>
           <div class="strip-why">Why this matters: ${escapeHtml(state.resumeNote.thought ?? getWhyNowLine(state))}</div>
         </div>
     </section>
-
-      <nav class="cockpit" aria-label="Status cockpit">
-        <span class="stat"><span class="pip pip-now"></span><span class="num">${state.now.length}</span> now</span>
-        <span class="stat"><span class="pip pip-next"></span><span class="num">${state.next.length}</span> next</span>
-        <span class="stat"><span class="pip pip-blocked"></span><span class="num">${state.blocked.length}</span> blocked</span>
-        <span class="stat"><span class="pip pip-agents"></span><span class="num">${state.agents.length}</span> agents</span>
-        <span class="stat"><span class="pip pip-files"></span><span class="num">${state.scannedFiles.length}</span> files watched</span>
-        <span class="spacer"></span>
-        <span class="tail">${escapeHtml(state.activeQuest.doc)} · ${escapeHtml(state.resumeNote.lastTouched)}</span>
-      </nav>
 
       ${renderGitStrip(state)}
 
@@ -1584,7 +1707,7 @@ function renderTaskTile(
   return `<section class="tile ${hot ? "hot" : ""}" data-area="${area}">
     <div class="tile-header">
       <h3 class="tile-title ${area}"><span class="accent-bar"></span>${escapeHtml(title)}</h3>
-      <span class="tile-meta">${count} ${area === "now" ? "active" : "queued"}</span>
+      <span class="tile-meta">${count}</span>
     </div>
     <div class="tile-body">
       ${tasks.length === 0
@@ -1619,7 +1742,7 @@ function renderConfidenceSigil(confidence: number | undefined): string {
     const clickable = task.doc ? "clickable" : "";
     const openAttrs = task.doc ? ` data-open-doc="${escapeHtml(task.doc)}" data-line="${task.line ?? 1}" role="button" tabindex="0"` : "";
     const agentChip = showAgent && task.agent ? renderAgentChip(task.agent) : "";
-    const docChip = task.doc ? `<span class="chip doc">${escapeHtml(task.doc)}</span>` : "";
+    const docChip = renderDocChip(task.doc, task.line);
     const toggle = renderTaskToggle(task, writebackEnabled, liveBridge);
     const note = task.thought && task.thought.trim() && task.thought.trim() !== task.text.trim()
       ? `<div class="task-note">${escapeHtml(task.thought)}</div>`
@@ -1657,11 +1780,19 @@ function renderAgentChip(agent: string): string {
   return `<span class="chip ${cls}">${escapeHtml(label)}</span>`;
 }
 
+function renderDocChip(doc: string | undefined, line?: number): string {
+  if (!doc) {
+    return "";
+  }
+  const suffix = typeof line === "number" && line > 0 ? `:${line}` : "";
+  return `<span class="chip doc">${escapeHtml(doc)}${escapeHtml(suffix)}</span>`;
+}
+
 function renderBlockedTile(tasks: BlockedTask[], writebackEnabled: boolean, liveBridge?: SurfaceHtmlOptions["liveBridge"]): string {
   return `<section class="tile tight" data-area="blocked">
     <div class="tile-header">
       <h3 class="tile-title blocked"><span class="accent-bar"></span>Blocked</h3>
-      <span class="tile-meta">${tasks.length} waiting</span>
+      <span class="tile-meta">${tasks.length}</span>
     </div>
     <div class="tile-body">
         ${tasks.length === 0
@@ -1673,7 +1804,7 @@ function renderBlockedTile(tasks: BlockedTask[], writebackEnabled: boolean, live
               ${renderConfidenceSigil(task.confidence)}
               <span class="item-num">${String(index + 1).padStart(2, "0")}</span>
               <span class="item-text">${escapeHtml(task.text)}</span>
-              <span class="item-aside"><span class="chip doc">${escapeHtml(task.since)}</span></span>
+              <span class="item-aside">${renderDocChip(task.doc || task.since, task.line)}</span>
             </div>
             <div class="blocked-reason">↳ ${escapeHtml(task.reason)}</div>
             ${task.thought && task.thought.trim() && task.thought.trim() !== task.text.trim() ? `<div class="task-note">${escapeHtml(task.thought)}</div>` : ""}
@@ -1684,12 +1815,11 @@ function renderBlockedTile(tasks: BlockedTask[], writebackEnabled: boolean, live
 
 function renderAgentsTile(state: QuestState, hasKey: boolean): string {
   const agents = state.agents;
-  // Status derived from lastDigest age — never from mtime heuristics
   const digestBtnDisabled = !hasKey ? ' title="Add OpenRouter key in Settings to enable"' : ' title="Run AI digest of current repo state"';
   return `<section class="tile" data-area="agents">
     <div class="tile-header">
       <h3 class="tile-title agents"><span class="accent-bar"></span>Agents</h3>
-      <span class="tile-meta">${agents.length} registered</span>
+      <span class="tile-meta">${agents.length}</span>
       <button class="digest-btn" data-ui-action="run-digest"${digestBtnDisabled}${!hasKey ? ' disabled' : ''}>✦ Digest</button>
     </div>
   <div class="tile-body">
@@ -1699,14 +1829,17 @@ function renderAgentsTile(state: QuestState, hasKey: boolean): string {
       const agentStatus = agent.status ?? "idle";
       return `
       <div class="agent-card">
-        <div class="agent-head">
-          ${renderAgentChip(agent.id)}
-          <span class="agent-name">${escapeHtml(agent.name)}</span>
-          <span class="agent-role">${escapeHtml(agent.role)}</span>
-          <span class="agent-status ${escapeHtml(agentStatus)}" data-agent-id="${escapeHtml(agent.id)}"><span class="dot"></span>${escapeHtml(agentStatus)}</span>
+        ${renderAgentAvatar(agent)}
+        <div class="agent-main">
+          <div class="agent-head">
+            <span class="agent-name">${escapeHtml(agent.name)}</span>
+            <span class="agent-status ${escapeHtml(agentStatus)}" data-agent-id="${escapeHtml(agent.id)}"><span class="dot"></span>${escapeHtml(agentStatus)}</span>
+          </div>
+          <div class="agent-role">Role: ${escapeHtml(agent.role)}</div>
+          <div class="agent-objective">Focus: ${escapeHtml(trimmedBlurb)}</div>
+          <div class="agent-meta">${escapeHtml(resolveAgentTask(agent, state.agentActivity)) || "Last seen from agent doc"}</div>
         </div>
-        <div class="agent-objective">${escapeHtml(trimmedBlurb)}</div>
-        <div class="agent-meta">${escapeHtml(agent.file)} · ${escapeHtml(agent.area)}</div>
+        <div class="agent-docs">${renderAgentDocs(agent, state)}</div>
       </div>
     `;}).join("")}
     ${state.lastDigest ? `
@@ -1722,6 +1855,49 @@ function renderAgentsTile(state: QuestState, hasKey: boolean): string {
     `}
   </div>
   </section>`;
+}
+
+function renderAgentAvatar(agent: AgentProfile): string {
+  const key = agent.id.toLowerCase();
+  const label = key.includes("claude") ? "AI" : key.includes("gemini") ? "✦" : key.includes("codex") ? "CX" : (agent.name.slice(0, 2).toUpperCase() || "AI");
+  const cls = key.includes("claude") ? "claude" : key.includes("gemini") ? "gemini" : "";
+  return `<span class="agent-avatar ${cls}" aria-hidden="true">${escapeHtml(label)}</span>`;
+}
+
+function renderAgentDocs(agent: AgentProfile, state: QuestState): string {
+  const docs = uniqueStrings([
+    state.activeQuest.doc,
+    state.resumeNote.doc,
+    agent.file,
+    "AGENTS.md",
+  ]).slice(0, 4);
+  return docs.map((doc) => renderDocChip(doc, doc === state.activeQuest.doc ? state.activeQuest.line : undefined)).join("");
+}
+
+function uniqueStrings(values: string[]): string[] {
+  const seen = new Set<string>();
+  return values.filter((value) => {
+    const key = value.toLowerCase();
+    if (!value || seen.has(key)) {
+      return false;
+    }
+    seen.add(key);
+    return true;
+  });
+}
+
+function extractHealthLine(state: QuestState): string {
+  const searchable = [
+    state.mission,
+    state.activeQuest.title,
+    state.resumeNote.task,
+    state.resumeNote.thought ?? "",
+    ...state.now.map((task) => `${task.text} ${task.thought ?? ""}`),
+    ...state.next.map((task) => `${task.text} ${task.thought ?? ""}`),
+    ...state.decisions.map((decision) => decision.text),
+  ].join(" ");
+  const match = searchable.match(/\b(\d+\s+tests?\s+green)\b/i);
+  return match?.[1] ?? `${state.scannedFiles.length} files watched`;
 }
 
   function renderGitStrip(state: QuestState): string {
@@ -1741,24 +1917,29 @@ function renderAgentsTile(state: QuestState, hasKey: boolean): string {
       ? `<span class="git-subject">${escapeHtml(git.lastCommit.subject)} <span class="git-sha">${escapeHtml(git.lastCommit.sha)}</span> · ${escapeHtml(git.lastCommit.at)}</span>`
       : `<span class="git-subject">No commits available</span>`;
 
-    return `<section class="git-strip" aria-label="Git context">${chips}${commit}</section>`;
+    const health = extractHealthLine(state);
+
+    return `<section class="git-strip" aria-label="Git context">${chips}${commit}<span class="git-health"><span class="ok-dot"></span>${escapeHtml(health)}<span style="color:var(--dim)">|</span><span>Workspace ${git.dirtyFiles > 0 ? "active" : "clean"}</span></span></section>`;
   }
 
 function renderSettingsRack(state: QuestState, liveBridge?: SurfaceHtmlOptions["liveBridge"]): string {
   const writeback = state.config?.writeback ? "on" : "off";
   const openRepoButton = liveBridge === "desktop"
-    ? `<button type="button" class="primary" data-ui-action="open-repo" title="Open a repo folder (Ctrl+O)">Open Repo <span class="kbd-inline"><kbd>Ctrl</kbd><kbd>O</kbd></span></button>`
+    ? `<button type="button" class="primary" data-ui-action="open-repo" title="Open a repo folder (Ctrl+O)">▭ Open Repo <span class="kbd-inline"><kbd>Ctrl</kbd><kbd>O</kbd></span></button>`
     : "";
   return `<section class="settings-rack" aria-label="Settings and shortcuts">
       <div class="settings-card">
         <div class="settings-head">Settings <span class="pill">${writeback}</span></div>
         <div class="settings-actions">
-          <button type="button" data-ui-action="open-settings" title="Open the settings panel">Open Settings</button>
+          <button type="button" data-ui-action="open-settings" title="Open the settings panel">⚙ Open Settings</button>
           ${openRepoButton}
         </div>
       </div>
       <div class="settings-card">
         <div class="settings-head">Write-back <span class="pill">${writeback}</span></div>
+        <div class="settings-actions">
+          <button type="button" data-ui-action="writeback-status">▣ Write-back ${writeback}</button>
+        </div>
         <div class="settings-copy">${state.config?.writeback ? "Checkbox toggles are live in the task rows." : "Off by default. Add <strong>\"writeback\": true</strong> to <strong>.repolog.json</strong> to enable checkbox-only edits."}</div>
         <div class="settings-copy">Only checklist items in <strong>Now</strong>, <strong>Next</strong>, and <strong>Blocked</strong> can be edited.</div>
       </div>
@@ -1968,7 +2149,7 @@ function renderDecisionsTile(decisions: Decision[] | undefined): string {
   return `<section class="tile tight" data-area="decisions" data-decisions-expanded="false">
     <div class="tile-header">
       <h3 class="tile-title changes"><span class="accent-bar"></span>Decisions</h3>
-      <span class="tile-meta">${decisions.length} logged · from STATE.md</span>
+      <span class="tile-meta">${decisions.length}</span>
     </div>
     <div class="tile-body">
       ${visible.map((d) => renderDecisionRow(d, false)).join("")}
@@ -1989,7 +2170,7 @@ function renderChangesTile(changes: FileChange[]): string {
   return `<section class="tile tight" data-area="changes">
     <div class="tile-header">
       <h3 class="tile-title changes"><span class="accent-bar"></span>Recent changes</h3>
-      <span class="tile-meta">file watcher</span>
+      <span class="tile-meta">${changes.length}</span>
     </div>
     <div class="tile-body">
       ${changes.length === 0 ? `<div class="change-row"><span class="change-file">No recent changes yet</span><span class="change-diff"></span><span class="change-age"></span></div>` : changes.map((change) => `

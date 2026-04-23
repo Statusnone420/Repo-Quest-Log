@@ -4,22 +4,21 @@ One sentence: **what this repo is trying to become.**
 > A local-first CLI + TUI + desktop + VS Code shell that makes repo intent legible at a glance and hands that intent to whichever coding agent you open next.
 
 ## Objective
-Ship v0.4 implementation: first-run setup, config UI, watcher/write-back hardening, and release polish. "Tool any dev needs" remains north star.
+Ship v0.5: honest Agents roster (status from .md content, not mtimes), on-demand LLM Digest via OpenRouter, Light/Dark theme, font picker, and font size fix. Keep the local-first, markdown-first philosophy intact.
 
 ## Current Focus
-v0.4 diamond gates are closed. CLI, TUI, desktop, and VS Code stay pinned to one shared `QuestState` pipeline and one renderer. First-run setup, config save flow, watcher/write-back hardening, doctor clarity, and release notes are verified.
+v0.4 diamond gates closed. v0.5 pass targets two user-facing pain points: the Agents section showing fake heuristic data, and the theme not applying correctly. Adding OpenRouter-powered Digest (on-demand, user-supplied key, free model default) as the first LLM integration. See `plan_implementation.md` for execution spec.
 
 **Objective Sync Rule:** When PLAN.md's `## Objective` changes, review and update all agent objectives (CLAUDE.md, GEMINI.md, AGENTS.md) to align with the new direction. Each agent's objective should support the repo objective from their specific angle (e.g., Claude = execution, Gemini = architecture).
 
 ## Now
-- [x] Finish first-run wizard + startup health check
-- [x] Finish settings/config save flow across desktop and VS Code
-- [x] Harden watcher/write-back path and release docs
+- [ ] Theme: Light/Dark only, fix density clamp (126% → 150%), add font picker
+- [ ] Agents: scrub mtime heuristics, source status from .md `## Current Task`, remove fake confidence feed
+- [ ] OpenRouter: API key in Electron userData, model config, `repolog:run-digest` IPC handler
+- [ ] Digest button: on-demand, bundles PLAN+STATE+agents+git log, shows 3-part result in Agents panel
 
 ## Next
-- [ ] `gh` integration: open PRs on current branch + assigned issues (if gh installed)
 - [ ] macOS host decision and prototyping
-- [ ] Optional LLM "summarize this week" feature exploration
 - [ ] Publish binary to npm via GitHub releases
 
 ## v0.1 (completed)
@@ -58,5 +57,5 @@ v0.4 diamond gates are closed. CLI, TUI, desktop, and VS Code stay pinned to one
 ## Blocked
 - [ ] Publish npm package `@repo-quest/core` — **need npm org + CI secrets**
 
-## Out of scope (v0.1–v0.3)
-Source-code parsing · LLM calls · multi-repo dashboards · team sync · cloud anything · plugin marketplace · settings UI beyond `.repolog.json` · theming · timers · pomodoros · streaks · gamification · free-text markdown write-back.
+## Out of scope
+Source-code parsing · multi-repo dashboards · team sync · cloud anything · plugin marketplace · timers · pomodoros · streaks · gamification · free-text markdown write-back · chat/back-and-forth LLM interfaces · auto-firing LLM calls.

@@ -9,11 +9,11 @@ owner: claude
 Live "where we are." Update this as work progresses. The normalizer reads this to build the Resume Note.
 
 ## Current Focus
-Tuneup supercharge complete. buildTuneup is now async with content quality analysis (boilerplate/generic/game-progress detection), RepoContext gathering (package.json, git log, source tree), and rich prompt generation with Repo Fingerprint + Content Quality Issues sections. UI shows combined structural+content score. Build/lint/test green (57 tests).
+v0.4 Work Streams 1 and 2 are complete. CLI MSYS bash entry-point bug fixed (`repolog` now returns output on Windows). Watcher debounce raised to 500ms minimum. Config corruption test added. 59 tests green.
 
 ## Resume Note
 
-> Session 2026-04-22: Rewrote tuneup.ts across 3 passes — (1) content quality gap detection (mission-boilerplate, objective-generic, resume-note-game-progress), (2) RepoContext gathering from package.json/git log/source tree, (3) rich prompt with Repo Fingerprint block and current-content quotes. Updated doctor.ts, cli/index.ts, tui/App.tsx callers to await. Updated render.ts to show combined score (avg of struct+content) and content badges on gap rows. 7 new tests, all 57 pass.
+> Session 2026-04-23: Audited v0.4 work streams 1–3 against IMPLEMENTATION_PLAN_v0.4.md. Found all IPC handlers, wizard UI, config save flow, and init templates already landed. Fixed CLI `isEntryPoint` detection (MSYS bash path mismatch via realpathSync normalization) — `repolog` now works after `npm link`. Bumped watcher debounce from 250ms → 500ms (now uses config.watch.debounce with 500ms floor). Added 2 new config tests (corrupt JSON falls back to defaults, validateAndFillConfig rejects non-objects). Updated AGENTS.md to reflect completed regression fix. All 59 tests pass. Next: Work Stream 3 watcher/writeback audit, Work Stream 4 doctor clarity, Work Stream 5 release prep.
 
 ## Last Session — UI polish pass (2026-04-22)
 - **Settings rack**: Removed filler description copy and Ctrl+ chip row; removed Standup button and extra Refresh from the rack. Rack now shows only Open Settings + Open Repo.

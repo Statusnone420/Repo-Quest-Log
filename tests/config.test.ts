@@ -35,6 +35,22 @@ describe("config validation", () => {
     expect(() => validateAndFillConfig({ writeback: "yes" })).toThrow("writeback must be boolean");
   });
 
+  it("returns defaults for corrupt .repolog.json (never crashes the scan)", async () => {
+    const root = await mkdtemp(join(tmpdir(), "repolog-config-corrupt-"));
+    try {
+      await writeFile(join(root, ".repolog.json"), "{ not: valid json <<<", "utf8");
+      const config = await readRepoConfig(root);
+      expect(config).toEqual(defaultRepoConfig());
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  it("validateAndFillConfig throws for non-object input", () => {
+    expect(() => validateAndFillConfig("not an object")).toThrow("expected an object");
+    expect(() => validateAndFillConfig([1, 2, 3])).toThrow("expected an object");
+  });
+
   it("writes config atomically", async () => {
     const root = await mkdtemp(join(tmpdir(), "repolog-config-write-"));
     try {

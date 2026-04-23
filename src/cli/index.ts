@@ -1,8 +1,8 @@
 #!/usr/bin/env node
-import { mkdir, readFileSync, writeFile } from "node:fs";
+import { mkdir, readFileSync, realpathSync, writeFile } from "node:fs";
 import { mkdir as mkdirAsync, writeFile as writeFileAsync } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import React from "react";
 import { render } from "ink";
 
@@ -327,8 +327,25 @@ function readPackageVersion(): string {
   return parsed.version ? `v${parsed.version}` : "v0.0.0";
 }
 
-const isEntryPoint = process.argv[1] ? import.meta.url === pathToFileURL(process.argv[1]).href : false;
-if (isEntryPoint) {
+// On Windows with MSYS/Git Bash, process.argv[1] may be a POSIX-style path
+// like /c/Users/... that pathToFileURL mis-encodes. Resolve both to real paths
+// (following symlinks) and compare case-insensitively for Windows compat.
+function detectEntryPoint(): boolean {
+  if (!process.argv[1]) return false;
+  try {
+    let argv1 = process.argv[1];
+    // Convert MSYS /c/... or /d/... style paths to Windows drive paths
+    argv1 = argv1.replace(/^\/([a-zA-Z])\//, (_, d: string) => `${d.toUpperCase()}:/`);
+    const selfPath = fileURLToPath(import.meta.url);
+    const realSelf = realpathSync(selfPath);
+    const realArgv = realpathSync(argv1);
+    return realSelf.toLowerCase() === realArgv.toLowerCase();
+  } catch {
+    return import.meta.url === pathToFileURL(process.argv[1]).href;
+  }
+}
+
+if (detectEntryPoint()) {
   void main().catch((error: unknown) => {
     const message = error instanceof Error ? error.stack ?? error.message : String(error);
     process.stderr.write(`${message}\n`);

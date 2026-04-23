@@ -38,7 +38,7 @@ export async function startWatcher(options: WatcherOptions): Promise<WatcherHand
     },
   });
 
-  const debounceMs = options.debounceMs ?? 250;
+  const debounceMs = options.debounceMs ?? Math.max(500, config.watch?.debounce ?? 500);
   const pendingChanges = new Map<string, FileChange>();
   let timer: NodeJS.Timeout | undefined;
   let inFlight = false;

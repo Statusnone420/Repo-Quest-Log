@@ -39,7 +39,7 @@ Instructions for any coding agent working in this repo (Codex, generic agents, C
 Keep the CLI, desktop app, and VS Code extension on one shared `QuestState` and one design-faithful renderer while landing the v0.4 first-run/config/write-back pass.
 
 ## Current Task
-**CRITICAL FIX REQUIRED:** v0.4 init/config/wizard handlers regressed (broke all click handling). Root cause: uncaught error in one of three new handlers. Handlers were removed to restore stability. **You must re-implement all three with proper try-catch error handling, testing on both fixture repos, and full build/test verification.** See **FIX_V0.4_HANDLERS.md** for exact spec — this is not a design task, it's a surgical code fix with all details provided. Do not deviate. Do not commit until `npm test` passes on all 49+ tests.
+Continue v0.4 hardening: watcher/write-back audit (Work Stream 3), clarity/docs improvements (Work Stream 4), and release prep (Work Stream 5). Handler regression is fixed; wizard, config save, and init flow are all working. CLI `repolog` entry-point detection fixed for MSYS bash.
 
 ## Last Task
-Desktop shell hardening landed: packaged rebuild works, click-to-open works in desktop, archive/exclude filtering is live. v0.4 implementation attempted but handler error broke UI click responses; waiting for corrected re-implementation.
+Handler regression fixed and verified. Wizard card (init-plan/init-state/init-config/dismiss-wizard), config save flow (collectConfig → saveConfig → writeConfig IPC), and VS Code writeConfig handler all landed with guarded try/catch. CLI MSYS bash fix applied. Watcher debounce bumped to 500ms minimum. All 57+ tests green.

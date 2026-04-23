@@ -10,6 +10,15 @@ contextBridge.exposeInMainWorld("repologDesktop", {
       callback(html);
     });
   },
+  onToast(callback) {
+    if (typeof callback !== "function") {
+      return;
+    }
+
+    ipcRenderer.on("repolog:toast", (_event, payload) => {
+      callback(payload && payload.message ? payload.message : String(payload || ""));
+    });
+  },
   requestRefresh() {
     ipcRenderer.send("repolog:refresh");
   },

@@ -46,7 +46,14 @@ export function resolveDesktopRepoRoot(options: DesktopRootOptions): string {
 }
 
 function firstMeaningfulArg(argv: readonly string[]): string | undefined {
-  for (const arg of argv) {
+  for (let index = 0; index < argv.length; index += 1) {
+    const arg = argv[index];
+    if (arg === "--repo-root" && argv[index + 1]) {
+      return argv[index + 1];
+    }
+    if (arg?.startsWith("--repo-root=")) {
+      return arg.slice("--repo-root=".length);
+    }
     if (!arg || arg.startsWith("-")) {
       continue;
     }

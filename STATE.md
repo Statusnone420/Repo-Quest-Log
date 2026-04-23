@@ -9,11 +9,11 @@ owner: claude
 Live "where we are." Update this as work progresses. The normalizer reads this to build the Resume Note.
 
 ## Current Focus
-v0.4 Work Streams 1 and 2 are complete. CLI MSYS bash entry-point bug fixed (`repolog` now returns output on Windows). Watcher debounce raised to 500ms minimum. Config corruption test added. 59 tests green.
+v0.4 diamond gate closeout is complete. First-run wizard, doctor clarity, settings save flow, watcher/write-back hardening, repo-root startup parsing, and release notes are aligned. 67 tests green.
 
 ## Resume Note
 
-> Session 2026-04-23: Audited v0.4 work streams 1–3 against IMPLEMENTATION_PLAN_v0.4.md. Found all IPC handlers, wizard UI, config save flow, and init templates already landed. Fixed CLI `isEntryPoint` detection (MSYS bash path mismatch via realpathSync normalization) — `repolog` now works after `npm link`. Bumped watcher debounce from 250ms → 500ms (now uses config.watch.debounce with 500ms floor). Added 2 new config tests (corrupt JSON falls back to defaults, validateAndFillConfig rejects non-objects). Updated AGENTS.md to reflect completed regression fix. All 59 tests pass. Next: Work Stream 3 watcher/writeback audit, Work Stream 4 doctor clarity, Work Stream 5 release prep.
+> Session 2026-04-23: Closed all 6 v0.4 diamond gates. Fixed setup rendering to show only when PLAN.md is missing, added per-repo wizard dismiss state, immediate busy states, sanitized setup errors, and "Run Doctor Again?" in-place doctor output. Doctor findings now include `why` and `fix` and sort by impact. Settings save validates debounce before IPC and reports inline errors; VS Code returns `configSaved` or `error`. Watcher now handles config add/change, logs contextual errors, emits config-changed, and desktop shows "File watch lost sync; re-scanning." Write-back now queues same-file writes and returns the exact stale-line re-scan message. `--repo-root` startup parsing and desktop `--version` landed. Added `CHANGELOG.md` v0.4.0 notes. Final verification: `npm run build && npm run lint && npm test` passes with 67 tests across 17 files.
 
 ## Last Session — UI polish pass (2026-04-22)
 - **Settings rack**: Removed filler description copy and Ctrl+ chip row; removed Standup button and extra Refresh from the rack. Rack now shows only Open Settings + Open Repo.

@@ -32,7 +32,7 @@ Instructions for Claude (Claude Code) working in this repo. "RepoLog"
 - Redesign landed work unless source disagrees with docs
 
 ## Objective
-Drive implementation toward v0.4 release: first-run setup, config UI/save flow, watcher/write-back hardening, and release/install polish. Align with PLAN.md and execute top-down.
+v0.4 diamond gates are closed and ready for human release review. Keep future work scoped to release verification, packaging smoke tests, or the next explicit PLAN.md objective.
 
 ## UI copy rule
 The product is "RepoLog". Panel labels are literal — Objective, Now, Next, Blocked, Agents, Recent changes. Do not introduce quest / mission / XP / progression language in UI copy. The RPG metaphor is a brand hook only.

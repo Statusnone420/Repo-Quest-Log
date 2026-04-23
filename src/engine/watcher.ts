@@ -13,6 +13,7 @@ export interface WatcherOptions {
   runInitial?: boolean;
   onRefresh: (changes: readonly FileChange[]) => Promise<void> | void;
   onError?: (error: unknown) => void;
+  onConfigChanged?: () => Promise<void> | void;
 }
 
 export interface WatcherHandle {
@@ -21,7 +22,7 @@ export interface WatcherHandle {
 }
 
 export async function startWatcher(options: WatcherOptions): Promise<WatcherHandle> {
-  const config = await readRepoConfig(options.cwd);
+  let config = await readRepoConfig(options.cwd);
   const watcher = chokidar.watch(options.globs ?? [...SCANNED_GLOBS, ".repolog.json"], {
     cwd: options.cwd,
     ignoreInitial: true,
@@ -38,7 +39,7 @@ export async function startWatcher(options: WatcherOptions): Promise<WatcherHand
     },
   });
 
-  const debounceMs = options.debounceMs ?? Math.max(500, config.watch?.debounce ?? 500);
+  const debounceMs = Math.max(options.debounceMs ?? config.watch?.debounce ?? 500, 500);
   const pendingChanges = new Map<string, FileChange>();
   let timer: NodeJS.Timeout | undefined;
   let inFlight = false;
@@ -66,13 +67,31 @@ export async function startWatcher(options: WatcherOptions): Promise<WatcherHand
     schedule();
   };
 
-  watcher.on("add", record);
-  watcher.on("change", record);
+  const recordConfig = async (): Promise<void> => {
+    config = await readRepoConfig(options.cwd);
+    await options.onConfigChanged?.();
+    record(".repolog.json");
+  };
+
+  watcher.on("add", (file) => {
+    if (normalizePath(file) === ".repolog.json") {
+      void recordConfig().catch((error: unknown) => handleWatcherError(error, ".repolog.json", "add"));
+      return;
+    }
+    record(file);
+  });
+  watcher.on("change", (file) => {
+    if (normalizePath(file) === ".repolog.json") {
+      void recordConfig().catch((error: unknown) => handleWatcherError(error, ".repolog.json", "change"));
+      return;
+    }
+    record(file);
+  });
   watcher.on("unlink", record);
   watcher.on("addDir", record);
   watcher.on("unlinkDir", record);
   watcher.on("error", (error) => {
-    options.onError?.(error);
+    handleWatcherError(error, "(watcher)", "error");
   });
 
   await new Promise<void>((resolve) => {
@@ -117,6 +136,12 @@ export async function startWatcher(options: WatcherOptions): Promise<WatcherHand
     },
     flush,
   };
+
+  function handleWatcherError(error: unknown, file: string, event: string): void {
+    const message = error instanceof Error ? error.message : String(error);
+    process.stderr.write(`RepoLog watcher error (${event} ${file}): ${message}\n`);
+    options.onError?.(error instanceof Error ? error : new Error(message));
+  }
 }
 
 function normalizePath(file: string): string {

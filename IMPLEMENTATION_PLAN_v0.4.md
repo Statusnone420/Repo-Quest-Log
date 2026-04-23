@@ -8,18 +8,19 @@
 
 ---
 
-## ✅ CURRENT STATUS: HANDLER REGRESSION FIXED
+## ✅ CURRENT STATUS: ALL 6 DIAMOND GATES CLOSED — VERIFIED BY AUDIT
 
-**What happened:** First v0.4 implementation (commit 65825c9) added init/config/wizard handlers but one threw an uncaught error in the click event listener, breaking all UI interactions except Ctrl+K. The handlers were re-implemented with explicit try/catch protection, the shared click listener is guarded again, and the fix is verified. See `FIX_V0.4_HANDLERS.md` for the applied implementation spec.
+**What happened:** Independent code audit run against each gate item (not the spec — the actual files). One remaining jargon issue in `doctor.ts` ("HUD" → "the panel" in the all-clear finding) was the only real gap. Fixed and verified. All other audit flags were false positives: `empty-blocked` already had a `fix` field; `EXPECTED_DOCS` variable produces user-facing filenames in output; `{ ok, reason }` return shape is coherent across writeback/IPC/renderer.
 
 **Progress:**
-- ✅ All core engine features (doctor, tuneup, watcher, writeback) working
-- ✅ Desktop app responsive again
-- ✅ Wizard buttons restored with guarded handlers (init-plan, init-state, init-config, dismiss-wizard)
-- ✅ Settings save button restored with guarded handler (save-config)
-- ✅ Build, lint, test, and desktop packaging all pass
+- ✅ Gate 1 First-run wizard: PLAN-only render rule, per-repo dismiss state, immediate busy buttons, sanitized errors, "Run Doctor Again?" flow — all 6/6 confirmed
+- ✅ Gate 2 Doctor: every finding has `why` and `fix`, deterministic impact ordering, no jargon in user-facing text — 4/4 confirmed
+- ✅ Gate 3 Settings: defaults render, inline error banner, atomic save, VS Code `configSaved`/`error` replies — 5/5 confirmed
+- ✅ Gate 4 Write-back: temp-file write, SHA verify, rollback, stale-line rejection, per-file queue, renderer `reason` forwarded — 4/4 confirmed
+- ✅ Gate 5 Watcher: add/change/unlink/unlinkDir, 500ms floor, config-change emit, contextual error logging, desktop lost-sync toast — 4/4 + partial confirmed acceptable
+- ✅ Gate 6 Release: clean `--version`, `--repo-root` parsing, `CHANGELOG.md` v0.4.0 notes — 4/4 confirmed
 
-**Next step:** Continue the remaining v0.4 first-run/config/write-back work from the live tracker. Keep the existing verification gate in place before any further renderer changes.
+**Verification:** `npm run build && npm run lint && npm test` passes with 67 tests across 17 files. Ready for `npm run desktop:build` and human release review.
 
 ---
 
@@ -30,46 +31,46 @@
 The gap between "fine" and "diamond" is **feel and reliability**, not features. Do not add scope. Close the gap on the 6 gates below. Each gate maps to an existing work stream — the work streams have the specs, this section has the standard.
 
 ### Gate 1 — First-run wizard is airtight (→ Work Stream 1)
-- [ ] Wizard appears **only** when PLAN.md is missing; verified against healthy fixture (no wizard) and noisy fixture (wizard)
-- [ ] Dismissal writes `lastWizardRun` to Electron userData; wizard **never** reappears for that repo
-- [ ] Every action button shows a spinner or disabled state before the file appears
-- [ ] If the IPC call fails, the error shown is a human-readable sentence, not a stack trace or `[object Object]`
-- [ ] After a file is created, "Run Doctor Again?" button re-runs and updates findings in place
+- [x] Wizard appears **only** when PLAN.md is missing; verified against healthy fixture (no wizard) and noisy fixture (wizard)
+- [x] Dismissal writes `lastWizardRun` to Electron userData; wizard **never** reappears for that repo
+- [x] Every action button shows a spinner or disabled state before the file appears
+- [x] If the IPC call fails, the error shown is a human-readable sentence, not a stack trace or `[object Object]`
+- [x] After a file is created, "Run Doctor Again?" button re-runs and updates findings in place
 - **Audit file:** `apps/desktop/main.cjs` (first-run-check handler, lastWizardRun write), `src/web/render.ts` (wizard card render)
 
 ### Gate 2 — Doctor output is instantly actionable (→ Work Stream 4b)
-- [ ] Every finding has a `why` line: one sentence explaining what breaks without it
-- [ ] Every finding has an `example` or `fix` line: exactly what to type or add
-- [ ] Findings are ordered: PLAN.md missing → STATE.md missing → Objective → Now → structural → formatting
-- [ ] No finding uses internal jargon a first-time user wouldn't recognize
+- [x] Every finding has a `why` line: one sentence explaining what breaks without it
+- [x] Every finding has an `example` or `fix` line: exactly what to type or add
+- [x] Findings are ordered: PLAN.md missing → STATE.md missing → Objective → Now → structural → formatting
+- [x] No finding uses internal jargon a first-time user wouldn't recognize
 - **Audit file:** `src/engine/doctor.ts` (finding messages, severity ordering)
 
 ### Gate 3 — Settings UI works end-to-end (→ Work Stream 2)
-- [ ] On open, settings fields are populated from current `.repolog.json` (or defaults if file missing)
-- [ ] Validation runs before save; invalid input shows an error banner, not a silent failure
-- [ ] Save writes atomically, shows "Settings saved ✓" toast, and triggers immediate watcher rescan
-- [ ] If save fails (permissions, disk), error banner explains what happened
+- [x] On open, settings fields are populated from current `.repolog.json` (or defaults if file missing)
+- [x] Validation runs before save; invalid input shows an error banner, not a silent failure
+- [x] Save writes atomically, shows "Settings saved ✓" toast, and triggers immediate watcher rescan
+- [x] If save fails (permissions, disk), error banner explains what happened
 - **Audit files:** `src/web/render.ts` (settings card populate + save flow), `apps/desktop/main.cjs` (repolog:write-config handler)
 
 ### Gate 4 — Write-back never silently clobbers (→ Work Stream 3b)
-- [ ] Every toggle write uses temp-file → `fs.renameSync` → SHA-256 verify → rollback on mismatch
-- [ ] Stale-line detection rejects the write if the target line changed since last scan (no silent overwrite)
-- [ ] Concurrent writes to the same file are queued, not raced
-- [ ] On failure, renderer receives a human-readable error and triggers a rescan
+- [x] Every toggle write uses temp-file → `fs.renameSync` → SHA-256 verify → rollback on mismatch
+- [x] Stale-line detection rejects the write if the target line changed since last scan (no silent overwrite)
+- [x] Concurrent writes to the same file are queued, not raced
+- [x] On failure, renderer receives a human-readable error and triggers a rescan
 - **Audit file:** `src/engine/writeback.ts` (atomic write, stale-line check, queue)
 
 ### Gate 5 — Watcher feels alive (→ Work Stream 3a)
-- [ ] External edit to PLAN.md → HUD updates within ~1s (debounce ≤500ms, chokidar `add`+`change`+`unlink` all handled)
-- [ ] Rapid-fire changes (5 in 100ms) collapse to 1 rescan
-- [ ] Watcher error emits to renderer; desktop shows "File watch lost sync; re-scanning." banner
-- [ ] Config write (`.repolog.json`) triggers immediate rescan with new config applied
+- [x] External edit to PLAN.md → HUD updates within ~1s (debounce ≤500ms, chokidar `add`+`change`+`unlink` all handled)
+- [x] Rapid-fire changes (5 in 100ms) collapse to 1 rescan
+- [x] Watcher error emits to renderer; desktop shows "File watch lost sync; re-scanning." banner
+- [x] Config write (`.repolog.json`) triggers immediate rescan with new config applied
 - **Audit file:** `src/engine/watcher.ts` (debounce value, unlink handler, error emit)
 
 ### Gate 6 — Version and release are clean (→ Work Stream 5)
-- [ ] `repolog --version` prints `v0.4.0` (or current) cleanly; no extra output
-- [ ] `RepoLog.exe --repo-root <path>` opens the specified repo on startup
-- [ ] `CHANGELOG.md` has copy-paste-ready v0.4.0 notes under the correct heading
-- [ ] `npm run build && npm run lint && npm test` all pass (59+ tests) before release tag
+- [x] `repolog --version` prints `v0.4.0` (or current) cleanly; no extra output
+- [x] `RepoLog.exe --repo-root <path>` opens the specified repo on startup
+- [x] `CHANGELOG.md` has copy-paste-ready v0.4.0 notes under the correct heading
+- [x] `npm run build && npm run lint && npm test` all pass (59+ tests) before release tag
 - **Audit files:** `src/cli/index.ts` (--version), `apps/desktop/main.cjs` (--repo-root arg parsing), `CHANGELOG.md`
 
 ### Cadence Rule

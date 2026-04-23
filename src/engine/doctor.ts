@@ -13,6 +13,8 @@ export interface DoctorFinding {
   severity: DoctorSeverity;
   code: string;
   message: string;
+  why: string;
+  fix: string;
   suggestion?: string;
 }
 
@@ -40,15 +42,20 @@ export async function runDoctor(rootDir: string): Promise<DoctorReport> {
   );
   for (const doc of expectedDocs) {
     if (!doc.present) {
+      const planFix = "Create PLAN.md with `## Objective`, `## Now`, `## Next`, and `## Blocked` headings.";
+      const stateFix = "Create STATE.md with a `## Resume Note` section.";
+      const readmeFix = "Create README.md with one sentence explaining what this repo is.";
       findings.push({
         severity: "warn",
         code: `missing-${doc.file.toLowerCase()}`,
         message: `${doc.file} is missing at repo root.`,
-        suggestion: doc.file === "PLAN.md"
-          ? "Add PLAN.md with `## Objective`, `## Now`, `## Next`, and `## Blocked` headings so RepoLog can explain what this repo is trying to become and what to do next."
+        why: doc.file === "PLAN.md"
+          ? "Without PLAN.md, RepoLog cannot explain the repo objective or current work."
           : doc.file === "STATE.md"
-          ? "Add STATE.md with a `## Resume Note` section so the HUD can answer \"where was I?\" for the next agent."
-          : "Add README.md so the scanner has a mission fallback.",
+          ? "Without STATE.md, the next session has no stable resume note."
+          : "Without README.md, RepoLog loses a useful fallback for the repo mission.",
+        fix: doc.file === "PLAN.md" ? planFix : doc.file === "STATE.md" ? stateFix : readmeFix,
+        suggestion: doc.file === "PLAN.md" ? planFix : doc.file === "STATE.md" ? stateFix : readmeFix,
       });
     }
   }
@@ -62,7 +69,9 @@ export async function runDoctor(rootDir: string): Promise<DoctorReport> {
       severity: "info",
       code: "no-agent-docs",
       message: "No AGENTS.md / CLAUDE.md / GEMINI.md found.",
-      suggestion: "Add at least one agent file to populate the Agents rail and enable activity inference.",
+      why: "Without an agent file, RepoLog cannot show who owns which part of the repo.",
+      fix: "Add AGENTS.md with each agent's role, owned area, objective, and constraints.",
+      suggestion: "Add AGENTS.md with each agent's role, owned area, objective, and constraints.",
     });
   }
 
@@ -73,7 +82,9 @@ export async function runDoctor(rootDir: string): Promise<DoctorReport> {
       severity: "warn",
       code: "empty-now",
       message: "Now bucket is empty.",
-      suggestion: "Add a `## Now` (or `## Current` / `## In Progress`) heading with `- [ ]` checklist items in PLAN.md.",
+      why: "Without a Now section, RepoLog cannot show what should happen next.",
+      fix: "Add `## Now` to PLAN.md with unchecked items like `- [ ] Ship the next release`.",
+      suggestion: "Add `## Now` to PLAN.md with unchecked items like `- [ ] Ship the next release`.",
     });
   }
   if (!state.next.length) {
@@ -81,7 +92,9 @@ export async function runDoctor(rootDir: string): Promise<DoctorReport> {
       severity: "info",
       code: "empty-next",
       message: "Next bucket is empty.",
-      suggestion: "Add a `## Next` (or `## Upcoming` / `## Queue`) heading with upcoming `- [ ]` items.",
+      why: "Without a Next section, handoff prompts have no follow-up work to reference.",
+      fix: "Add `## Next` to PLAN.md with upcoming unchecked checklist items.",
+      suggestion: "Add `## Next` to PLAN.md with upcoming unchecked checklist items.",
     });
   }
   if (!state.blocked.length) {
@@ -89,6 +102,8 @@ export async function runDoctor(rootDir: string): Promise<DoctorReport> {
       severity: "ok",
       code: "empty-blocked",
       message: "No blocked items detected.",
+      why: "This is fine when nothing is blocked.",
+      fix: "If something is waiting on a person or decision, add it under `## Blocked`.",
     });
   }
 
@@ -97,7 +112,9 @@ export async function runDoctor(rootDir: string): Promise<DoctorReport> {
       severity: "warn",
       code: "missing-mission",
       message: "Mission could not be extracted.",
-      suggestion: "Add a `## Mission` heading to PLAN.md or README.md with one sentence describing what this repo is.",
+      why: "Without a mission sentence, RepoLog cannot summarize the repo at a glance.",
+      fix: "Add `## Mission` to PLAN.md or README.md with one sentence describing the repo.",
+      suggestion: "Add `## Mission` to PLAN.md or README.md with one sentence describing the repo.",
     });
   }
 
@@ -106,7 +123,9 @@ export async function runDoctor(rootDir: string): Promise<DoctorReport> {
       severity: "warn",
       code: "missing-objective",
       message: "Objective title could not be extracted.",
-      suggestion: "Add a `## Objective` section in PLAN.md with 1 to 2 sentences describing what this repo aims to become. RepoLog uses that heading to anchor the current milestone.",
+      why: "Without an Objective, agents can misunderstand scope and work on the wrong task.",
+      fix: "Add `## Objective` near the top of PLAN.md with 1 to 2 sentences describing what this repo aims to become.",
+      suggestion: "Add `## Objective` near the top of PLAN.md with 1 to 2 sentences describing what this repo aims to become.",
     });
   }
 
@@ -115,15 +134,21 @@ export async function runDoctor(rootDir: string): Promise<DoctorReport> {
       severity: "warn",
       code: "no-scanned-files",
       message: "No markdown files matched the scanner.",
-      suggestion: `Create one of: ${[...EXPECTED_DOCS, ...AGENT_DOCS].join(", ")} or rename existing docs to match (see docs/SCHEMA.md extraction table).`,
+      why: "Without supported markdown files, RepoLog has no local context to display.",
+      fix: `Create one of: ${[...EXPECTED_DOCS, ...AGENT_DOCS].join(", ")}.`,
+      suggestion: `Create one of: ${[...EXPECTED_DOCS, ...AGENT_DOCS].join(", ")}.`,
     });
   }
+
+  findings.sort((a, b) => findingOrder(a.code) - findingOrder(b.code));
 
   if (!findings.some((finding) => finding.severity === "warn")) {
     findings.unshift({
       severity: "ok",
       code: "all-clear",
       message: "No blocking issues detected.",
+      why: "RepoLog found enough structure to build the panel.",
+      fix: "No required fix. Keep PLAN.md and STATE.md current as work changes.",
     });
   }
 
@@ -150,6 +175,16 @@ export async function runDoctor(rootDir: string): Promise<DoctorReport> {
   return partialReport as DoctorReport;
 }
 
+function findingOrder(code: string): number {
+  if (code === "missing-plan.md") return 10;
+  if (code === "missing-state.md") return 20;
+  if (code === "missing-objective") return 30;
+  if (code === "empty-now") return 40;
+  if (code === "missing-readme.md" || code === "missing-mission" || code === "no-scanned-files" || code === "no-agent-docs") return 50;
+  if (code === "invalid-config" || code === "empty-next" || code === "empty-blocked") return 60;
+  return 100;
+}
+
 async function probeConfig(rootDir: string, findings: DoctorFinding[]): Promise<"missing" | "ok" | "invalid"> {
   const path = resolve(rootDir, ".repolog.json");
   try {
@@ -164,7 +199,9 @@ async function probeConfig(rootDir: string, findings: DoctorFinding[]): Promise<
       severity: "warn",
       code: "invalid-config",
       message: ".repolog.json is present but could not be parsed.",
-      suggestion: "Validate the file as JSON and keep only supported keys: excludes, writeback, prompts.dir, watch.debounce, watch.reportFileChanges, and schemaVersion.",
+      why: "Invalid settings make RepoLog fall back to defaults.",
+      fix: "Fix the JSON and keep these keys only: excludes, writeback, prompts.dir, watch.debounce, watch.reportFileChanges, schemaVersion.",
+      suggestion: "Fix the JSON and keep these keys only: excludes, writeback, prompts.dir, watch.debounce, watch.reportFileChanges, schemaVersion.",
     });
     return "invalid";
   }
@@ -202,9 +239,8 @@ export function formatDoctorReport(report: DoctorReport): string {
   lines.push("Findings:");
   for (const finding of report.findings) {
     lines.push(`  [${mark(finding.severity)}] ${finding.code}: ${finding.message}`);
-    if (finding.suggestion) {
-      lines.push(`      → ${finding.suggestion}`);
-    }
+    lines.push(`      why: ${finding.why}`);
+    lines.push(`      fix: ${finding.fix}`);
   }
 
   lines.push("");

@@ -39,6 +39,10 @@ Instructions for any coding agent working in this repo (Codex, generic agents, C
 
 Ship v0.4 as a diamond release: a user downloads the exe, opens a messy repo, and the app earns their trust in the first 5 minutes without confusing them or breaking. Do not add features. Close the 6 quality gates in order.
 
+## Current Task
+
+All 6 diamond gates closed. Ready for release.
+
 ---
 
 ## GOD MODE — v0.4 Diamond Execution
@@ -133,4 +137,4 @@ Fix anything that doesn't hold.
 ---
 
 ## Last Task
-Handler regression fixed and verified. Wizard card (init-plan/init-state/init-config/dismiss-wizard), config save flow (collectConfig → saveConfig → writeConfig IPC), and VS Code writeConfig handler all landed with guarded try/catch. CLI MSYS bash fix applied. Watcher debounce bumped to 500ms minimum. All 59 tests green.
+Diamond gate closeout completed and verified. First-run wizard, doctor findings, settings save flow, write-back queue/stale handling, watcher config/error handling, repo-root startup parsing, and release notes are aligned. `npm run build && npm run lint && npm test` passes with 67 tests.

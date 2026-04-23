@@ -69,7 +69,7 @@ describe("web renderers", () => {
     expect(html).toContain("Create PLAN.md");
   });
 
-  it("renders the setup card from the healthy fixture without throwing", async () => {
+  it("does not render the setup card from the healthy fixture", async () => {
     const root = await copyFixture("healthy");
 
     try {
@@ -79,8 +79,7 @@ describe("web renderers", () => {
       expect(html).toContain("Settings");
       expect(html).toContain("Save settings");
       expect(html).toContain('data-ui-action="save-config"');
-      expect(html).toContain('data-ui-action="init-state"');
-      expect(html).toContain('data-ui-action="dismiss-wizard"');
+      expect(html).not.toContain('<div class="settings-panel-card" data-setup-card>');
     } finally {
       await rm(root, { recursive: true, force: true });
     }
@@ -91,12 +90,15 @@ describe("web renderers", () => {
 
     try {
       const state = await scanRepo(root);
+      state.scannedFiles = state.scannedFiles.filter((file) => !/PLAN\.md$/i.test(file));
       const html = renderDesktopHtml(state, { liveBridge: "desktop" });
 
+      expect(html).toContain('data-ui-action="init-plan"');
       expect(html).toContain('data-ui-action="init-state"');
       expect(html).toContain('data-ui-action="init-config"');
       expect(html).toContain('data-ui-action="dismiss-wizard"');
       expect(html).toContain('data-ui-action="save-config"');
+      expect(html).toContain("Create PLAN.md");
       expect(html).toContain("Create STATE.md");
       expect(html).toContain("Create .repolog.json");
       expect(html).toContain("Skip for now");

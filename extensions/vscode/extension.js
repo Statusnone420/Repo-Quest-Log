@@ -106,10 +106,11 @@ class RepoQuestViewProvider {
             const modules = await this.loadModules();
             await modules.writeRepoConfig(this.rootDir, message.payload || {});
             await this.refresh();
-            await this.view.webview.postMessage({ type: "repolog:toast", message: "settings saved" });
+            await this.view.webview.postMessage({ type: "configSaved" });
+            await this.view.webview.postMessage({ type: "repolog:toast", message: "Settings saved ✓" });
           } catch (e) {
             const errorText = e instanceof Error ? e.message : String(e);
-            await this.view.webview.postMessage({ type: "repolog:toast", message: `settings save failed: ${errorText}` });
+            await this.view.webview.postMessage({ type: "error", message: `Settings save failed: ${errorText}` });
           }
         }
 

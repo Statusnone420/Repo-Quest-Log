@@ -32,7 +32,7 @@ describe("toggleChecklistItem", () => {
     try {
       const result = await toggleChecklistItem(file, 2, "ship the shell");
       expect(result.ok).toBe(false);
-      expect(result.reason).toBe("task text changed");
+      expect(result.reason).toBe("Line has changed since last read; re-scan required");
       expect(await readFile(file, "utf8")).toBe("# Plan\n- [ ] ship the shell now\n");
     } finally {
       await rm(root, { recursive: true, force: true });
@@ -54,5 +54,32 @@ describe("toggleChecklistItem", () => {
     } finally {
       await rm(root, { recursive: true, force: true });
     }
+  });
+
+  it("queues concurrent writes to the same file", async () => {
+    const root = join(tmpdir(), `repo-quest-log-writeback-${Date.now()}-queue`);
+    const file = join(root, "PLAN.md");
+    await mkdir(root, { recursive: true });
+    await writeFile(file, "# Plan\n- [ ] first task\n- [ ] second task\n", "utf8");
+
+    try {
+      const [first, second] = await Promise.all([
+        toggleChecklistItem(file, 2, "first task", true),
+        toggleChecklistItem(file, 3, "second task", true),
+      ]);
+      expect(first.ok).toBe(true);
+      expect(second.ok).toBe(true);
+      expect(await readFile(file, "utf8")).toBe("# Plan\n- [x] first task\n- [x] second task\n");
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  it("keeps rollback and SHA verification in the write path", async () => {
+    const source = await readFile(join(process.cwd(), "src", "engine", "writeback.ts"), "utf8");
+    expect(source).toContain("sha256");
+    expect(source).toContain("Write verification failed: content mismatch. Original restored.");
+    expect(source).toContain("await writeFile(filePath, original");
+    expect(source).toContain("writeQueues");
   });
 });

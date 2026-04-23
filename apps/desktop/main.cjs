@@ -330,10 +330,30 @@ async function startWatcherForTarget() {
       void refresh(changes);
     },
     onError: (error) => {
-      const message = error instanceof Error ? error.stack || error.message : String(error);
-      void pushHtml(renderErrorHtml(message));
+      process.stderr.write(`RepoLog watcher error: ${error instanceof Error ? error.message : String(error)}\n`);
+      if (win && !win.isDestroyed()) {
+        win.webContents.send("repolog:toast", { message: "File watch lost sync; re-scanning." });
+      }
+      void refresh();
+    },
+    onConfigChanged: () => {
+      if (win && !win.isDestroyed()) {
+        win.webContents.send("repolog:config-changed", { ok: true });
+      }
     },
   });
+}
+
+function readFirstRunForTarget() {
+  const state = readFirstRunState();
+  return state && state.repos && state.repos[targetRoot] ? state.repos[targetRoot] : {};
+}
+
+function writeFirstRunForTarget(data) {
+  const state = readFirstRunState();
+  const repos = state && typeof state.repos === "object" ? state.repos : {};
+  repos[targetRoot] = { ...(repos[targetRoot] || {}), ...data };
+  writeFirstRunState({ ...state, repos });
 }
 
 async function openRepoPicker() {
@@ -356,7 +376,7 @@ async function firstRunCheck() {
   const planPath = path.join(targetRoot, "PLAN.md");
   const statePath = path.join(targetRoot, "STATE.md");
   const charterPath = path.join(targetRoot, ".repolog", "CHARTER.md");
-  const state = readFirstRunState();
+  const state = readFirstRunForTarget();
   return {
     hasPlanMd: fs.existsSync(planPath),
     hasStateMd: fs.existsSync(statePath),
@@ -492,7 +512,7 @@ ipcMain.handle("repolog:toggle-checklist", async (_event, payload = {}) => {
 ipcMain.handle("repolog:first-run-check", async () => firstRunCheck());
 
 ipcMain.handle("repolog:wizard-dismiss", async () => {
-  writeFirstRunState({ lastWizardRun: Date.now() });
+  writeFirstRunForTarget({ lastWizardRun: Date.now() });
   return { ok: true };
 });
 
@@ -613,6 +633,10 @@ app.on("before-quit", async () => {
 });
 
 if (require.main === module) {
+  if (process.argv.includes("--version") || process.argv.includes("-v")) {
+    process.stdout.write(`v${appVersion}\n`);
+    app.exit(0);
+  }
   void start().catch((error) => {
     const message = error instanceof Error ? error.stack || error.message : String(error);
     process.stderr.write(`${message}\n`);

@@ -1676,8 +1676,7 @@ function renderSettingsPanel(state: QuestState, liveBridge?: SurfaceHtmlOptions[
   const wbStatus = state.config?.writeback ? "on" : "off";
   const promptDir = state.config?.prompts?.dir?.trim() || "~/.repolog/prompts";
   const hasPlan = state.scannedFiles.some((file) => /PLAN\.md$/i.test(file));
-  const hasState = state.scannedFiles.some((file) => /STATE\.md$/i.test(file));
-  const setupNeeded = !hasPlan || !hasState;
+  const setupNeeded = !hasPlan;
   const configButton = liveBridge === "desktop"
     ? `<button type="button" data-ui-action="open-config">Open .repolog.json</button>`
     : "";
@@ -1719,19 +1718,22 @@ function renderSettingsPanel(state: QuestState, liveBridge?: SurfaceHtmlOptions[
           </div>
         </div>
         ${setupNeeded ? `
-        <div class="settings-panel-card">
+        <div class="settings-panel-card" data-setup-card>
           <div class="head">Setup <span class="pill">first run</span></div>
-          <div class="detail">Generate the missing repo scaffolding so RepoLog can read the objective and resume note directly from markdown.</div>
+          <div class="detail">Welcome to RepoLog: a calm memory layer for repos using AI agents.</div>
+          <pre class="settings-panel-report" data-doctor-report data-visible="false"></pre>
           <div class="actions">
-            ${hasPlan ? "" : `<button type="button" data-ui-action="init-plan" class="primary">Create PLAN.md</button>`}
-            ${hasState ? "" : `<button type="button" data-ui-action="init-state">Create STATE.md</button>`}
+            <button type="button" data-ui-action="init-plan" class="primary">Create PLAN.md</button>
+            <button type="button" data-ui-action="init-state">Create STATE.md</button>
             <button type="button" data-ui-action="init-config">Create .repolog.json</button>
+            <button type="button" data-ui-action="run-doctor-again" data-run-doctor-again hidden>Run Doctor Again?</button>
             <button type="button" data-ui-action="dismiss-wizard">Skip for now</button>
           </div>
         </div>` : ""}
         <div class="settings-panel-card">
           <div class="head">Config <span class="pill">${wbStatus}</span></div>
           <div class="detail">Edit \`.repolog.json\` without touching JSON by hand. Save writes the file atomically and refreshes the HUD.</div>
+          <div class="settings-panel-report" data-config-error data-visible="false"></div>
           <div class="settings-config" data-config-form>
             <div class="field span-2">
               <label for="rql-config-excludes">Excludes</label>
@@ -1946,6 +1948,11 @@ function renderLiveBridge(mode: SurfaceHtmlOptions["liveBridge"]): string {
       if (window.repologDesktop && typeof window.repologDesktop.onHtml === "function") {
         window.repologDesktop.onHtml(replaceHtml);
       }
+      if (window.repologDesktop && typeof window.repologDesktop.onToast === "function") {
+        window.repologDesktop.onToast(function (message) {
+          if (window.__rqlToast) window.__rqlToast(message);
+        });
+      }
     `
     : "";
 
@@ -2001,6 +2008,16 @@ function renderLiveBridge(mode: SurfaceHtmlOptions["liveBridge"]): string {
           if (data && data.type === "repolog:toast" && window.__rqlToast && data.message) {
             window.__rqlToast(data.message);
           }
+          if (data && data.type === "configSaved" && window.__rqlToast) {
+            var configOk = document.querySelector("[data-config-error]");
+            if (configOk) { configOk.textContent = ""; configOk.setAttribute("data-visible", "false"); }
+            window.__rqlToast("Settings saved ✓");
+          }
+          if (data && data.type === "error" && data.message) {
+            var configErr = document.querySelector("[data-config-error]");
+            if (configErr) { configErr.textContent = data.message; configErr.setAttribute("data-visible", "true"); }
+            if (window.__rqlToast) window.__rqlToast(data.message);
+          }
           return;
         }
         replaceHtml(data.html);
@@ -2016,6 +2033,14 @@ function renderSettingsScript(): string {
       var defaults = { scale: 1.08, density: "cozy", theme: "dark" };
       var settingsOverlay = document.querySelector("[data-settings-panel]");
       var vscode = typeof acquireVsCodeApi === "function" ? acquireVsCodeApi() : null;
+      var setupCard = document.querySelector("[data-setup-card]");
+      if (setupCard && window.repologDesktop && typeof window.repologDesktop.firstRunCheck === "function") {
+        Promise.resolve(window.repologDesktop.firstRunCheck()).then(function (result) {
+          if (!result || result.hasPlanMd !== false || result.lastWizardRun) {
+            setupCard.remove();
+          }
+        }).catch(function () {});
+      }
 
       function clamp(value, min, max) { return Math.min(max, Math.max(min, value)); }
       function normalizeDensity(value) {
@@ -2103,6 +2128,58 @@ function renderSettingsScript(): string {
         }
         if (window.__rqlToast) window.__rqlToast("standup export is unavailable");
       }
+      function humanError(error) {
+        var raw = error && error.message ? error.message : String(error || "Unknown error");
+        raw = raw.replace(/^Error:\\s*/i, "").replace(/\\s+/g, " ").trim();
+        if (!raw || raw === "[object Object]") return "Something went wrong. Please try again.";
+        return raw.split("\\n")[0].slice(0, 120);
+      }
+      function setConfigError(message) {
+        var node = document.querySelector("[data-config-error]");
+        if (!node) return;
+        node.textContent = message || "";
+        node.setAttribute("data-visible", message ? "true" : "false");
+      }
+      function setBusy(button, busy) {
+        if (!button) return;
+        if (busy) {
+          button.setAttribute("data-label", button.textContent || "");
+          button.disabled = true;
+          button.textContent = "Working...";
+        } else {
+          button.disabled = false;
+          button.textContent = button.getAttribute("data-label") || button.textContent || "";
+          button.removeAttribute("data-label");
+        }
+      }
+      function showDoctorAgain() {
+        var btn = document.querySelector("[data-run-doctor-again]");
+        if (btn) btn.hidden = false;
+      }
+      function runDoctorInPlace(button) {
+        var report = document.querySelector("[data-doctor-report]");
+        setBusy(button, true);
+        if (window.repologDesktop && typeof window.repologDesktop.runDoctor === "function") {
+          return Promise.resolve(window.repologDesktop.runDoctor()).then(function (result) {
+            if (report) {
+              report.textContent = result && result.text ? result.text : "Doctor finished.";
+              report.setAttribute("data-visible", "true");
+            }
+          }).catch(function (error) {
+            var msg = "Doctor failed: " + humanError(error);
+            if (report) {
+              report.textContent = msg;
+              report.setAttribute("data-visible", "true");
+            }
+            if (window.__rqlToast) window.__rqlToast(msg);
+          }).finally(function () {
+            setBusy(button, false);
+          });
+        }
+        if (window.__rqlToast) window.__rqlToast("Doctor is only available in the desktop shell");
+        setBusy(button, false);
+        return Promise.resolve();
+      }
       function collectConfig() {
         try {
           function valueFor(field) {
@@ -2117,41 +2194,54 @@ function renderSettingsScript(): string {
           if (excludesNode && typeof excludesNode.value === "string") {
             excludes = excludesNode.value.split(/\\r?\\n/).map(function (line) { return line.trim(); }).filter(Boolean);
           }
+          var debounceRaw = debounceNode && debounceNode.value ? String(debounceNode.value).trim() : "500";
+          var debounce = Number(debounceRaw);
+          if (!Number.isFinite(debounce) || debounce < 100 || debounce > 10000) {
+            throw new Error("Watch debounce must be a number from 100 to 10000.");
+          }
           return {
             excludes: excludes,
             writeback: !!(writebackNode && writebackNode.checked),
             prompts: { dir: promptsNode && typeof promptsNode.value === "string" ? promptsNode.value.trim() : "" },
             watch: {
-              debounce: Math.max(100, Math.min(10000, parseInt(debounceNode && debounceNode.value ? debounceNode.value : "500", 10) || 500)),
+              debounce: debounce,
               reportFileChanges: !!(reportNode && reportNode.checked),
             },
           };
         } catch (error) {
-          if (window.__rqlToast) window.__rqlToast("Error reading config: " + String(error).slice(0, 50));
-          return { excludes: [], writeback: false, prompts: { dir: "" }, watch: { debounce: 500, reportFileChanges: true } };
+          throw error;
         }
       }
-      function saveConfig() {
+      function saveConfig(button) {
         try {
+          setConfigError("");
           var payload = collectConfig();
+          setBusy(button, true);
           if (window.repologDesktop && typeof window.repologDesktop.writeConfig === "function") {
             return Promise.resolve(window.repologDesktop.writeConfig(payload)).then(function (result) {
               if (window.__rqlToast) {
                 window.__rqlToast(result && result.success ? "Settings saved ✓" : "Settings save failed");
               }
             }).catch(function (error) {
-              if (window.__rqlToast) window.__rqlToast("Save failed: " + String(error).slice(0, 50));
+              var msg = "Settings save failed: " + humanError(error);
+              setConfigError(msg);
+              if (window.__rqlToast) window.__rqlToast(msg);
+            }).finally(function () {
+              setBusy(button, false);
             });
           }
           if (vscode && typeof vscode.postMessage === "function") {
             vscode.postMessage({ type: "writeConfig", payload: payload });
             if (window.__rqlToast) window.__rqlToast("Settings sent to editor");
+            setBusy(button, false);
             return Promise.resolve();
           }
+          setBusy(button, false);
           if (window.__rqlToast) window.__rqlToast("Settings save unavailable");
           return Promise.resolve();
         } catch (error) {
-          if (window.__rqlToast) window.__rqlToast("Save error: " + String(error).slice(0, 50));
+          setBusy(button, false);
+          setConfigError(humanError(error));
           return Promise.resolve();
         }
       }
@@ -2226,21 +2316,33 @@ function renderSettingsScript(): string {
             if (action === "init-plan" || action === "init-state" || action === "init-config") {
               try {
                 var targetDoc = action === "init-plan" ? "plan" : action === "init-state" ? "state" : "config";
+                setBusy(button, true);
                 if (window.repologDesktop && typeof window.repologDesktop.initTemplate === "function") {
                   Promise.resolve(window.repologDesktop.initTemplate(targetDoc)).then(function () {
                     if (window.__rqlToast) window.__rqlToast(targetDoc.toUpperCase() + " created ✓");
+                    showDoctorAgain();
                   }).catch(function (error) {
-                    if (window.__rqlToast) window.__rqlToast("Failed to create " + targetDoc + ": " + String(error).slice(0, 50));
+                    if (window.__rqlToast) window.__rqlToast("Failed to create " + targetDoc + ": " + humanError(error));
+                  }).finally(function () {
+                    setBusy(button, false);
                   });
                 } else if (vscode && typeof vscode.postMessage === "function") {
                   vscode.postMessage({ type: "initTemplate", target: targetDoc });
                   if (window.__rqlToast) window.__rqlToast("Creating " + targetDoc + "…");
+                  showDoctorAgain();
+                  setBusy(button, false);
                 } else {
                   if (window.__rqlToast) window.__rqlToast("Init not available in this shell");
+                  setBusy(button, false);
                 }
               } catch (error) {
-                if (window.__rqlToast) window.__rqlToast("Error: " + String(error).slice(0, 50));
+                setBusy(button, false);
+                if (window.__rqlToast) window.__rqlToast("Error: " + humanError(error));
               }
+              return;
+            }
+            if (action === "run-doctor-again") {
+              runDoctorInPlace(button);
               return;
             }
             if (action === "standup-export") {
@@ -2265,9 +2367,9 @@ function renderSettingsScript(): string {
             }
             if (action === "save-config") {
               try {
-                saveConfig();
+                saveConfig(button);
               } catch (error) {
-                if (window.__rqlToast) window.__rqlToast("Error saving config: " + String(error).slice(0, 50));
+                setConfigError(humanError(error));
               }
               return;
             }
@@ -2362,9 +2464,15 @@ function renderWritebackScript(): string {
               return;
             }
             showToast((result && result.reason) ? result.reason : "write-back skipped");
+            if (window.repologDesktop && typeof window.repologDesktop.requestRefresh === "function") {
+              window.repologDesktop.requestRefresh();
+            }
           })
           .catch(function () {
-            showToast("write-back failed");
+            showToast("Failed to update task. Re-scanning...");
+            if (window.repologDesktop && typeof window.repologDesktop.requestRefresh === "function") {
+              window.repologDesktop.requestRefresh();
+            }
           })
           .finally(function () {
             button.disabled = false;

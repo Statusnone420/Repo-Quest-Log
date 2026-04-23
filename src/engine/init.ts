@@ -38,25 +38,31 @@ export function buildPlanTemplate(repoName: string): string {
 title: ${repoName}
 ---
 
-<!-- RepoLog reads Objective to answer: "What is this repo trying to become?" -->
-
 ## Mission
 
 A calm memory layer for repos that use AI coding agents.
 
 ## Objective
 
+<!-- RepoLog looks here to answer: "What is this repo trying to become?" -->
+
 Describe the current milestone in one sentence.
 
 ## Now
+
+<!-- Unchecked items here appear in the HUD as current work. -->
 
 - [ ] First active task
 
 ## Next
 
+<!-- RepoLog pulls these into the HUD and handoff prompts as upcoming work. -->
+
 - [ ] Next task after the current focus
 
 ## Blocked
+
+<!-- List blockers with owner/reason so agents see what is waiting. -->
 
 - [ ] Waiting on something external
 
@@ -73,17 +79,21 @@ status: active
 owner: claude
 ---
 
-<!-- RepoLog reads Resume Note to answer: "Where was I?" -->
-
 ## Current Focus
+
+<!-- One-liner: what is the team focused on right now? -->
 
 One sentence about the current workstream.
 
 ## Resume Note
 
+<!-- One paragraph: what happened last session and what the next agent should know. -->
+
 > What happened last session and what the next agent should know.
 
 ## Recent Decisions
+
+<!-- Bullet list of key decisions and why they were made. Helps prevent rework. -->
 
 - Decision text and why it was made.
 `;

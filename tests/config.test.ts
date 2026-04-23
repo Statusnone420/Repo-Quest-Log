@@ -35,6 +35,12 @@ describe("config validation", () => {
     expect(() => validateAndFillConfig({ writeback: "yes" })).toThrow("writeback must be boolean");
   });
 
+  it("rejects invalid debounce values", () => {
+    expect(() => validateAndFillConfig({ watch: { debounce: "slow" } })).toThrow("watch.debounce must be a number");
+    expect(() => validateAndFillConfig({ watch: { debounce: 25 } })).toThrow("watch.debounce must be at least 100");
+    expect(() => validateAndFillConfig({ watch: { debounce: 20000 } })).toThrow("watch.debounce must be at most 10000");
+  });
+
   it("returns defaults for corrupt .repolog.json (never crashes the scan)", async () => {
     const root = await mkdtemp(join(tmpdir(), "repolog-config-corrupt-"));
     try {
@@ -64,6 +70,7 @@ describe("config validation", () => {
       expect(next.watch.debounce).toBe(750);
       expect(next.watch.reportFileChanges).toBe(false);
       expect(raw).toContain("\"writeback\": true");
+      expect(raw).toContain("\"excludes\"");
       expect(raw).not.toContain(".tmp");
     } finally {
       await rm(root, { recursive: true, force: true });

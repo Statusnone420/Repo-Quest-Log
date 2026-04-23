@@ -1,4 +1,4 @@
-import { copyFile, mkdir, readFile, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
@@ -43,6 +43,56 @@ describe("startWatcher", () => {
 
       expect(runs[0]?.map((change) => change.file)).toEqual(["PLAN.md", "README.md"]);
       expect(runs[0]?.every((change) => change.at === "just now")).toBe(true);
+    } finally {
+      await handle.close();
+    }
+  });
+
+  it("records unlink events and config changes", async () => {
+    const cwd = await createTempRepo();
+    await writeFile(join(cwd, ".repolog.json"), JSON.stringify({ watch: { debounce: 500, reportFileChanges: true } }), "utf8");
+    const runs: FileChange[][] = [];
+    let configChanged = false;
+
+    const handle = await startWatcher({
+      cwd,
+      globs: ["PLAN.md", ".repolog.json"],
+      debounceMs: 50,
+      runInitial: false,
+      onConfigChanged: () => {
+        configChanged = true;
+      },
+      onRefresh: (changes) => {
+        runs.push([...changes]);
+      },
+    });
+
+    try {
+      await writeFile(join(cwd, ".repolog.json"), JSON.stringify({ watch: { debounce: 700, reportFileChanges: true } }), "utf8");
+      await waitFor(() => configChanged, 1000);
+      await unlink(join(cwd, "PLAN.md"));
+      await waitFor(() => runs.some((run) => run.some((change) => change.file === "PLAN.md")), 1500);
+
+      expect(configChanged).toBe(true);
+    } finally {
+      await handle.close();
+    }
+  });
+
+  it("emits watcher errors to consumers with a loggable message", async () => {
+    const cwd = await createTempRepo();
+    const errors: unknown[] = [];
+    const handle = await startWatcher({
+      cwd,
+      globs: ["PLAN.md"],
+      runInitial: false,
+      onRefresh: () => {},
+      onError: (error) => errors.push(error),
+    });
+
+    try {
+      await handle.close();
+      expect(errors).toEqual([]);
     } finally {
       await handle.close();
     }

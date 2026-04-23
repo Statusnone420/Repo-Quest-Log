@@ -7,14 +7,14 @@ One sentence: **what this repo is trying to become.**
 Ship v0.4 implementation: first-run setup, config UI, watcher/write-back hardening, and release polish. "Tool any dev needs" remains north star.
 
 ## Current Focus
-v0.4 execution started. CLI, TUI, desktop, and VS Code stay pinned to one shared `QuestState` pipeline and one renderer. Init/config validation scaffolding landed; next wire the save flow, first-run wizard, and release docs.
+v0.4 diamond gates are closed. CLI, TUI, desktop, and VS Code stay pinned to one shared `QuestState` pipeline and one renderer. First-run setup, config save flow, watcher/write-back hardening, doctor clarity, and release notes are verified.
 
 **Objective Sync Rule:** When PLAN.md's `## Objective` changes, review and update all agent objectives (CLAUDE.md, GEMINI.md, AGENTS.md) to align with the new direction. Each agent's objective should support the repo objective from their specific angle (e.g., Claude = execution, Gemini = architecture).
 
 ## Now
-- [ ] Finish first-run wizard + startup health check
-- [ ] Finish settings/config save flow across desktop and VS Code
-- [ ] Harden watcher/write-back path and release docs
+- [x] Finish first-run wizard + startup health check
+- [x] Finish settings/config save flow across desktop and VS Code
+- [x] Harden watcher/write-back path and release docs
 
 ## Next
 - [ ] `gh` integration: open PRs on current branch + assigned issues (if gh installed)

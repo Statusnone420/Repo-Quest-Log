@@ -24,6 +24,8 @@ describe("renderDesktopHtml", () => {
     expect(html).toContain("Prompt dir");
     expect(html).toContain("Save settings");
     expect(html).toContain('data-config-field="watchDebounce"');
+    expect(html).toContain("data-config-error");
+    expect(html).toContain("Watch debounce must be a number from 100 to 10000.");
     expect(html).toContain("Startup");
     expect(html).toContain("Remember");
     expect(html).toContain("Forget");
@@ -36,6 +38,27 @@ describe("renderDesktopHtml", () => {
     expect(html).toContain('data-ui-action="refresh"');
     expect(html).toContain("change-spark");
     expect(html).toContain("Standup");
+  });
+
+  it("does not render the first-run setup card for a healthy PLAN.md repo even when STATE.md is absent", () => {
+    const state = sampleState();
+    state.scannedFiles = ["PLAN.md"];
+
+    const html = renderDesktopHtml(state, { appVersion: "0.0.4" });
+
+    expect(html).not.toContain('<div class="settings-panel-card" data-setup-card>');
+  });
+
+  it("renders wizard safeguards for missing PLAN.md repos", () => {
+    const state = sampleState();
+    state.scannedFiles = ["README.md"];
+
+    const html = renderDesktopHtml(state, { appVersion: "0.0.4" });
+
+    expect(html).toContain('<div class="settings-panel-card" data-setup-card>');
+    expect(html).toContain('data-ui-action="run-doctor-again"');
+    expect(html).toContain("humanError(error)");
+    expect(html).toContain("setBusy(button, true)");
   });
 });
 
@@ -57,6 +80,11 @@ describe("desktop shell sizing", () => {
     expect(source).toContain("About Repo Quest Log");
     expect(source).toContain("setAppUserModelId");
     expect(source).toContain('require(path.join(__dirname, "package.json"))');
+    expect(source).toContain("repolog:first-run-check");
+    expect(source).toContain("repolog:wizard-dismiss");
+    expect(source).toContain("first-run-state.json");
+    expect(source).toContain("lastWizardRun: Date.now()");
+    expect(source).toContain("repolog:toast");
     expect(packageJson.build?.win?.target).toEqual(["nsis", "portable"]);
     expect(packageJson.build?.extraResources).toEqual([{ from: "build/icon.png", to: "build/icon.png" }]);
   });
@@ -116,6 +144,21 @@ describe("resolveDesktopRepoRoot", () => {
         argv: [dir],
         cwd: tmpdir(),
         execPath: join(dir, "Repo Quest Log.exe"),
+      });
+      expect(resolved).toBe(dir);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("accepts --repo-root as the explicit startup directory", async () => {
+    const dir = join(tmpdir(), `repo-quest-log-flag-${Date.now()}`);
+    await mkdir(dir, { recursive: true });
+    try {
+      const resolved = resolveDesktopRepoRoot({
+        argv: ["--repo-root", dir],
+        cwd: tmpdir(),
+        execPath: join(tmpdir(), "Repo Quest Log.exe"),
       });
       expect(resolved).toBe(dir);
     } finally {

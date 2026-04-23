@@ -140,7 +140,7 @@ function readWatchConfig(value: unknown): RepoConfig["watch"] {
   const reportFileChanges = (value as { reportFileChanges?: unknown }).reportFileChanges;
 
   return {
-    debounce: debounce === undefined ? DEFAULT_CONFIG.watch.debounce : assertNumber(debounce, "watch.debounce", 100),
+    debounce: debounce === undefined ? DEFAULT_CONFIG.watch.debounce : assertNumber(debounce, "watch.debounce", 100, 10000),
     reportFileChanges: reportFileChanges === undefined ? DEFAULT_CONFIG.watch.reportFileChanges : assertBoolean(reportFileChanges, "watch.reportFileChanges"),
   };
 }
@@ -209,12 +209,15 @@ function assertBoolean(value: unknown, field: string): boolean {
   return value;
 }
 
-function assertNumber(value: unknown, field: string, minimum = Number.NEGATIVE_INFINITY): number {
+function assertNumber(value: unknown, field: string, minimum = Number.NEGATIVE_INFINITY, maximum = Number.POSITIVE_INFINITY): number {
   if (typeof value !== "number" || Number.isNaN(value)) {
     throw new Error(`Invalid .repolog.json: ${field} must be a number`);
   }
   if (value < minimum) {
     throw new Error(`Invalid .repolog.json: ${field} must be at least ${minimum}`);
+  }
+  if (value > maximum) {
+    throw new Error(`Invalid .repolog.json: ${field} must be at most ${maximum}`);
   }
   return value;
 }

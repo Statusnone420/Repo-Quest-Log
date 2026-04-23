@@ -19,11 +19,20 @@ describe("runDoctor", () => {
     expect(report.findings.some((f) => f.code === "missing-state.md")).toBe(true);
     expect(report.findings.some((f) => f.code === "empty-now")).toBe(true);
     expect(report.findings.some((f) => f.code === "no-agent-docs")).toBe(true);
+    expect(report.findings.every((f) => f.why && f.fix)).toBe(true);
+    expect(report.findings.map((f) => f.code).slice(0, 4)).toEqual([
+      "missing-plan.md",
+      "missing-state.md",
+      "missing-objective",
+      "empty-now",
+    ]);
 
     const formatted = formatDoctorReport(report);
     expect(formatted).toContain("Findings:");
     expect(formatted).toContain("missing-plan.md");
-    expect(formatted).toContain("Add PLAN.md");
+    expect(formatted).toContain("why:");
+    expect(formatted).toContain("fix:");
+    expect(formatted).toContain("Create PLAN.md");
   });
 
   it("reports invalid .repolog.json", async () => {

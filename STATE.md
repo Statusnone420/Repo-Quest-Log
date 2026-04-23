@@ -9,7 +9,11 @@ owner: claude
 Live "where we are." Update this as work progresses. The normalizer reads this to build the Resume Note.
 
 ## Current Focus
-UI polish pass complete. Settings rack decluttered, window controls removed from HTML, density/theme controls moved to settings panel, startup size fixed to 1280×800 with bounds persistence. Build/lint/test green (52 tests).
+Tuneup supercharge complete. buildTuneup is now async with content quality analysis (boilerplate/generic/game-progress detection), RepoContext gathering (package.json, git log, source tree), and rich prompt generation with Repo Fingerprint + Content Quality Issues sections. UI shows combined structural+content score. Build/lint/test green (57 tests).
+
+## Resume Note
+
+> Session 2026-04-22: Rewrote tuneup.ts across 3 passes — (1) content quality gap detection (mission-boilerplate, objective-generic, resume-note-game-progress), (2) RepoContext gathering from package.json/git log/source tree, (3) rich prompt with Repo Fingerprint block and current-content quotes. Updated doctor.ts, cli/index.ts, tui/App.tsx callers to await. Updated render.ts to show combined score (avg of struct+content) and content badges on gap rows. 7 new tests, all 57 pass.
 
 ## Last Session — UI polish pass (2026-04-22)
 - **Settings rack**: Removed filler description copy and Ctrl+ chip row; removed Standup button and extra Refresh from the rack. Rack now shows only Open Settings + Open Repo.

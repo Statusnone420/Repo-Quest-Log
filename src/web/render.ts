@@ -2777,11 +2777,16 @@ function renderTuneupScript(): string {
 
       function renderGap(gap) {
         var sevClass = gap.severity === "high" ? "high" : gap.severity === "med" ? "med" : "low";
+        var isContent = gap.currentContent !== undefined;
+        var badge = isContent ? ' <span style="font-size:0.75em;opacity:0.6;border:1px solid currentColor;border-radius:3px;padding:0 3px">content</span>' : '';
+        var current = isContent && gap.currentContent
+          ? '<div style="margin-top:3px;font-size:0.8em;opacity:0.65;font-style:italic;padding-left:8px">was: ' + escHtml(gap.currentContent.slice(0, 80)) + (gap.currentContent.length > 80 ? "…" : "") + '</div>'
+          : '';
         return '<div class="tuneup-gap-row">'
           + '<span class="tuneup-gap-sev ' + sevClass + '">' + gap.severity + '</span>'
-          + '<span><span class="tuneup-gap-text">' + escHtml(gap.id) + '</span> '
+          + '<span><span class="tuneup-gap-text">' + escHtml(gap.id) + '</span>' + badge + ' '
           + '<span class="tuneup-gap-file">(' + escHtml(gap.file) + ')</span> — '
-          + escHtml(gap.fix) + '</span>'
+          + escHtml(gap.fix) + current + '</span>'
           + '</div>';
       }
 
@@ -2791,22 +2796,29 @@ function renderTuneupScript(): string {
 
       function applyResult(data) {
         tuneupData = data;
+        var contentScore = typeof data.contentScore === "number" ? data.contentScore : 100;
+        var displayScore = Math.floor((data.score + contentScore) / 2);
         if (placeholder) placeholder.hidden = true;
         if (meterWrap) meterWrap.hidden = false;
         if (fill) {
-          fill.style.width = Math.max(0, Math.min(100, data.score)) + "%";
-          fill.style.background = meterColor(data.score);
+          fill.style.width = Math.max(0, Math.min(100, displayScore)) + "%";
+          fill.style.background = meterColor(displayScore);
         }
-        if (scoreEl) scoreEl.textContent = data.score + "/100";
+        if (scoreEl) {
+          var label = contentScore < 100 ? displayScore + "/100 (struct " + data.score + " · content " + contentScore + ")" : data.score + "/100";
+          scoreEl.textContent = label;
+        }
         if (promptArea) {
           promptArea.value = data.prompt || "";
           promptArea.setAttribute("data-visible", "true");
         }
         if (actionsEl) actionsEl.hidden = false;
-        if (gapsEl && data.gaps && data.gaps.length > 0) {
-          gapsEl.innerHTML = data.gaps.map(renderGap).join("");
+        var allGaps = (data.gaps || []).concat(data.contentGaps || []);
+        if (gapsEl && allGaps.length > 0) {
+          gapsEl.innerHTML = allGaps.map(renderGap).join("");
+          gapsEl.setAttribute("data-visible", "true");
         } else if (gapsEl) {
-          gapsEl.innerHTML = '<div class="tuneup-placeholder">No gaps — this repo is at 100%.</div>';
+          gapsEl.innerHTML = '<div class="tuneup-placeholder">No gaps — structural and content scores are both 100.</div>';
         }
       }
 

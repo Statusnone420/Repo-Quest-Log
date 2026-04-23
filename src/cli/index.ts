@@ -60,7 +60,7 @@ async function main(): Promise<void> {
     }
     case "tuneup": {
       const report = await runDoctor(command.rootDir);
-      const tuneup = buildTuneup(report.state, report);
+      const tuneup = await buildTuneup(report.state, report, command.rootDir);
 
       if (command.agent) {
         const agentPrompt = tuneup.perAgent[command.agent];

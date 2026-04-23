@@ -298,7 +298,7 @@ export function WatchApp({ rootDir }: WatchAppProps) {
       void (async () => {
         try {
           const report = await runDoctor(rootDir);
-          const result = buildTuneup(report.state, report);
+          const result = await buildTuneup(report.state, report, rootDir);
           setTuneupResult(result);
           setTuneupOpen(true);
           setStatusLine(null);

@@ -24,7 +24,7 @@ export interface DoctorReport {
   counts: { now: number; next: number; blocked: number; agents: number; decisions: number };
   findings: DoctorFinding[];
   state: QuestState;
-  tuneup: Pick<TuneupResult, "score" | "gaps">;
+  tuneup: Pick<TuneupResult, "score" | "contentScore" | "gaps" | "contentGaps">;
 }
 
 const EXPECTED_DOCS = ["PLAN.md", "STATE.md", "README.md"] as const;
@@ -141,11 +141,11 @@ export async function runDoctor(rootDir: string): Promise<DoctorReport> {
     },
     findings,
     state,
-    tuneup: { score: 0, gaps: [] as TuneupResult["gaps"] },
+    tuneup: { score: 0, contentScore: 100, gaps: [] as TuneupResult["gaps"], contentGaps: [] as TuneupResult["contentGaps"] },
   };
 
-  const { score, gaps } = buildTuneup(state, partialReport as DoctorReport);
-  partialReport.tuneup = { score, gaps };
+  const { score, contentScore, gaps, contentGaps } = await buildTuneup(state, partialReport as DoctorReport, absolute);
+  partialReport.tuneup = { score, contentScore, gaps, contentGaps };
 
   return partialReport as DoctorReport;
 }

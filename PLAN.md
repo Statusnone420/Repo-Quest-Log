@@ -57,7 +57,7 @@ v0.4 feature pass complete and verified. Agents section is honest (per-agent sta
 - [x] Settings panel redesign: scrollable body with fixed head/footer, tuneup promoted to top
 
 ## Blocked
-- [ ] Publish npm package `@repo-quest/core` — **need npm org + CI secrets**
+- None
 
 ## Out of scope
 Source-code parsing · multi-repo dashboards · team sync · cloud anything · plugin marketplace · timers · pomodoros · streaks · gamification · free-text markdown write-back · chat/back-and-forth LLM interfaces · auto-firing LLM calls.

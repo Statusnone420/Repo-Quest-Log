@@ -916,7 +916,7 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       appearance: none;
       width: 100%;
       min-height: 52px;
-      cursor: default;
+      cursor: pointer;
       font: inherit;
       text-align: left;
       color: #8995a4;
@@ -948,6 +948,20 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     }
     .settings-main::-webkit-scrollbar { width: 6px; }
     .settings-main::-webkit-scrollbar-thumb { background: var(--faint); border-radius: 3px; }
+    [hidden],
+    .settings-section[hidden] {
+      display: none !important;
+    }
+    .settings-section[data-section-focus="true"] {
+      outline: 1px solid rgba(88,166,255,0.52);
+      outline-offset: 2px;
+    }
+    .settings-tuneup-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-width: 0;
+    }
     .settings-hero {
       min-height: 170px;
       padding: 18px 22px;
@@ -963,6 +977,8 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       width: 92px;
       height: 92px;
       border-radius: 999px;
+      position: relative;
+      flex: 0 0 92px;
       display: grid;
       place-items: center;
       background:
@@ -970,18 +986,58 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
         conic-gradient(var(--ok) 0 92%, rgba(255,255,255,0.08) 92% 100%);
       box-shadow: 0 0 24px rgba(34,197,94,0.1);
     }
+    .score-ring > div {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 64px;
+      height: 64px;
+      line-height: 1;
+      text-align: center;
+    }
     .score-ring strong {
       color: #dff8ea;
-      font-size: 26px;
-      line-height: 1;
+      font-family: var(--mono);
+      font-size: 28px;
+      line-height: 0.95;
     }
     .score-ring span {
       display: block;
       margin-top: 4px;
       color: var(--dim);
       font-family: var(--mono);
-      font-size: 10px;
+      font-size: 9px;
       text-align: center;
+    }
+    .settings-card.settings-tuneup-results {
+      display: none;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 10px;
+      padding: 12px 14px;
+    }
+    .settings-card.settings-tuneup-results[data-visible="true"] {
+      display: grid;
+    }
+    .settings-tuneup-results .tuneup-prompt-area {
+      height: 168px;
+      min-height: 132px;
+      max-height: 240px;
+      margin: 0;
+    }
+    .settings-tuneup-results[data-visible="true"] .tuneup-prompt-area[data-visible="true"] {
+      display: block;
+    }
+    .settings-tuneup-results .tuneup-gaps {
+      max-height: 150px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+    .settings-tuneup-results[data-visible="true"] .tuneup-gaps[data-visible="true"] {
+      display: flex;
+    }
+    .settings-tuneup-results .tuneup-actions {
+      justify-content: flex-start;
     }
     .settings-hero-copy {
       min-width: 0;
@@ -2554,13 +2610,13 @@ function renderSettingsPanel(state: QuestState, liveBridge?: SurfaceHtmlOptions[
         <div class="settings-panel-shell">
           <aside class="settings-sidebar" aria-label="Settings sections">
             <nav class="settings-nav">
-              <button type="button" class="settings-nav-item active"><span class="settings-nav-icon">◇</span><span class="settings-nav-label">Overview<small>Repo health</small></span></button>
-              <button type="button" class="settings-nav-item"><span class="settings-nav-icon">▣</span><span class="settings-nav-label">Repo Setup<small>Files and watcher</small></span></button>
-              <button type="button" class="settings-nav-item"><span class="settings-nav-icon">✓</span><span class="settings-nav-label">Write-back<small>${wbStatus}</small></span></button>
-              <button type="button" class="settings-nav-item"><span class="settings-nav-icon">⌘</span><span class="settings-nav-label">Prompts<small>Palette source</small></span></button>
+              <button type="button" class="settings-nav-item active" data-settings-tab="overview" aria-pressed="true"><span class="settings-nav-icon">◇</span><span class="settings-nav-label">Overview<small>Repo health</small></span></button>
+              <button type="button" class="settings-nav-item" data-settings-tab="repo" aria-pressed="false"><span class="settings-nav-icon">▣</span><span class="settings-nav-label">Repo Setup<small>Files and watcher</small></span></button>
+              <button type="button" class="settings-nav-item" data-settings-tab="writeback" aria-pressed="false"><span class="settings-nav-icon">✓</span><span class="settings-nav-label">Write-back<small>${wbStatus}</small></span></button>
+              <button type="button" class="settings-nav-item" data-settings-tab="prompts" aria-pressed="false"><span class="settings-nav-icon">⌘</span><span class="settings-nav-label">Prompts<small>Palette source</small></span></button>
               <span class="settings-sidebar-divider"></span>
-              <button type="button" class="settings-nav-item"><span class="settings-nav-icon">◐</span><span class="settings-nav-label">Appearance<small>Theme, density, font</small></span></button>
-              <button type="button" class="settings-nav-item"><span class="settings-nav-icon">✦</span><span class="settings-nav-label">Digest<small>OpenRouter</small></span></button>
+              <button type="button" class="settings-nav-item" data-settings-tab="appearance" aria-pressed="false"><span class="settings-nav-icon">◐</span><span class="settings-nav-label">Appearance<small>Theme, density, font</small></span></button>
+              <button type="button" class="settings-nav-item" data-settings-tab="digest" aria-pressed="false"><span class="settings-nav-icon">✦</span><span class="settings-nav-label">Digest<small>OpenRouter</small></span></button>
             </nav>
             <div class="settings-sidebar-status">
               <div><span class="status-dot"></span><strong>File watcher: Active</strong></div>
@@ -2568,36 +2624,41 @@ function renderSettingsPanel(state: QuestState, liveBridge?: SurfaceHtmlOptions[
             </div>
           </aside>
           <main class="settings-main">
-            <div class="tuneup-card settings-hero" data-tuneup-card>
-              <div class="score-ring" aria-label="RepoLog legibility score">
-                <div><strong data-tuneup-score>92</strong><span>Legibility</span></div>
+            <div class="settings-tuneup-wrap settings-section" data-settings-section="overview" data-tuneup-card>
+              <div class="tuneup-card settings-hero">
+                <div class="score-ring" aria-label="RepoLog legibility score">
+                  <div><strong data-tuneup-score>92</strong><span>Legibility</span></div>
+                </div>
+                <div class="settings-hero-copy">
+                  <span class="settings-kicker">Tune this repo</span>
+                  <h2 class="settings-hero-title">Make the current repo easier to resume.</h2>
+                  <p data-tuneup-placeholder>Click <strong>Analyze</strong> to score this repo's RepoLog legibility and generate a targeted fix prompt for Claude, Codex, or Gemini.</p>
+                  <span class="settings-status-pill">Ready</span>
+                  <div class="settings-hero-meta"><span>Last analyzed: just now</span><span>Source: PLAN.md, STATE.md</span></div>
+                  <div class="tuneup-meter-wrap sr-only" data-tuneup-meter-wrap><div class="tuneup-meter"><div class="tuneup-meter-fill" data-tuneup-fill style="width:92%"></div></div></div>
+                </div>
+                <div class="settings-hero-actions">
+                  <button type="button" class="settings-primary-button" data-tuneup-action="generate">Analyze</button>
+                  <p class="settings-subtle-copy">Generate a targeted fix prompt for Claude, Codex, or Gemini.</p>
+                </div>
               </div>
-              <div class="settings-hero-copy">
-                <span class="settings-kicker">Tune this repo</span>
-                <h2 class="settings-hero-title">Make the current repo easier to resume.</h2>
-                <p data-tuneup-placeholder>Click <strong>Analyze</strong> to score this repo's RepoLog legibility and generate a targeted fix prompt for Claude, Codex, or Gemini.</p>
-                <span class="settings-status-pill">Ready</span>
-                <div class="settings-hero-meta"><span>Last analyzed: just now</span><span>Source: PLAN.md, STATE.md</span></div>
-                <div class="tuneup-meter-wrap sr-only" data-tuneup-meter-wrap><div class="tuneup-meter"><div class="tuneup-meter-fill" data-tuneup-fill style="width:92%"></div></div></div>
-              </div>
-              <div class="settings-hero-actions">
-                <button type="button" class="settings-primary-button" data-tuneup-action="generate">Analyze</button>
-                <p class="settings-subtle-copy">Generate a targeted fix prompt for Claude, Codex, or Gemini.</p>
-              </div>
-              <textarea class="tuneup-prompt-area" data-tuneup-prompt readonly aria-label="Tuneup prompt" spellcheck="false"></textarea>
-              <div class="tuneup-gaps" data-tuneup-gaps aria-label="Gap list"></div>
-              <div class="tuneup-actions" data-tuneup-actions hidden>
-                <button type="button" data-tuneup-action="copy">Copy prompt</button>
-                <button type="button" data-tuneup-action="write-charter">Write CHARTER.md</button>
-                <button type="button" data-tuneup-action="preview-gaps">Preview gaps</button>
-                <span class="sep"></span>
-                <button type="button" data-tuneup-action="send-claude">→ Claude</button>
-                <button type="button" data-tuneup-action="send-codex">→ Codex</button>
-                <button type="button" data-tuneup-action="send-gemini">→ Gemini</button>
+              <div class="settings-card settings-tuneup-results" data-tuneup-results>
+                <textarea class="tuneup-prompt-area" data-tuneup-prompt readonly aria-label="Tuneup prompt" spellcheck="false"></textarea>
+                <div class="tuneup-gaps" data-tuneup-gaps aria-label="Gap list"></div>
+                <div class="tuneup-actions" data-tuneup-actions hidden>
+                  <button type="button" data-tuneup-action="copy">Copy prompt</button>
+                  <button type="button" data-tuneup-action="write-charter">Write CHARTER.md</button>
+                  <button type="button" data-tuneup-action="preview-gaps">Preview gaps</button>
+                  <span class="sep"></span>
+                  <button type="button" data-tuneup-action="send-claude">→ Claude</button>
+                  <button type="button" data-tuneup-action="send-codex">→ Codex</button>
+                  <button type="button" data-tuneup-action="send-gemini">→ Gemini</button>
+                </div>
               </div>
             </div>
             ${setupNeeded ? `
-            <div class="settings-panel-card" data-setup-card>
+            <!-- <div class="settings-panel-card" data-setup-card> -->
+            <div class="settings-panel-card settings-section" data-setup-card data-settings-section="repo">
               <div class="settings-card-head"><h3 class="settings-card-title">Setup <span class="pill">first run</span></h3></div>
               <p class="settings-card-detail">Welcome to RepoLog: a calm memory layer for repos using AI agents.</p>
               <pre class="settings-panel-report" data-doctor-report data-visible="false"></pre>
@@ -2609,8 +2670,8 @@ function renderSettingsPanel(state: QuestState, liveBridge?: SurfaceHtmlOptions[
                 <button type="button" data-ui-action="dismiss-wizard">Skip for now</button>
               </div>
             </div>` : ""}
-            <div class="settings-core">
-              <section class="settings-card settings-config-card">
+            <div class="settings-core settings-section" data-settings-section="overview repo writeback prompts digest">
+              <section class="settings-card settings-config-card" data-settings-section="overview repo writeback prompts">
                 <div class="settings-card-head">
                   <h3 class="settings-card-title">Repo config <span class="pill">${wbStatus}</span></h3>
                   ${renderInfoIcon("Save writes .repolog.json atomically, validates the config, and refreshes the HUD.")}
@@ -2650,7 +2711,7 @@ function renderSettingsPanel(state: QuestState, liveBridge?: SurfaceHtmlOptions[
                   </div>
                 </div>
               </section>
-              <section class="settings-card settings-digest-card" data-card="openrouter">
+              <section class="settings-card settings-digest-card settings-section" data-settings-section="overview digest" data-card="openrouter">
                 <div class="settings-card-head">
                   <h3 class="settings-card-title">OpenRouter Digest <span class="pill">optional</span></h3>
                   ${renderInfoIcon("Powers the Digest button. Key is stored locally in the desktop shell, never in the repo.")}
@@ -2681,7 +2742,7 @@ function renderSettingsPanel(state: QuestState, liveBridge?: SurfaceHtmlOptions[
                 </div>
               </section>
             </div>
-            <div class="settings-utility-grid">
+            <div class="settings-utility-grid settings-section" data-settings-section="overview appearance">
               <section class="settings-card settings-utility-card">
                 <div class="settings-card-head"><h3 class="settings-card-title">Standup</h3>${renderInfoIcon("Copies a markdown summary of today's done plus active tasks to your clipboard.")}</div>
                 <div class="settings-card-actions"><button type="button" data-ui-action="standup-export">Copy standup <span class="kbd-inline"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>C</kbd></span></button></div>
@@ -3033,6 +3094,7 @@ function renderSettingsScript(): string {
       }
       function openSettings() {
         if (settingsOverlay) settingsOverlay.setAttribute("data-open", "true");
+        selectSettingsTab("overview", false);
         if (window.repologDesktop && typeof window.repologDesktop.getOpenRouterConfig === "function") {
           window.repologDesktop.getOpenRouterConfig().then(function(cfg) {
             // Key field: always empty so user types a real key; status label shows config state
@@ -3048,6 +3110,34 @@ function renderSettingsScript(): string {
       }
       function closeSettings() {
         if (settingsOverlay) settingsOverlay.setAttribute("data-open", "false");
+      }
+      function selectSettingsTab(tab, shouldScroll) {
+        var name = tab || "overview";
+        var tabs = document.querySelectorAll("[data-settings-tab]");
+        for (var i = 0; i < tabs.length; i++) {
+          var active = tabs[i].getAttribute("data-settings-tab") === name;
+          tabs[i].classList.toggle("active", active);
+          tabs[i].setAttribute("aria-pressed", active ? "true" : "false");
+        }
+        var sections = document.querySelectorAll("[data-settings-section]");
+        var first = null;
+        for (var s = 0; s < sections.length; s++) {
+          var values = (sections[s].getAttribute("data-settings-section") || "").split(/\s+/);
+          var match = name === "overview" ? values.indexOf("overview") !== -1 : values.indexOf(name) !== -1;
+          sections[s].hidden = false;
+          sections[s].setAttribute("data-section-focus", match && name !== "overview" ? "true" : "false");
+          if (match && !first) first = sections[s];
+        }
+        if (shouldScroll && first && typeof first.scrollIntoView === "function") {
+          first.scrollIntoView({ block: "start", behavior: "smooth" });
+        }
+        if (first) {
+          clearTimeout(selectSettingsTab._t);
+          selectSettingsTab._t = setTimeout(function () {
+            var focused = document.querySelectorAll('[data-section-focus="true"]');
+            for (var f = 0; f < focused.length; f++) focused[f].setAttribute("data-section-focus", "false");
+          }, 900);
+        }
       }
       function copyStandup() {
         if (window.repologDesktop && typeof window.repologDesktop.copyStandup === "function") {
@@ -3217,8 +3307,12 @@ function renderSettingsScript(): string {
             var line = parseInt(openRow.getAttribute("data-line") || "1", 10);
             window.repologDesktop.openDoc(doc, line);
           }
-          var button = target.closest("[data-ui-action], [data-ui-density], [data-ui-theme], [data-ui-font]");
+          var button = target.closest("[data-ui-action], [data-ui-density], [data-ui-theme], [data-ui-font], [data-settings-tab]");
           if (!button) return;
+          if (button.hasAttribute("data-settings-tab")) {
+            selectSettingsTab(button.getAttribute("data-settings-tab"), true);
+            return;
+          }
           if (button.hasAttribute("data-ui-action")) {
             var action = button.getAttribute("data-ui-action");
             var prefs = read();
@@ -3897,6 +3991,7 @@ function renderTuneupScript(): string {
       var promptArea = card.querySelector("[data-tuneup-prompt]");
       var gapsEl = card.querySelector("[data-tuneup-gaps]");
       var actionsEl = card.querySelector("[data-tuneup-actions]");
+      var resultsEl = card.querySelector("[data-tuneup-results]");
 
       var tuneupData = null;
 
@@ -3907,17 +4002,20 @@ function renderTuneupScript(): string {
       }
 
       function renderGap(gap) {
-        var sevClass = gap.severity === "high" ? "high" : gap.severity === "med" ? "med" : "low";
+        var severity = gap.severity || "low";
+        var sevClass = severity === "high" ? "high" : severity === "med" ? "med" : "low";
+        var label = gap.id || gap.title || gap.text || "gap";
+        var file = gap.file || gap.doc || "repo";
+        var fix = gap.fix || gap.example || gap.why || gap.text || "";
         var isContent = gap.currentContent !== undefined;
         var badge = isContent ? ' <span style="font-size:0.75em;opacity:0.6;border:1px solid currentColor;border-radius:3px;padding:0 3px">content</span>' : '';
         var current = isContent && gap.currentContent
           ? '<div style="margin-top:3px;font-size:0.8em;opacity:0.65;font-style:italic;padding-left:8px">was: ' + escHtml(gap.currentContent.slice(0, 80)) + (gap.currentContent.length > 80 ? "…" : "") + '</div>'
           : '';
         return '<div class="tuneup-gap-row">'
-          + '<span class="tuneup-gap-sev ' + sevClass + '">' + gap.severity + '</span>'
-          + '<span><span class="tuneup-gap-text">' + escHtml(gap.id) + '</span>' + badge + ' '
-          + '<span class="tuneup-gap-file">(' + escHtml(gap.file) + ')</span> — '
-          + escHtml(gap.fix) + current + '</span>'
+          + '<span class="tuneup-gap-sev ' + sevClass + '">' + escHtml(severity) + '</span>'
+          + '<span><span class="tuneup-gap-text">' + escHtml(label) + '</span>' + badge + ' '
+          + '<span class="tuneup-gap-file">(' + escHtml(file) + ')</span>' + (fix ? ' — ' + escHtml(fix) : '') + current + '</span>'
           + '</div>';
       }
 
@@ -3929,15 +4027,16 @@ function renderTuneupScript(): string {
         tuneupData = data;
         var contentScore = typeof data.contentScore === "number" ? data.contentScore : 100;
         var displayScore = Math.floor((data.score + contentScore) / 2);
-        if (placeholder) placeholder.hidden = true;
+        if (placeholder) placeholder.hidden = false;
+        if (resultsEl) resultsEl.setAttribute("data-visible", "true");
         if (meterWrap) meterWrap.hidden = false;
         if (fill) {
           fill.style.width = Math.max(0, Math.min(100, displayScore)) + "%";
           fill.style.background = meterColor(displayScore);
         }
         if (scoreEl) {
-          var label = contentScore < 100 ? displayScore + "/100 (struct " + data.score + " · content " + contentScore + ")" : data.score + "/100";
-          scoreEl.textContent = label;
+          scoreEl.textContent = String(displayScore);
+          scoreEl.title = contentScore < 100 ? displayScore + "/100 (struct " + data.score + " · content " + contentScore + ")" : data.score + "/100";
         }
         if (promptArea) {
           promptArea.value = data.prompt || "";

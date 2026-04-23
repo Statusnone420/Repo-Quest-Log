@@ -23,6 +23,66 @@
 
 ---
 
+## 💎 DIAMOND STANDARD — What v0.4 Must Feel Like
+
+> "A user downloads the exe, opens a real messy repo, and the app earns their trust in the first 5 minutes without confusing them or breaking."
+
+The gap between "fine" and "diamond" is **feel and reliability**, not features. Do not add scope. Close the gap on the 6 gates below. Each gate maps to an existing work stream — the work streams have the specs, this section has the standard.
+
+### Gate 1 — First-run wizard is airtight (→ Work Stream 1)
+- [ ] Wizard appears **only** when PLAN.md is missing; verified against healthy fixture (no wizard) and noisy fixture (wizard)
+- [ ] Dismissal writes `lastWizardRun` to Electron userData; wizard **never** reappears for that repo
+- [ ] Every action button shows a spinner or disabled state before the file appears
+- [ ] If the IPC call fails, the error shown is a human-readable sentence, not a stack trace or `[object Object]`
+- [ ] After a file is created, "Run Doctor Again?" button re-runs and updates findings in place
+- **Audit file:** `apps/desktop/main.cjs` (first-run-check handler, lastWizardRun write), `src/web/render.ts` (wizard card render)
+
+### Gate 2 — Doctor output is instantly actionable (→ Work Stream 4b)
+- [ ] Every finding has a `why` line: one sentence explaining what breaks without it
+- [ ] Every finding has an `example` or `fix` line: exactly what to type or add
+- [ ] Findings are ordered: PLAN.md missing → STATE.md missing → Objective → Now → structural → formatting
+- [ ] No finding uses internal jargon a first-time user wouldn't recognize
+- **Audit file:** `src/engine/doctor.ts` (finding messages, severity ordering)
+
+### Gate 3 — Settings UI works end-to-end (→ Work Stream 2)
+- [ ] On open, settings fields are populated from current `.repolog.json` (or defaults if file missing)
+- [ ] Validation runs before save; invalid input shows an error banner, not a silent failure
+- [ ] Save writes atomically, shows "Settings saved ✓" toast, and triggers immediate watcher rescan
+- [ ] If save fails (permissions, disk), error banner explains what happened
+- **Audit files:** `src/web/render.ts` (settings card populate + save flow), `apps/desktop/main.cjs` (repolog:write-config handler)
+
+### Gate 4 — Write-back never silently clobbers (→ Work Stream 3b)
+- [ ] Every toggle write uses temp-file → `fs.renameSync` → SHA-256 verify → rollback on mismatch
+- [ ] Stale-line detection rejects the write if the target line changed since last scan (no silent overwrite)
+- [ ] Concurrent writes to the same file are queued, not raced
+- [ ] On failure, renderer receives a human-readable error and triggers a rescan
+- **Audit file:** `src/engine/writeback.ts` (atomic write, stale-line check, queue)
+
+### Gate 5 — Watcher feels alive (→ Work Stream 3a)
+- [ ] External edit to PLAN.md → HUD updates within ~1s (debounce ≤500ms, chokidar `add`+`change`+`unlink` all handled)
+- [ ] Rapid-fire changes (5 in 100ms) collapse to 1 rescan
+- [ ] Watcher error emits to renderer; desktop shows "File watch lost sync; re-scanning." banner
+- [ ] Config write (`.repolog.json`) triggers immediate rescan with new config applied
+- **Audit file:** `src/engine/watcher.ts` (debounce value, unlink handler, error emit)
+
+### Gate 6 — Version and release are clean (→ Work Stream 5)
+- [ ] `repolog --version` prints `v0.4.0` (or current) cleanly; no extra output
+- [ ] `RepoLog.exe --repo-root <path>` opens the specified repo on startup
+- [ ] `CHANGELOG.md` has copy-paste-ready v0.4.0 notes under the correct heading
+- [ ] `npm run build && npm run lint && npm test` all pass (59+ tests) before release tag
+- **Audit files:** `src/cli/index.ts` (--version), `apps/desktop/main.cjs` (--repo-root arg parsing), `CHANGELOG.md`
+
+### Cadence Rule
+Before implementing anything new: **audit the gate first** — read the actual code, not the spec. Report what's real vs. stub. Fix gaps in gate order (1→2→3→4→5→6). Run the build gate after each gate closes.
+
+```
+npm run build && npm run lint && npm test
+```
+
+Anything failing = gate is not closed.
+
+---
+
 ## Prerequisites for Implementation
 
 - Read `docs/SCHEMA.md` for all type shapes: `RepoConfig`, `QuestState`, `DoctorReport`, `TuneupResult`

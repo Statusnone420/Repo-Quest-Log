@@ -1909,13 +1909,15 @@ function renderSettingsPanel(state: QuestState, liveBridge?: SurfaceHtmlOptions[
             <div class="field" style="margin-top:6px">
               <label>Model</label>
               <select data-or-field="model" style="width:100%;margin-top:4px">
-                <option value="nvidia/nemotron-3-super-120b-a12b:free">Nemotron 3 Super 120B (free) — recommended</option>
-                <option value="google/gemma-3-27b-it:free">Gemma 3 27B (free) — fast</option>
-                <option value="meta-llama/llama-4-scout:free">Llama 4 Scout (free) — strong</option>
-                <option value="deepseek/deepseek-r1-0528:free">DeepSeek R1 (free) — reasoning</option>
+                <option value="deepseek/deepseek-r1:free">DeepSeek R1 (free) — reasoning ★</option>
+                <option value="deepseek/deepseek-chat-v3-0324:free">DeepSeek V3 (free) — fast &amp; capable</option>
+                <option value="nvidia/nemotron-3-super-120b-a12b:free">Nemotron 3 Super 120B (free)</option>
+                <option value="google/gemma-3-27b-it:free">Gemma 3 27B (free)</option>
+                <option value="meta-llama/llama-4-scout:free">Llama 4 Scout (free)</option>
                 <option value="qwen/qwen3-14b:free">Qwen3 14B (free)</option>
-                <option value="microsoft/phi-4-reasoning-plus:free">Phi-4 Reasoning+ (free) — coding</option>
+                <option value="qwen/qwen3-235b-a22b:free">Qwen3 235B (free) — large</option>
               </select>
+              <div style="font-size:10px;color:var(--dim);margin-top:4px;line-height:1.4">Free models have ~10 req/day limit. Add $10 credits at <strong style="color:var(--muted)">openrouter.ai</strong> to unlock 1000/day — credits aren't charged for free models.</div>
             </div>
             <div class="actions" style="margin-top:8px">
               <button type="button" data-ui-action="save-openrouter">Save</button>
@@ -2581,13 +2583,19 @@ function renderSettingsScript(): string {
                 digestBtn.textContent = "✦ Digest";
                 if (res && res.error) {
                   if (window.__rqlToast) window.__rqlToast(res.error);
+                  // Also show inline so it's readable after the toast fades
+                  var emptyEl = document.querySelector(".digest-empty");
+                  if (emptyEl) { emptyEl.textContent = "⚠ " + res.error; emptyEl.style.color = "var(--warn)"; }
                 } else {
                   window.repologDesktop.requestRefresh();
                 }
               }).catch(function(err) {
                 digestBtn.disabled = false;
                 digestBtn.textContent = "✦ Digest";
-                if (window.__rqlToast) window.__rqlToast("Digest failed: " + String(err).slice(0, 60));
+                var msg = "Digest failed: " + String(err).slice(0, 80);
+                if (window.__rqlToast) window.__rqlToast(msg);
+                var emptyEl = document.querySelector(".digest-empty");
+                if (emptyEl) { emptyEl.textContent = "⚠ " + msg; emptyEl.style.color = "var(--warn)"; }
               });
             } else {
               digestBtn.disabled = false;
@@ -2744,7 +2752,8 @@ function renderPaletteScript(): string {
         toast.textContent = msg;
         toast.setAttribute("data-visible", "true");
         clearTimeout(showToast._t);
-        showToast._t = setTimeout(function () { toast.setAttribute("data-visible", "false"); }, 2000);
+        var duration = Math.min(Math.max(2500, msg.length * 55), 8000);
+        showToast._t = setTimeout(function () { toast.setAttribute("data-visible", "false"); }, duration);
       }
       window.__rqlToast = showToast;
       function escapeHtml(v) {

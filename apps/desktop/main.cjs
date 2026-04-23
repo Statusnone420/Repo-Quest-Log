@@ -674,8 +674,23 @@ Based on the git commits and Now/Blocked tasks, return exactly this JSON — be 
     });
 
     if (!resp.ok) {
-      const errText = await resp.text().catch(() => "");
-      return { error: `OpenRouter ${resp.status}: ${errText.slice(0, 160)}` };
+      let friendly = `OpenRouter error ${resp.status}`;
+      try {
+        const errData = await resp.json();
+        const msg = errData?.error?.message ?? "";
+        if (resp.status === 429) {
+          friendly = msg.includes("free-models-per-day")
+            ? "Daily free-model limit reached. Add $10 credits at openrouter.ai → Account → Credits — credits are NOT spent on free models, they just raise your daily cap to 1000 requests."
+            : "Rate limited. Wait a minute and try again.";
+        } else if (resp.status === 404) {
+          friendly = `Model not found on OpenRouter — pick a different one in Settings. (${openrouterConfig.model})`;
+        } else if (resp.status === 401 || resp.status === 403) {
+          friendly = "Invalid or expired API key — check your OpenRouter key in Settings.";
+        } else if (msg) {
+          friendly = `OpenRouter: ${msg.slice(0, 120)}`;
+        }
+      } catch { /* keep generic message */ }
+      return { error: friendly };
     }
 
     const data = await resp.json();

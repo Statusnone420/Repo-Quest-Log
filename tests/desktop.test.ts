@@ -31,7 +31,7 @@ describe("renderDesktopHtml", () => {
     expect(html).toContain("Forget");
     expect(html).toContain("data-writeback-toggle");
     expect(html).toContain("Theme");
-    expect(html).toContain("likely working");
+    expect(html).toContain("run-digest");
     expect(html).toContain("source: STATE.md resume note");
     expect(html).toContain("desktop-preview.html");
     expect(html).toContain("data-copy-context=");

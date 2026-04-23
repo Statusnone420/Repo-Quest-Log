@@ -96,13 +96,6 @@ function normalizeAgentStatus(
   if (status === "active" || status === "working" || status === "idle") {
     return status;
   }
-
-  if (agentId === "claude") {
-    return "active";
-  }
-  if (agentId === "codex") {
-    return "working";
-  }
   return "idle";
 }
 

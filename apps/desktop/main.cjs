@@ -591,7 +591,10 @@ ipcMain.handle("repolog:write-tuneup-charter", async (_event, charter) => {
 });
 
 ipcMain.handle("repolog:save-openrouter-config", async (_event, payload = {}) => {
-  const key = typeof payload.key === "string" ? payload.key.trim() : "";
+  // If key is not supplied in payload, preserve the existing key
+  const key = typeof payload.key === "string" && payload.key.trim()
+    ? payload.key.trim()
+    : openrouterConfig.key;
   const model = typeof payload.model === "string" && payload.model.trim()
     ? payload.model.trim()
     : "nvidia/nemotron-3-super-120b-a12b:free";

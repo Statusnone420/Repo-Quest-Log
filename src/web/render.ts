@@ -83,16 +83,21 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
        --bg-elevated: #1c1a17;
      }
      [data-theme="light"] {
-       --bg: #f4f5f7;
+       --bg: #f0f2f5;
+       --bg-grid: rgba(0,0,0,0.04);
        --tile: #ffffff;
-       --tile-border: rgba(0,0,0,0.08);
+       --tile-border: rgba(0,0,0,0.09);
+       --tile-border-hot: rgba(10,95,214,0.4);
        --accent: #0a5fd6;
        --accent-soft: rgba(10,95,214,0.09);
        --ink: #111318;
-       --muted: rgba(0,0,0,0.54);
-       --dim: rgba(0,0,0,0.36);
-       --faint: rgba(0,0,0,0.08);
+       --muted: rgba(0,0,0,0.55);
+       --dim: rgba(0,0,0,0.38);
+       --faint: rgba(0,0,0,0.06);
        --warn: #b45309;
+       --warn-soft: rgba(180,83,9,0.1);
+       --ok: #1a7f4b;
+       --danger: #c0392b;
        --bg-elevated: #ffffff;
        --dot-idle: rgba(0,0,0,0.22);
      }
@@ -1064,6 +1069,38 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       background: var(--faint); border-radius: 3px; color: var(--muted);
       vertical-align: middle; margin-left: 4px;
     }
+    .card-info {
+      position: relative; display: inline-flex; align-items: center;
+      vertical-align: middle; margin-left: 4px; cursor: help;
+    }
+    .card-info-icon {
+      width: 13px; height: 13px; border-radius: 50%;
+      border: 1px solid var(--dim); color: var(--dim);
+      font-size: 8px; font-style: normal; font-weight: 700;
+      display: inline-flex; align-items: center; justify-content: center;
+      user-select: none; line-height: 1;
+    }
+    .card-info-tip {
+      display: none; position: absolute;
+      bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+      background: var(--bg-elevated); border: 1px solid var(--tile-border);
+      border-radius: 6px; padding: 7px 9px;
+      font-size: var(--tiny-size); color: var(--muted);
+      width: 190px; text-align: left; z-index: 200;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.35);
+      line-height: 1.45; pointer-events: none; white-space: normal;
+    }
+    .card-info:hover .card-info-tip { display: block; }
+    .settings-panel-card select {
+      background: var(--faint); border: 1px solid var(--tile-border);
+      color: var(--ink); border-radius: 4px; padding: 4px 6px;
+      font-size: var(--small-size); font-family: var(--rql-font);
+      appearance: none; -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23888'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 8px center;
+      padding-right: 24px; cursor: pointer;
+    }
+    .settings-panel-card select:focus { outline: 1px solid var(--accent); }
 
     /* ---- CHANGE ROWS ---- */
     .change-row {
@@ -1638,18 +1675,20 @@ function renderBlockedTile(tasks: BlockedTask[], writebackEnabled: boolean, live
 
 function renderAgentsTile(state: QuestState, hasKey: boolean): string {
   const agents = state.agents;
+  // Status derived from lastDigest age — never from mtime heuristics
+  const digestAge60 = state.lastDigest
+    ? (Date.now() - new Date(state.lastDigest.generatedAt).getTime()) < 60 * 60 * 1000
+    : false;
+  const rosterStatus: "active" | "idle" = digestAge60 ? "active" : "idle";
+  const digestBtnDisabled = !hasKey ? ' title="Add OpenRouter key in Settings to enable"' : ' title="Run AI digest of current repo state"';
   return `<section class="tile" data-area="agents">
     <div class="tile-header">
       <h3 class="tile-title agents"><span class="accent-bar"></span>Agents</h3>
       <span class="tile-meta">${agents.length} registered</span>
-      <button class="digest-btn" data-action="run-digest" 
-              title="${hasKey ? 'Run AI digest of current repo state' : 'Add OpenRouter key in Settings to enable'}">
-        ✦ Digest
-      </button>
+      <button class="digest-btn" data-action="run-digest"${digestBtnDisabled}${!hasKey ? ' disabled' : ''}>✦ Digest</button>
     </div>
   <div class="tile-body">
     ${agents.length === 0 ? `<div class="agent-card"><div class="agent-objective">No agent profiles discovered.</div></div>` : agents.map((agent) => {
-      const status = agent.status;
       const blurb = agent.currentTask ?? agent.objective ?? "";
       const trimmedBlurb = blurb.length > 120 ? blurb.substring(0, 120) + "…" : blurb;
       return `
@@ -1658,7 +1697,7 @@ function renderAgentsTile(state: QuestState, hasKey: boolean): string {
           ${renderAgentChip(agent.id)}
           <span class="agent-name">${escapeHtml(agent.name)}</span>
           <span class="agent-role">${escapeHtml(agent.role)}</span>
-          <span class="agent-status ${escapeHtml(status)}" title="Status from agent's ## Current Task section" data-agent-id="${escapeHtml(agent.id)}"><span class="dot"></span>${escapeHtml(renderAgentStatusLabel(status))}</span>
+          <span class="agent-status ${escapeHtml(rosterStatus)}" data-agent-id="${escapeHtml(agent.id)}"><span class="dot"></span>${rosterStatus}</span>
         </div>
         <div class="agent-objective">${escapeHtml(trimmedBlurb)}</div>
         <div class="agent-meta">${escapeHtml(agent.file)} · ${escapeHtml(agent.area)}</div>
@@ -1810,25 +1849,22 @@ function renderSettingsPanel(state: QuestState, liveBridge?: SurfaceHtmlOptions[
         </div>
         <div class="settings-panel-grid">
           <div class="settings-panel-card">
-            <div class="head">Write-back <span class="pill">${wbStatus}</span></div>
-            <div class="detail">${state.config?.writeback ? "Checkbox toggles are live." : "Add <strong>\"writeback\": true</strong> to <strong>.repolog.json</strong> to enable."}</div>
+            <div class="head">Write-back <span class="pill">${wbStatus}</span> <span class="card-info"><i class="card-info-icon">i</i><span class="card-info-tip">${state.config?.writeback ? "Checkbox toggles in Now/Next/Blocked write back to your markdown files instantly." : 'Enable by adding "writeback": true to .repolog.json, then save settings.'}</span></span></div>
             <div class="actions">${configButton}</div>
           </div>
           <div class="settings-panel-card">
-            <div class="head">Standup</div>
-            <div class="detail">Copy today's standup export to clipboard.</div>
+            <div class="head">Standup <span class="card-info"><i class="card-info-icon">i</i><span class="card-info-tip">Copies a markdown summary of today's done + active tasks to your clipboard.</span></span></div>
             <div class="actions">
               <button type="button" data-ui-action="standup-export">Copy standup <span class="kbd-inline"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>C</kbd></span></button>
             </div>
           </div>
           <div class="settings-panel-card">
-            <div class="head">Prompt dir</div>
+            <div class="head">Prompt dir <span class="card-info"><i class="card-info-icon">i</i><span class="card-info-tip">Directory for custom prompt templates. Files here appear in the Ctrl+K palette.</span></span></div>
             <div class="detail" title="${escapeHtml(promptDir)}">${escapeHtml(promptDir)}</div>
             <div class="actions">${repoButton}</div>
           </div>
           <div class="settings-panel-card">
-            <div class="head">Startup</div>
-            <div class="detail">Remembers last repo in Electron userData.</div>
+            <div class="head">Startup <span class="card-info"><i class="card-info-icon">i</i><span class="card-info-tip">Remember opens this repo automatically on next launch. Forget clears that memory.</span></span></div>
             <div class="actions">
               <button type="button" data-ui-action="remember-startup-root">Remember</button>
               <button type="button" data-ui-action="forget-startup-root">Forget</button>
@@ -1836,15 +1872,13 @@ function renderSettingsPanel(state: QuestState, liveBridge?: SurfaceHtmlOptions[
           </div>
           <div class="settings-panel-card">
             <div class="head">Theme</div>
-            <div class="detail">Choose a color scheme for the HUD.</div>
             <div class="actions theme-picker">
-              <button type="button" data-ui-theme="dark" aria-pressed="false" title="Dark (default)"><span class="theme-swatch" style="background:#0b0d10;border-color:#8ab4ff"></span>Dark</button>
-              <button type="button" data-ui-theme="light" aria-pressed="false" title="Light"><span class="theme-swatch" style="background:#f4f5f7;border-color:#0a5fd6"></span>Light</button>
+              <button type="button" data-ui-theme="dark" aria-pressed="false"><span class="theme-swatch" style="background:#0b0d10;border-color:#8ab4ff"></span>Dark</button>
+              <button type="button" data-ui-theme="light" aria-pressed="false"><span class="theme-swatch" style="background:#f4f5f7;border-color:#0a5fd6"></span>Light</button>
             </div>
           </div>
           <div class="settings-panel-card">
-            <div class="head">Density</div>
-            <div class="detail">Adjust spacing and padding.</div>
+            <div class="head">Density <span class="card-info"><i class="card-info-icon">i</i><span class="card-info-tip">Controls spacing and font size. Wide = more breathing room. Compact = fit more on screen.</span></span></div>
             <div class="actions">
               <button type="button" data-ui-density="cozy" aria-pressed="false">Cozy</button>
               <button type="button" data-ui-density="wide" aria-pressed="false">Wide</button>
@@ -1853,7 +1887,6 @@ function renderSettingsPanel(state: QuestState, liveBridge?: SurfaceHtmlOptions[
           </div>
           <div class="settings-panel-card">
             <div class="head">Font</div>
-            <div class="detail">Applied across the entire HUD.</div>
             <div class="actions">
               <button type="button" data-ui-font="system" aria-pressed="true">System</button>
               <button type="button" data-ui-font="mono" aria-pressed="false">Mono</button>
@@ -1861,19 +1894,25 @@ function renderSettingsPanel(state: QuestState, liveBridge?: SurfaceHtmlOptions[
             </div>
           </div>
           <div class="settings-panel-card" data-card="openrouter">
-            <div class="head">OpenRouter <span class="pill">optional</span></div>
-            <div class="detail">Powers the Digest button. Free key at <strong>openrouter.ai</strong>.</div>
+            <div class="head">OpenRouter <span class="pill">optional</span> <span class="card-info"><i class="card-info-icon">i</i><span class="card-info-tip">Powers the ✦ Digest button. Get a free key at openrouter.ai — no credit card needed. Key is stored locally, never in your repo.</span></span></div>
             <div class="field">
               <label>API Key</label>
               <input type="password" data-or-field="key" placeholder="sk-or-…" autocomplete="off" spellcheck="false" style="width:100%;margin-top:4px" />
+              <span data-or-status style="font-size:var(--tiny-size);color:var(--ok);display:block;margin-top:3px"></span>
             </div>
             <div class="field" style="margin-top:6px">
               <label>Model</label>
-              <input type="text" data-or-field="model" placeholder="nvidia/nemotron-3-super-120b-a12b:free" spellcheck="false" style="width:100%;margin-top:4px" />
+              <select data-or-field="model" style="width:100%;margin-top:4px">
+                <option value="nvidia/nemotron-3-super-120b-a12b:free">Nemotron 3 Super 120B (free) — recommended</option>
+                <option value="google/gemma-3-27b-it:free">Gemma 3 27B (free) — fast</option>
+                <option value="meta-llama/llama-4-scout:free">Llama 4 Scout (free) — strong</option>
+                <option value="deepseek/deepseek-r1-0528:free">DeepSeek R1 (free) — reasoning</option>
+                <option value="qwen/qwen3-14b:free">Qwen3 14B (free)</option>
+                <option value="microsoft/phi-4-reasoning-plus:free">Phi-4 Reasoning+ (free) — coding</option>
+              </select>
             </div>
             <div class="actions" style="margin-top:8px">
-              <button type="button" data-action="save-openrouter">Save key</button>
-              <span class="or-status" data-or-status style="font-size:var(--tiny-size);color:var(--ok);margin-left:8px"></span>
+              <button type="button" data-action="save-openrouter">Save</button>
             </div>
           </div>
         </div>
@@ -2134,9 +2173,9 @@ function renderSettingsScript(): string {
         serif: 'Georgia, "Times New Roman", serif'
       };
       function densityMultiplier(value) {
-        if (value === "wide") return 1.1;
+        if (value === "wide") return 1.22;
         if (value === "cozy") return 1;
-        return 0.9;
+        return 0.8;
       }
       function viewportMultiplier() {
         var width = window.innerWidth || 0;
@@ -2193,12 +2232,14 @@ function renderSettingsScript(): string {
         if (settingsOverlay) settingsOverlay.setAttribute("data-open", "true");
         if (window.repologDesktop && typeof window.repologDesktop.getOpenRouterConfig === "function") {
           window.repologDesktop.getOpenRouterConfig().then(function(cfg) {
+            // Key field: always empty so user types a real key; status label shows config state
             var keyField = document.querySelector("[data-or-field='key']");
             var modelField = document.querySelector("[data-or-field='model']");
             var orStatus = document.querySelector("[data-or-status]");
-            if (keyField) keyField.value = cfg.keyPreview || "";
-            if (modelField) modelField.value = cfg.model || "";
-            if (orStatus) orStatus.textContent = cfg.configured ? "✓ Configured" : "";
+            if (keyField) keyField.value = ""; // never pre-fill with masked preview
+            if (modelField) modelField.value = cfg.model || "nvidia/nemotron-3-super-120b-a12b:free";
+            if (orStatus) orStatus.textContent = cfg.configured ? "✓ Key saved" : "No key saved";
+            if (orStatus) orStatus.style.color = cfg.configured ? "var(--ok)" : "var(--dim)";
           }).catch(function() {});
         }
       }
@@ -2373,7 +2414,7 @@ function renderSettingsScript(): string {
             var line = parseInt(openRow.getAttribute("data-line") || "1", 10);
             window.repologDesktop.openDoc(doc, line);
           }
-          var button = target.closest("[data-ui-action], [data-ui-density]");
+          var button = target.closest("[data-ui-action], [data-ui-density], [data-ui-theme], [data-ui-font]");
           if (!button) return;
           if (button.hasAttribute("data-ui-action")) {
             var action = button.getAttribute("data-ui-action");
@@ -2502,23 +2543,25 @@ function renderSettingsScript(): string {
           }
           if (action === "save-openrouter") {
             var keyField = document.querySelector("[data-or-field='key']");
-            var modelField = document.querySelector("[data-or-field='model']");
+            var modelSel = document.querySelector("[data-or-field='model']");
             var orStatus = document.querySelector("[data-or-status]");
-            var key = keyField ? keyField.value.trim() : "";
-            var model = (modelField ? modelField.value.trim() : "") || "nvidia/nemotron-3-super-120b-a12b:free";
+            var newKey = keyField ? keyField.value.trim() : "";
+            var model = (modelSel ? modelSel.value.trim() : "") || "nvidia/nemotron-3-super-120b-a12b:free";
+            // If key field is blank, only save the model (preserve existing key)
             if (window.repologDesktop && typeof window.repologDesktop.saveOpenRouterConfig === "function") {
-              window.repologDesktop.saveOpenRouterConfig({ key: key, model: model }).then(function() {
-                if (orStatus) { orStatus.textContent = key ? "✓ Saved" : "Cleared"; }
+              var payload = newKey ? { key: newKey, model: model } : { model: model };
+              window.repologDesktop.saveOpenRouterConfig(payload).then(function() {
+                if (orStatus) { orStatus.textContent = newKey ? "✓ Key saved" : "✓ Model saved"; orStatus.style.color = "var(--ok)"; }
+                if (keyField) keyField.value = ""; // clear after save
                 var digestBtns = document.querySelectorAll("[data-action='run-digest']");
                 for (var d = 0; d < digestBtns.length; d++) {
-                  digestBtns[d].disabled = !key;
-                  digestBtns[d].title = key ? "Run AI digest of current repo state" : "Add OpenRouter key in Settings to enable";
+                  if (newKey) { digestBtns[d].disabled = false; digestBtns[d].title = "Run AI digest of current repo state"; }
                 }
               }).catch(function(err) {
-                if (orStatus) orStatus.textContent = "Error: " + String(err).slice(0, 40);
+                if (orStatus) { orStatus.textContent = "Error: " + String(err).slice(0, 40); orStatus.style.color = "var(--danger)"; }
               });
             } else {
-              if (orStatus) orStatus.textContent = "Only available in desktop shell";
+              if (orStatus) { orStatus.textContent = "Only available in desktop shell"; orStatus.style.color = "var(--dim)"; }
             }
           }
           if (action === "run-digest") {

@@ -23,7 +23,7 @@ describe("web renderers", () => {
     expect(html).toContain("Startup");
     expect(html).toContain("data-writeback-toggle");
     expect(html).toContain("Theme");
-    expect(html).toContain("likely working");
+    expect(html).toContain("idle");
     expect(html).toContain("run-digest");
     expect(html).toContain("source: STATE.md resume note");
     expect(html).toContain("source: PLAN.md");

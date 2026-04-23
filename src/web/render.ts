@@ -347,7 +347,8 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       padding: 0;
       border-radius: 16px;
       border: 1px solid var(--tile-border-hot);
-      background: rgba(15,18,24,0.98);
+      background: var(--bg-elevated);
+      color: var(--ink);
       box-shadow: 0 34px 90px -18px rgba(0,0,0,0.72);
       overflow: hidden;
     }
@@ -392,7 +393,7 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     .settings-panel-close {
       appearance: none;
       border: 1px solid var(--tile-border);
-      background: rgba(255,255,255,0.02);
+      background: var(--faint);
       color: var(--ink);
       border-radius: 7px;
       padding: 4px 10px;
@@ -413,7 +414,7 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       padding: 10px 12px;
       border-radius: 10px;
       border: 1px solid var(--tile-border);
-      background: rgba(255,255,255,0.02);
+      background: var(--faint);
     }
     .settings-panel-card .head {
       display: flex;
@@ -842,7 +843,7 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     /* ---- BOARD (3 cols, single row, fits viewport) ---- */
     .board {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
+      grid-template-columns: minmax(0, 0.88fr) minmax(0, 1fr) minmax(0, 1.12fr);
       grid-template-rows: minmax(0, 1fr);
       gap: var(--tile-gap);
       padding: var(--tile-gap) var(--pad-x) var(--pad-x);
@@ -853,11 +854,19 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       display: flex; flex-direction: column; gap: var(--tile-gap);
       min-height: 0; min-width: 0;
     }
+    /* Col 2: Next gets most space, changes + decisions share the rest */
     .col:nth-child(2) .tile[data-area="next"] {
-      flex: 1.72 1 0;
+      flex: 1.5 1 0;
     }
     .col:nth-child(2) .tile.tight[data-area="changes"] {
-      flex: 0.72 1 0;
+      flex: 0.55 1 0;
+    }
+    .col:nth-child(2) .tile[data-area="decisions"] {
+      flex: 0 1 auto;
+    }
+    /* Col 3: agents fills the full column */
+    .col:nth-child(3) .tile[data-area="agents"] {
+      flex: 1 1 0;
     }
 
     .tile {
@@ -1358,11 +1367,11 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       <div class="col">
         ${renderTaskTile("next", "Next", state.next.length, state.next, false, !!state.config?.writeback, options.liveBridge)}
         ${renderChangesTile(state.recentChanges)}
+        ${renderDecisionsTile(state.decisions)}
       </div>
       <div class="col">
-           ${renderAgentsTile(state, options.openrouterConfigured ?? false)}
-          ${renderDecisionsTile(state.decisions)}
-        </div>
+        ${renderAgentsTile(state, options.openrouterConfigured ?? false)}
+      </div>
       </section>
     `}
   </div>
@@ -1676,10 +1685,6 @@ function renderBlockedTile(tasks: BlockedTask[], writebackEnabled: boolean, live
 function renderAgentsTile(state: QuestState, hasKey: boolean): string {
   const agents = state.agents;
   // Status derived from lastDigest age — never from mtime heuristics
-  const digestAge60 = state.lastDigest
-    ? (Date.now() - new Date(state.lastDigest.generatedAt).getTime()) < 60 * 60 * 1000
-    : false;
-  const rosterStatus: "active" | "idle" = digestAge60 ? "active" : "idle";
   const digestBtnDisabled = !hasKey ? ' title="Add OpenRouter key in Settings to enable"' : ' title="Run AI digest of current repo state"';
   return `<section class="tile" data-area="agents">
     <div class="tile-header">
@@ -1691,13 +1696,14 @@ function renderAgentsTile(state: QuestState, hasKey: boolean): string {
     ${agents.length === 0 ? `<div class="agent-card"><div class="agent-objective">No agent profiles discovered.</div></div>` : agents.map((agent) => {
       const blurb = agent.currentTask ?? agent.objective ?? "";
       const trimmedBlurb = blurb.length > 120 ? blurb.substring(0, 120) + "…" : blurb;
+      const agentStatus = agent.status ?? "idle";
       return `
       <div class="agent-card">
         <div class="agent-head">
           ${renderAgentChip(agent.id)}
           <span class="agent-name">${escapeHtml(agent.name)}</span>
           <span class="agent-role">${escapeHtml(agent.role)}</span>
-          <span class="agent-status ${escapeHtml(rosterStatus)}" data-agent-id="${escapeHtml(agent.id)}"><span class="dot"></span>${rosterStatus}</span>
+          <span class="agent-status ${escapeHtml(agentStatus)}" data-agent-id="${escapeHtml(agent.id)}"><span class="dot"></span>${escapeHtml(agentStatus)}</span>
         </div>
         <div class="agent-objective">${escapeHtml(trimmedBlurb)}</div>
         <div class="agent-meta">${escapeHtml(agent.file)} · ${escapeHtml(agent.area)}</div>

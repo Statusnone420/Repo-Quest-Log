@@ -37,11 +37,11 @@ Instructions for any coding agent working in this repo (Codex, generic agents, C
 
 ## Current Objective
 
-Ship v0.5: honest Agents roster (status from .md content), on-demand LLM Digest via OpenRouter, Light/Dark theme, font picker, font size fix. See `plan_implementation.md` for execution spec.
+Ship v0.4: honest Agents roster (status from .md content), on-demand LLM Digest via OpenRouter, Light/Dark theme, font picker, font size fix. See `plan_implementation.md` for execution spec.
 
 ## Current Task
 
-v0.5 pass complete. Agents section honest, Digest button wired, OpenRouter IPC handlers live, Light theme and font picker in settings. 67 tests green.
+v0.4 feature pass complete. Layout restructured (Agents own col 3, Decisions moved to col 2). Agent status uses per-agent frontmatter. Settings panel themes correctly in Light mode. OpenRouter Digest wired and working. 67 tests green.
 
 ---
 

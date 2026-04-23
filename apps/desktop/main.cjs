@@ -638,22 +638,22 @@ ipcMain.handle("repolog:run-digest", async () => {
     ).trim() || "(no recent commits)";
   } catch { /* non-git repo or timeout */ }
 
-  const contextPrompt = `You are analyzing a software repo's planning documents. Return ONLY a JSON object — no markdown, no explanation.
+  const contextPrompt = `You are a senior engineering lead doing a quick repo status check. Prioritize the git log and ## Now / ## Blocked sections — those reflect what actually happened, not just the plan. Return ONLY a JSON object, no markdown, no extra text.
 
-## PLAN.md
-${read("PLAN.md")}
-
-## STATE.md
-${read("STATE.md")}
-
-## Agent Files
-${agentFiles || "(none)"}
-
-## Recent git commits (last 7 days)
+## Recent git commits (last 7 days — most reliable signal)
 ${gitLog}
 
-Return exactly this JSON shape:
-{"summary":"2-3 sentences on where things stand","stuck":"what is blocked or needs attention (one sentence, or 'Nothing blocked')","next":"the single most logical next action (one sentence)"}`;
+## PLAN.md (## Now and ## Blocked are the critical sections)
+${read("PLAN.md")}
+
+## STATE.md (## Current Focus and ## Resume Note show last session)
+${read("STATE.md")}
+
+## Agent files (## Current Task shows what each agent last did)
+${agentFiles || "(none)"}
+
+Based on the git commits and Now/Blocked tasks, return exactly this JSON — be specific, avoid restating the plan docs verbatim:
+{"summary":"What actually happened recently and where things stand (2 sentences max, reference specific features or files)","stuck":"The most concrete blocker or risk right now, or 'Nothing blocked'","next":"The single most actionable next step (name a specific file, command, or decision — not vague advice)"}`;
 
   try {
     const resp = await fetch("https://openrouter.ai/api/v1/chat/completions", {

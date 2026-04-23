@@ -1,4 +1,4 @@
-# plan_implementation.md — v0.5 Agents + Theme Pass
+# plan_implementation.md — v0.4 Agents + Theme Pass
 
 **Owner:** AGENTS.md (Codex executes). Claude drafted spec.
 **Gate:** `npm run build && npm run lint && npm test` must pass after every pass.

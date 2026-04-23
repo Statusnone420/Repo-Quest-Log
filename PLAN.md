@@ -4,18 +4,20 @@ One sentence: **what this repo is trying to become.**
 > A local-first CLI + TUI + desktop + VS Code shell that makes repo intent legible at a glance and hands that intent to whichever coding agent you open next.
 
 ## Objective
-Ship v0.5: honest Agents roster (status from .md content, not mtimes), on-demand LLM Digest via OpenRouter, Light/Dark theme, font picker, and font size fix. Keep the local-first, markdown-first philosophy intact.
+Ship v0.4: honest Agents roster (status from .md frontmatter), on-demand LLM Digest via OpenRouter, Light/Dark theme, font picker, font size fix, and polished 3-column layout. Keep the local-first, markdown-first philosophy intact.
 
 ## Current Focus
-v0.4 diamond gates closed. v0.5 pass targets two user-facing pain points: the Agents section showing fake heuristic data, and the theme not applying correctly. Adding OpenRouter-powered Digest (on-demand, user-supplied key, free model default) as the first LLM integration. See `plan_implementation.md` for execution spec.
+v0.4 feature pass complete and verified. Agents section is honest (per-agent status from frontmatter), Digest works (OpenRouter, confirmed live hit), layout restructured (Agents own col 3, Decisions in col 2), Settings panel themes correctly in Light mode. 67 tests green.
 
 **Objective Sync Rule:** When PLAN.md's `## Objective` changes, review and update all agent objectives (CLAUDE.md, GEMINI.md, AGENTS.md) to align with the new direction. Each agent's objective should support the repo objective from their specific angle (e.g., Claude = execution, Gemini = architecture).
 
 ## Now
-- [ ] Theme: Light/Dark only, fix density clamp (126% → 150%), add font picker
-- [ ] Agents: scrub mtime heuristics, source status from .md `## Current Task`, remove fake confidence feed
-- [ ] OpenRouter: API key in Electron userData, model config, `repolog:run-digest` IPC handler
-- [ ] Digest button: on-demand, bundles PLAN+STATE+agents+git log, shows 3-part result in Agents panel
+- [x] Theme: Light/Dark only, fix density clamp (126% → 150%), add font picker
+- [x] Agents: honest per-agent status from .md frontmatter, remove fake confidence feed
+- [x] OpenRouter: API key in Electron userData, model config, `repolog:run-digest` IPC handler
+- [x] Digest button: on-demand, bundles PLAN+STATE+agents+git log, shows 3-part result in Agents panel
+- [x] Layout: col 1 = Now+Blocked, col 2 = Next+Changes+Decisions, col 3 = Agents full-height
+- [x] Light mode: settings panel background uses CSS vars, fully themed
 
 ## Next
 - [ ] macOS host decision and prototyping

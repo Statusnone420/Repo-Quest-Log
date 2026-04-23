@@ -9,11 +9,11 @@ owner: claude
 Live "where we are." Update this as work progresses. The normalizer reads this to build the Resume Note.
 
 ## Current Focus
-v0.5 pass complete. Agents section rebuilt (honest status from .md content, Digest button + OpenRouter integration). Theme simplified to Light/Dark, font picker added, font size cap raised to 150%. 67 tests green.
+v0.4 feature pass complete. Agents tile restructured (honest per-agent status from frontmatter, not digest timing). Layout: col 1 = Now+Blocked, col 2 = Next+Changes+Decisions, col 3 = Agents full-height. Settings panel now themes correctly in Light mode. OpenRouter Digest wired and confirmed working. 67 tests green.
 
 ## Resume Note
 
-> Session 2026-04-23 (v0.5): Rewrote Agents tile — removed mtime heuristics and fake confidence feed entirely. Agent status now sourced from `## Current Task` / `## Last Task` in each agent .md. Added `DigestResult` type and `lastDigest` to `QuestState`; scan.ts loads `.repolog/digest.json` on startup. Added on-demand Digest button: bundles PLAN.md + STATE.md + agent files + 7-day git log → POST to OpenRouter (default: nemotron-free) → shows 3-part summary in Agents panel. API key stored in Electron userData (`openrouter.json`), never in repo. Theme simplified to Dark/Light only; `normalizeTheme()` maps slate/dim → dark. Font picker (System/Mono/Serif) with `--rql-font` CSS var. Density clamp raised from 1.32 → 1.5 (fixes 126% ceiling bug). Stale test assertion updated (`heuristic feed` → `run-digest`). `npm run build && npm run lint && npm test` passes with 67 tests across 17 files.
+> Session 2026-04-23 (v0.4): Full feature pass — honest Agents roster (status from .md frontmatter, not mtime heuristics), on-demand Digest via OpenRouter (nemotron-free default, key in Electron userData), Light/Dark theme, font picker (System/Mono/Serif), density clamp raised 1.32→1.5 (fixes 126% ceiling). Layout restructured: Agents own the third column full-height; Decisions moved to col 2 alongside Next+Recent Changes. Settings panel background now uses `--bg-elevated` (themes correctly in Light mode). Agent status uses `agent.status` from frontmatter directly (no more global roster status overriding all agents). Click delegation bug fixed (Save + Digest buttons used `data-action` instead of `data-ui-action`). SVG info icons replace janky letter-in-circle. Dropdown `option` colors added for dark/light. `npm run build && npm run lint && npm test` passes with 67 tests across 17 files.
 
 ## Last Session — UI polish pass (2026-04-22)
 - **Settings rack**: Removed filler description copy and Ctrl+ chip row; removed Standup button and extra Refresh from the rack. Rack now shows only Open Settings + Open Repo.

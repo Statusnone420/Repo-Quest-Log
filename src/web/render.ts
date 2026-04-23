@@ -1074,11 +1074,9 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       vertical-align: middle; margin-left: 4px; cursor: help;
     }
     .card-info-icon {
-      width: 13px; height: 13px; border-radius: 50%;
-      border: 1px solid var(--dim); color: var(--dim);
-      font-size: 8px; font-style: normal; font-weight: 700;
-      display: inline-flex; align-items: center; justify-content: center;
-      user-select: none; line-height: 1;
+      width: 12px; height: 12px; color: var(--dim);
+      opacity: 0.7; flex-shrink: 0; display: inline-block;
+      vertical-align: middle; user-select: none; pointer-events: none;
     }
     .card-info-tip {
       display: none; position: absolute;
@@ -1101,6 +1099,8 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       padding-right: 24px; cursor: pointer;
     }
     .settings-panel-card select:focus { outline: 1px solid var(--accent); }
+    .settings-panel-card select option { background-color: #18182a; color: #dddde8; }
+    [data-theme="light"] .settings-panel-card select option { background-color: #f5f5fa; color: #18181e; }
 
     /* ---- CHANGE ROWS ---- */
     .change-row {
@@ -1685,7 +1685,7 @@ function renderAgentsTile(state: QuestState, hasKey: boolean): string {
     <div class="tile-header">
       <h3 class="tile-title agents"><span class="accent-bar"></span>Agents</h3>
       <span class="tile-meta">${agents.length} registered</span>
-      <button class="digest-btn" data-action="run-digest"${digestBtnDisabled}${!hasKey ? ' disabled' : ''}>✦ Digest</button>
+      <button class="digest-btn" data-ui-action="run-digest"${digestBtnDisabled}${!hasKey ? ' disabled' : ''}>✦ Digest</button>
     </div>
   <div class="tile-body">
     ${agents.length === 0 ? `<div class="agent-card"><div class="agent-objective">No agent profiles discovered.</div></div>` : agents.map((agent) => {
@@ -1849,22 +1849,22 @@ function renderSettingsPanel(state: QuestState, liveBridge?: SurfaceHtmlOptions[
         </div>
         <div class="settings-panel-grid">
           <div class="settings-panel-card">
-            <div class="head">Write-back <span class="pill">${wbStatus}</span> <span class="card-info"><i class="card-info-icon">i</i><span class="card-info-tip">${state.config?.writeback ? "Checkbox toggles in Now/Next/Blocked write back to your markdown files instantly." : 'Enable by adding "writeback": true to .repolog.json, then save settings.'}</span></span></div>
+            <div class="head">Write-back <span class="pill">${wbStatus}</span> <span class="card-info"><svg class="card-info-icon" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/><path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/></svg><span class="card-info-tip">${state.config?.writeback ? "Checkbox toggles in Now/Next/Blocked write back to your markdown files instantly." : 'Enable by adding "writeback": true to .repolog.json, then save settings.'}</span></span></div>
             <div class="actions">${configButton}</div>
           </div>
           <div class="settings-panel-card">
-            <div class="head">Standup <span class="card-info"><i class="card-info-icon">i</i><span class="card-info-tip">Copies a markdown summary of today's done + active tasks to your clipboard.</span></span></div>
+            <div class="head">Standup <span class="card-info"><svg class="card-info-icon" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/><path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/></svg><span class="card-info-tip">Copies a markdown summary of today's done + active tasks to your clipboard.</span></span></div>
             <div class="actions">
               <button type="button" data-ui-action="standup-export">Copy standup <span class="kbd-inline"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>C</kbd></span></button>
             </div>
           </div>
           <div class="settings-panel-card">
-            <div class="head">Prompt dir <span class="card-info"><i class="card-info-icon">i</i><span class="card-info-tip">Directory for custom prompt templates. Files here appear in the Ctrl+K palette.</span></span></div>
+            <div class="head">Prompt dir <span class="card-info"><svg class="card-info-icon" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/><path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/></svg><span class="card-info-tip">Directory for custom prompt templates. Files here appear in the Ctrl+K palette.</span></span></div>
             <div class="detail" title="${escapeHtml(promptDir)}">${escapeHtml(promptDir)}</div>
             <div class="actions">${repoButton}</div>
           </div>
           <div class="settings-panel-card">
-            <div class="head">Startup <span class="card-info"><i class="card-info-icon">i</i><span class="card-info-tip">Remember opens this repo automatically on next launch. Forget clears that memory.</span></span></div>
+            <div class="head">Startup <span class="card-info"><svg class="card-info-icon" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/><path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/></svg><span class="card-info-tip">Remember opens this repo automatically on next launch. Forget clears that memory.</span></span></div>
             <div class="actions">
               <button type="button" data-ui-action="remember-startup-root">Remember</button>
               <button type="button" data-ui-action="forget-startup-root">Forget</button>
@@ -1878,7 +1878,7 @@ function renderSettingsPanel(state: QuestState, liveBridge?: SurfaceHtmlOptions[
             </div>
           </div>
           <div class="settings-panel-card">
-            <div class="head">Density <span class="card-info"><i class="card-info-icon">i</i><span class="card-info-tip">Controls spacing and font size. Wide = more breathing room. Compact = fit more on screen.</span></span></div>
+            <div class="head">Density <span class="card-info"><svg class="card-info-icon" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/><path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/></svg><span class="card-info-tip">Controls spacing and font size. Wide = more breathing room. Compact = fit more on screen.</span></span></div>
             <div class="actions">
               <button type="button" data-ui-density="cozy" aria-pressed="false">Cozy</button>
               <button type="button" data-ui-density="wide" aria-pressed="false">Wide</button>
@@ -1894,7 +1894,7 @@ function renderSettingsPanel(state: QuestState, liveBridge?: SurfaceHtmlOptions[
             </div>
           </div>
           <div class="settings-panel-card" data-card="openrouter">
-            <div class="head">OpenRouter <span class="pill">optional</span> <span class="card-info"><i class="card-info-icon">i</i><span class="card-info-tip">Powers the ✦ Digest button. Get a free key at openrouter.ai — no credit card needed. Key is stored locally, never in your repo.</span></span></div>
+            <div class="head">OpenRouter <span class="pill">optional</span> <span class="card-info"><svg class="card-info-icon" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/><path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/></svg><span class="card-info-tip">Powers the ✦ Digest button. Get a free key at openrouter.ai — no credit card needed. Key is stored locally, never in your repo.</span></span></div>
             <div class="field">
               <label>API Key</label>
               <input type="password" data-or-field="key" placeholder="sk-or-…" autocomplete="off" spellcheck="false" style="width:100%;margin-top:4px" />
@@ -1912,7 +1912,7 @@ function renderSettingsPanel(state: QuestState, liveBridge?: SurfaceHtmlOptions[
               </select>
             </div>
             <div class="actions" style="margin-top:8px">
-              <button type="button" data-action="save-openrouter">Save</button>
+              <button type="button" data-ui-action="save-openrouter">Save</button>
             </div>
           </div>
         </div>
@@ -2553,7 +2553,7 @@ function renderSettingsScript(): string {
               window.repologDesktop.saveOpenRouterConfig(payload).then(function() {
                 if (orStatus) { orStatus.textContent = newKey ? "✓ Key saved" : "✓ Model saved"; orStatus.style.color = "var(--ok)"; }
                 if (keyField) keyField.value = ""; // clear after save
-                var digestBtns = document.querySelectorAll("[data-action='run-digest']");
+                var digestBtns = document.querySelectorAll("[data-ui-action='run-digest']");
                 for (var d = 0; d < digestBtns.length; d++) {
                   if (newKey) { digestBtns[d].disabled = false; digestBtns[d].title = "Run AI digest of current repo state"; }
                 }
@@ -2565,7 +2565,7 @@ function renderSettingsScript(): string {
             }
           }
           if (action === "run-digest") {
-            var digestBtn = event.target.closest("[data-action='run-digest']");
+            var digestBtn = button;
             if (!digestBtn || digestBtn.disabled) return;
             digestBtn.disabled = true;
             digestBtn.textContent = "⏳ Running…";

@@ -1,6 +1,7 @@
-import { readFile, writeFile, rename, stat, unlink } from "node:fs/promises";
+import { readFile, rename } from "node:fs/promises";
 import { homedir } from "node:os";
-import { dirname, resolve } from "node:path";
+import { resolve } from "node:path";
+import { assertRegularFilePath, cleanupTempFile, writeAtomicExclusive } from "./safe-fs.js";
 
 export interface RepoConfig {
   excludes: string[];
@@ -45,9 +46,14 @@ export async function readRepoConfig(rootDir: string): Promise<RepoConfig> {
   const configPath = resolve(rootDir, ".repolog.json");
 
   try {
+    await assertRegularFilePath(rootDir, configPath);
     const raw = await readFile(configPath, "utf8");
     return validateAndFillConfig(JSON.parse(raw) as RepoConfigInput);
-  } catch {
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!message.includes("ENOENT")) {
+      return defaultRepoConfig();
+    }
     return defaultRepoConfig();
   }
 }
@@ -93,18 +99,23 @@ export async function writeRepoConfig(
     watch: next.watch ?? current.watch,
     schemaVersion: next.schemaVersion ?? current.schemaVersion,
   });
-  const json = `${JSON.stringify(merged, null, 2)}\n`;
-  const tempPath = `${filePath}.tmp`;
+  const json = `${JSON.stringify(merged, null, 2)}
+`;
 
-  await writeFile(tempPath, json, "utf8");
+  try {
+    await assertRegularFilePath(rootDir, filePath);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!message.includes("ENOENT")) {
+      throw error;
+    }
+  }
+
+  const tempPath = await writeAtomicExclusive(filePath, json);
   try {
     await rename(tempPath, filePath);
   } catch (error) {
-    try {
-      await unlink(tempPath);
-    } catch {
-      // best effort cleanup
-    }
+    await cleanupTempFile(tempPath);
     throw error;
   }
 

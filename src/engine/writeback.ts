@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
-import { readFile, rename, writeFile, unlink } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { readFile, rename, writeFile } from "node:fs/promises";
+import { dirname, resolve } from "node:path";
+import { assertRegularFilePath, cleanupTempFile, writeAtomicExclusive } from "./safe-fs.js";
 
 export interface ChecklistToggleResult {
   ok: boolean;
@@ -39,7 +40,10 @@ async function toggleChecklistItemUnsafe(
     return { ok: false, changed: false, reason: "invalid line number" };
   }
 
-  const original = await readFile(filePath, "utf8");
+  const resolvedPath = resolve(filePath);
+  const rootDir = dirname(resolvedPath);
+  await assertRegularFilePath(rootDir, resolvedPath);
+  const original = await readFile(resolvedPath, "utf8");
   const newline = original.includes("\r\n") ? "\r\n" : "\n";
   const lines = original.split(/\r?\n/);
   const current = lines[line - 1];
@@ -67,29 +71,28 @@ async function toggleChecklistItemUnsafe(
 
   lines[line - 1] = `${match[1]}${checked ? "x" : " "}${match[3]}${match[4] ?? ""}`;
   const nextContent = lines.join(newline);
-  const tempPath = tempWritePath(filePath);
+  const tempPath = await writeAtomicExclusive(resolvedPath, nextContent);
   const originalHash = hashContent(original);
   const nextHash = hashContent(nextContent);
 
-  await writeFile(tempPath, nextContent, "utf8");
   try {
-    await rename(tempPath, filePath);
+    await rename(tempPath, resolvedPath);
   } catch (error) {
-    await cleanupTemp(tempPath);
+    await cleanupTempFile(tempPath);
     throw error;
   }
 
   try {
-    const written = await readFile(filePath, "utf8");
+    const written = await readFile(resolvedPath, "utf8");
     if (hashContent(written) !== nextHash) {
-      await writeFile(filePath, original, "utf8");
+      await writeFile(resolvedPath, original, "utf8");
       throw new Error("Write verification failed: content mismatch. Original restored.");
     }
   } catch (error) {
     if (String((error as Error).message).includes("content mismatch")) {
       throw error;
     }
-    await writeFile(filePath, original, "utf8");
+    await writeFile(resolvedPath, original, "utf8");
     throw error;
   }
 
@@ -98,20 +101,6 @@ async function toggleChecklistItemUnsafe(
   }
 
   return { ok: true, changed: true, checked };
-}
-
-async function cleanupTemp(tempPath: string): Promise<void> {
-  try {
-    await unlink(tempPath);
-  } catch {
-    // best effort cleanup
-  }
-}
-
-function tempWritePath(filePath: string): string {
-  const dir = dirname(filePath);
-  const base = filePath.split(/[\\/]/).pop() ?? "file";
-  return join(dir, `${base}.tmp`);
 }
 
 function hashContent(value: string): string {

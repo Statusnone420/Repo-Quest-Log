@@ -179,7 +179,8 @@ async function loadModules() {
       importModule("dist/engine/standup.js"),
       importModule("dist/web/render.js"),
       importModule("dist/engine/prompts.js"),
-    ]).then(([config, init, changes, editor, doctor, scan, watcher, writeback, standup, web, prompts]) => ({
+      importModule("dist/engine/safe-fs.js"),
+    ]).then(([config, init, changes, editor, doctor, scan, watcher, writeback, standup, web, prompts, safeFs]) => ({
       readRepoConfig: config.readRepoConfig,
       writeRepoConfig: config.writeRepoConfig,
       writeInitTemplates: init.writeInitTemplates,
@@ -193,6 +194,10 @@ async function loadModules() {
       buildStandupMarkdown: standup.buildStandupMarkdown,
       renderDesktopHtml: web.renderDesktopHtml,
       loadPromptPresets: prompts.loadPromptPresets,
+      assertRegularFilePath: safeFs.assertRegularFilePath,
+      assertPathInsideRepo: safeFs.assertPathInsideRepo,
+      writeAtomicExclusive: safeFs.writeAtomicExclusive,
+      cleanupTempFile: safeFs.cleanupTempFile,
     })).then(async (mods) => {
       const tuneup = await importModule("dist/engine/tuneup.js");
       return { ...mods, buildTuneup: tuneup.buildTuneup };
@@ -621,15 +626,50 @@ ipcMain.handle("repolog:run-digest", async () => {
   if (!openrouterConfig.key) return { error: "No OpenRouter API key configured. Add one in Settings." };
   if (!targetRoot) return { error: "No repo open." };
 
-  const read = (f) => {
-    try { return fs.readFileSync(path.join(targetRoot, f), "utf8"); }
-    catch { return "(not found)"; }
+  const { assertRegularFilePath, writeAtomicExclusive, cleanupTempFile } = await loadModules();
+  const planningLimit = 20000;
+  const skippedFiles = [];
+
+  const sanitizeDigestSkipReason = (error) => {
+    if (!error || typeof error !== "object") return "unreadable";
+    const code = typeof error.code === "string" ? error.code : "";
+    if (code === "ENOENT") return "missing";
+    if (["EACCES", "EPERM", "EBUSY"].includes(code)) return "unreadable";
+
+    const message = typeof error.message === "string" ? error.message.toLowerCase() : "";
+    if (message.includes("outside") || message.includes("escapes")) return "outside repo";
+    if (message.includes("symlink") || message.includes("regular file")) return "invalid file type";
+
+    return "unreadable";
   };
 
-  const agentFiles = ["CLAUDE.md", "AGENTS.md", "GEMINI.md", "CODEX.md"]
-    .map((f) => { const c = read(f); return c !== "(not found)" ? `### ${f}\n${c}` : null; })
-    .filter(Boolean).join("\n\n");
+  const readPlanningFile = async (fileName) => {
+    const filePath = path.join(targetRoot, fileName);
+    try {
+      await assertRegularFilePath(targetRoot, filePath);
+      const content = fs.readFileSync(filePath, "utf8");
+      if (content.length > planningLimit) {
+        skippedFiles.push(`${fileName} (skipped: exceeds ${planningLimit} chars)`);
+        return "(skipped: file too large)";
+      }
+      return content;
+    } catch (error) {
+      const reason = sanitizeDigestSkipReason(error);
+      skippedFiles.push(`${fileName} (skipped: ${reason})`);
+      return "(not included)";
+    }
+  };
 
+  const planContent = await readPlanningFile("PLAN.md");
+  const stateContent = await readPlanningFile("STATE.md");
+
+  const agentFiles = [];
+  for (const fileName of ["CLAUDE.md", "AGENTS.md", "GEMINI.md", "CODEX.md"]) {
+    const content = await readPlanningFile(fileName);
+    if (content !== "(not included)" && content !== "(skipped: file too large)") {
+      agentFiles.push(`### ${fileName}\n${content}`);
+    }
+  }
   let gitLog = "(unavailable)";
   try {
     gitLog = require("node:child_process").execSync(
@@ -644,13 +684,15 @@ ipcMain.handle("repolog:run-digest", async () => {
 ${gitLog}
 
 ## PLAN.md (## Now and ## Blocked are the critical sections)
-${read("PLAN.md")}
+${planContent}
 
 ## STATE.md (## Current Focus and ## Resume Note show last session)
-${read("STATE.md")}
+${stateContent}
 
 ## Agent files (## Current Task shows what each agent last did)
-${agentFiles || "(none)"}
+${agentFiles.join("\n\n") || "(none)"}
+
+Skipped files: ${skippedFiles.join("; ") || "none"}
 
 Based on the git commits and Now/Blocked tasks, return exactly this JSON — be specific, avoid restating the plan docs verbatim:
 {"summary":"What actually happened recently and where things stand (2 sentences max, reference specific features or files)","stuck":"The most concrete blocker or risk right now, or 'Nothing blocked'","next":"The single most actionable next step (name a specific file, command, or decision — not vague advice)"}`;
@@ -707,10 +749,41 @@ Based on the git commits and Now/Blocked tasks, return exactly this JSON — be 
     };
 
     const digestDir = path.join(targetRoot, ".repolog");
-    fs.mkdirSync(digestDir, { recursive: true });
-    fs.writeFileSync(path.join(digestDir, "digest.json"), JSON.stringify(result, null, 2), "utf8");
+    try {
+      const digestDirStat = await fs.promises.lstat(digestDir);
+      if (!digestDirStat.isDirectory() || digestDirStat.isSymbolicLink()) {
+        throw new Error("Digest directory is not a regular directory.");
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (!message.includes("ENOENT")) {
+        throw error;
+      }
+      fs.mkdirSync(digestDir, { recursive: true });
+    }
+    const digestFile = path.join(digestDir, "digest.json");
+    try {
+      await assertRegularFilePath(targetRoot, digestFile);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (!message.includes("ENOENT")) {
+        throw error;
+      }
+    }
+    const tempPath = await writeAtomicExclusive(digestFile, JSON.stringify(result, null, 2));
+    try {
+      await fs.promises.rename(tempPath, digestFile);
+    } catch (error) {
+      await cleanupTempFile(tempPath);
+      throw error;
+    }
 
-    return { result };
+    if (skippedFiles.length > 0) {
+      result.skippedFiles = skippedFiles;
+      console.warn("Digest skipped planning files:", skippedFiles.join("; "));
+    }
+
+    return { result, skippedFiles };
   } catch (err) {
     return { error: `Digest failed: ${err.message || String(err)}` };
   }

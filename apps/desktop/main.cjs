@@ -628,6 +628,19 @@ ipcMain.handle("repolog:run-digest", async () => {
   const planningLimit = 20000;
   const skippedFiles = [];
 
+  const sanitizeDigestSkipReason = (error) => {
+    if (!error || typeof error !== "object") return "unreadable";
+    const code = typeof error.code === "string" ? error.code : "";
+    if (code === "ENOENT") return "missing";
+    if (["EACCES", "EPERM", "EBUSY"].includes(code)) return "unreadable";
+
+    const message = typeof error.message === "string" ? error.message.toLowerCase() : "";
+    if (message.includes("outside") || message.includes("escapes")) return "outside repo";
+    if (message.includes("symlink") || message.includes("regular file")) return "invalid file type";
+
+    return "unreadable";
+  };
+
   const readPlanningFile = async (fileName) => {
     const filePath = path.join(targetRoot, fileName);
     try {
@@ -639,8 +652,8 @@ ipcMain.handle("repolog:run-digest", async () => {
       }
       return content;
     } catch (error) {
-      const message = error && error.message ? error.message : String(error);
-      skippedFiles.push(`${fileName} (skipped: ${message})`);
+      const reason = sanitizeDigestSkipReason(error);
+      skippedFiles.push(`${fileName} (skipped: ${reason})`);
       return "(not included)";
     }
   };

@@ -245,3 +245,13 @@ function sampleState(): QuestState {
     config: { writeback: false, prompts: { dir: "~/.repolog/prompts" } },
   };
 }
+
+
+describe("desktop digest hardening", () => {
+  it("digest skips symlinked planning files", async () => {
+    const source = await readFile(join(process.cwd(), "apps", "desktop", "main.cjs"), "utf8");
+    expect(source).toContain("assertRegularFilePath(targetRoot, filePath)");
+    expect(source).toContain("skippedFiles");
+    expect(source).toContain("planningLimit = 20000");
+  });
+});

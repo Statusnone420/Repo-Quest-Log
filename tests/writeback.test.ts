@@ -75,11 +75,26 @@ describe("toggleChecklistItem", () => {
     }
   });
 
+
+
+  it("rejects symlink targets before write", async () => {
+    const root = join(tmpdir(), `repo-quest-log-writeback-${Date.now()}-symlink`);
+    const outside = join(tmpdir(), `repo-quest-log-writeback-${Date.now()}-outside.md`);
+    const file = join(root, "PLAN.md");
+    await mkdir(root, { recursive: true });
+    await writeFile(outside, "outside", "utf8");
+    await import("node:fs/promises").then(({ symlink }) => symlink(outside, file));
+
+    await expect(toggleChecklistItem(file, 1, "anything")).rejects.toThrow(/Refusing to use non-regular file|Path escapes repo root/);
+    await rm(root, { recursive: true, force: true });
+    await rm(outside, { force: true });
+  });
+
   it("keeps rollback and SHA verification in the write path", async () => {
     const source = await readFile(join(process.cwd(), "src", "engine", "writeback.ts"), "utf8");
     expect(source).toContain("sha256");
     expect(source).toContain("Write verification failed: content mismatch. Original restored.");
-    expect(source).toContain("await writeFile(filePath, original");
+    expect(source).toContain("await writeFile(resolvedPath, original");
     expect(source).toContain("writeQueues");
   });
 });

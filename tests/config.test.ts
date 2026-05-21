@@ -76,4 +76,22 @@ describe("config validation", () => {
       await rm(root, { recursive: true, force: true });
     }
   });
+
+  it("rejects symlink config writes", async () => {
+    const root = await mkdtemp(join(tmpdir(), "repolog-config-symlink-"));
+    const outside = join(tmpdir(), `repolog-config-outside-${Date.now()}.json`);
+    try {
+      await writeFile(outside, '{"writeback":false}\n', "utf8");
+      const { symlink } = await import("node:fs/promises");
+      await symlink(outside, join(root, ".repolog.json"));
+      await expect(writeRepoConfig(root, { writeback: true })).rejects.toThrow();
+      const raw = await readFile(outside, "utf8");
+      expect(raw).toContain("writeback");
+      expect(raw).not.toContain("true");
+    } finally {
+      await rm(root, { recursive: true, force: true });
+      await rm(outside, { force: true });
+    }
+  });
+
 });

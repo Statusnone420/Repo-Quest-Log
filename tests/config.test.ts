@@ -52,6 +52,21 @@ describe("config validation", () => {
     }
   });
 
+  it("returns defaults instead of reading symlinked .repolog.json", async () => {
+    const root = await mkdtemp(join(tmpdir(), "repolog-config-read-symlink-"));
+    const outside = join(tmpdir(), `repolog-config-read-outside-${Date.now()}.json`);
+    try {
+      await writeFile(outside, JSON.stringify({ writeback: true, watch: { debounce: 999 } }, null, 2), "utf8");
+      const { symlink } = await import("node:fs/promises");
+      await symlink(outside, join(root, ".repolog.json"));
+      const config = await readRepoConfig(root);
+      expect(config).toEqual(defaultRepoConfig());
+    } finally {
+      await rm(root, { recursive: true, force: true });
+      await rm(outside, { force: true });
+    }
+  });
+
   it("validateAndFillConfig throws for non-object input", () => {
     expect(() => validateAndFillConfig("not an object")).toThrow("expected an object");
     expect(() => validateAndFillConfig([1, 2, 3])).toThrow("expected an object");

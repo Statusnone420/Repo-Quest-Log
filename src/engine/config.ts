@@ -46,9 +46,14 @@ export async function readRepoConfig(rootDir: string): Promise<RepoConfig> {
   const configPath = resolve(rootDir, ".repolog.json");
 
   try {
+    await assertRegularFilePath(rootDir, configPath);
     const raw = await readFile(configPath, "utf8");
     return validateAndFillConfig(JSON.parse(raw) as RepoConfigInput);
-  } catch {
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!message.includes("ENOENT")) {
+      return defaultRepoConfig();
+    }
     return defaultRepoConfig();
   }
 }

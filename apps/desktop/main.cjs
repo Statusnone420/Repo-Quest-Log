@@ -196,6 +196,8 @@ async function loadModules() {
       loadPromptPresets: prompts.loadPromptPresets,
       assertRegularFilePath: safeFs.assertRegularFilePath,
       assertPathInsideRepo: safeFs.assertPathInsideRepo,
+      writeAtomicExclusive: safeFs.writeAtomicExclusive,
+      cleanupTempFile: safeFs.cleanupTempFile,
     })).then(async (mods) => {
       const tuneup = await importModule("dist/engine/tuneup.js");
       return { ...mods, buildTuneup: tuneup.buildTuneup };
@@ -624,7 +626,7 @@ ipcMain.handle("repolog:run-digest", async () => {
   if (!openrouterConfig.key) return { error: "No OpenRouter API key configured. Add one in Settings." };
   if (!targetRoot) return { error: "No repo open." };
 
-  const { assertRegularFilePath } = await loadModules();
+  const { assertRegularFilePath, writeAtomicExclusive, cleanupTempFile } = await loadModules();
   const planningLimit = 20000;
   const skippedFiles = [];
 
@@ -747,8 +749,34 @@ Based on the git commits and Now/Blocked tasks, return exactly this JSON — be 
     };
 
     const digestDir = path.join(targetRoot, ".repolog");
-    fs.mkdirSync(digestDir, { recursive: true });
-    fs.writeFileSync(path.join(digestDir, "digest.json"), JSON.stringify(result, null, 2), "utf8");
+    try {
+      const digestDirStat = await fs.promises.lstat(digestDir);
+      if (!digestDirStat.isDirectory() || digestDirStat.isSymbolicLink()) {
+        throw new Error("Digest directory is not a regular directory.");
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (!message.includes("ENOENT")) {
+        throw error;
+      }
+      fs.mkdirSync(digestDir, { recursive: true });
+    }
+    const digestFile = path.join(digestDir, "digest.json");
+    try {
+      await assertRegularFilePath(targetRoot, digestFile);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (!message.includes("ENOENT")) {
+        throw error;
+      }
+    }
+    const tempPath = await writeAtomicExclusive(digestFile, JSON.stringify(result, null, 2));
+    try {
+      await fs.promises.rename(tempPath, digestFile);
+    } catch (error) {
+      await cleanupTempFile(tempPath);
+      throw error;
+    }
 
     if (skippedFiles.length > 0) {
       result.skippedFiles = skippedFiles;

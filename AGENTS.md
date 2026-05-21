@@ -1,9 +1,9 @@
 # AGENTS.md
 
-Instructions for any coding agent working in this repo (Codex, generic agents, CI bots). "RepoLog"
+Instructions for any coding agent working in this repo (Codex, generic agents, CI bots). Product name: RepoLog.
 
 ## Role
-**Implementer of Backend Code and Coding Expert** You write TypeScript per `PLAN.md`. You do not redesign. You do not expand scope.
+**Backend implementer and coding agent.** You write TypeScript per `PLAN.md`. You do not redesign. You do not expand scope.
 
 ## Owned Areas
 - `src/engine/**` — parser, normalizer, ranker, watcher
@@ -14,13 +14,13 @@ Instructions for any coding agent working in this repo (Codex, generic agents, C
 - `tests/**` — vitest suites, fixture repos
 
 ## Do
-- Read `PRD.md`, `PLAN.md`, `docs/SCHEMA.md`, and `STATE.md` before starting any task
+- Read `docs/product/PRD.md`, `PLAN.md`, `docs/SCHEMA.md`, and `STATE.md` before starting any task
 - Work through `PLAN.md` → "The 7 build tasks" in order
 - Keep the design mockup (`docs/design/Repo Quest Log.html`) as the source of truth for visual output
 - Write tests against the fixture repos under `tests/fixtures/` before marking a task done
 - Update `STATE.md` when you finish a task. Keep all relevant md's updated when finishing tasks.
 - Run `npm run lint && npm test` before committing
-- Check with `CLAUDE.md` to make sure you and Claude are on the same page but don't intefere in what it's doing.
+- Check `CLAUDE.md` to keep agent responsibilities aligned without interfering with active Claude work.
 
 ## Do Not
 - Add source-code parsing (v0.2+)
@@ -37,7 +37,7 @@ Instructions for any coding agent working in this repo (Codex, generic agents, C
 
 ## Current Objective
 
-Ship v0.4: honest Agents roster (status from .md content), on-demand LLM Digest via OpenRouter, Light/Dark theme, font picker, font size fix. See `plan_implementation.md` for execution spec.
+Ship v0.4: frontmatter-based Agents roster (status from .md content), on-demand LLM Digest via OpenRouter, Light/Dark theme, font picker, font size fix. See `docs/plans/plan_implementation.md` for execution spec.
 
 ## Current Task
 
@@ -45,18 +45,18 @@ v0.4 feature pass complete. Layout restructured (Agents own col 3, Decisions mov
 
 ---
 
-## GOD MODE — v0.4 Diamond Execution
+## Agent Execution Protocol — v0.4 Release Verification
 
 **Read this section before touching any file.**
 
-### The only rule
+### Core rule
 Audit the actual code first. Never assume spec = implementation. Read the file, report what's real vs. stub, then fix. Run `npm run build && npm run lint && npm test` after closing each gate. Anything failing = gate is not closed.
 
 ### Gate order (strict — do not skip ahead)
 
 ---
 
-**GATE 1 — First-run wizard is airtight**
+**GATE 1 — First-run wizard reliability**
 Audit `apps/desktop/main.cjs` and `src/web/render.ts`. Verify:
 1. `repolog:first-run-check` IPC handler exists and checks `PLAN.md` presence at repo root.
 2. Wizard renders **only** when `hasPlanMd === false`. Healthy fixture must NOT show the wizard.
@@ -69,7 +69,7 @@ Fix anything that doesn't hold. Tests: `tests/desktop.test.ts` must cover startu
 
 ---
 
-**GATE 2 — Doctor output is instantly actionable**
+**GATE 2 — Doctor output is actionable**
 Audit `src/engine/doctor.ts`. For every finding, verify:
 1. A `why` field or inline sentence exists: one line explaining what breaks without it.
 2. A `fix` or `example` field exists: exactly what the user should type or add.
@@ -93,7 +93,7 @@ Fix anything that doesn't hold. Tests: `tests/config.test.ts` must cover atomic 
 
 ---
 
-**GATE 4 — Write-back never silently clobbers**
+**GATE 4 — Write-back avoids silent clobbering**
 Audit `src/engine/writeback.ts`. Verify:
 1. Every task toggle write follows: read original → write to `${file}.tmp` → `fs.renameSync(tmp, file)` → read back → SHA-256 compare → rollback on mismatch.
 2. Stale-line detection: if the target line changed since last scan, the write is rejected with `"Line has changed since last read; re-scan required"` — not silently applied.
@@ -104,7 +104,7 @@ Fix anything that doesn't hold. Tests: `tests/writeback.test.ts` must cover atom
 
 ---
 
-**GATE 5 — Watcher feels alive**
+**GATE 5 — Watcher responsiveness**
 Audit `src/engine/watcher.ts`. Verify:
 1. `add`, `change`, `unlink`, and `unlinkDir` events all trigger a debounced rescan.
 2. Debounce value is `Math.max(config.watch.debounce ?? 500, 500)` ms — never lower.
@@ -116,7 +116,7 @@ Fix anything that doesn't hold. Tests: `tests/watcher.test.ts` must cover create
 
 ---
 
-**GATE 6 — Version and release are clean**
+**GATE 6 — Version and release readiness**
 Audit `src/cli/index.ts`, `apps/desktop/main.cjs`, and `CHANGELOG.md`. Verify:
 1. `repolog --version` prints exactly `vX.Y.Z` (from `package.json`) and exits 0. No extra lines, no banner.
 2. `RepoLog.exe --repo-root <path>` reads `--repo-root` from `process.argv` before the window is created and passes it to `resolveDesktopRepoRoot`. Verify with a path that has no `.repolog.json`.
@@ -127,14 +127,14 @@ Fix anything that doesn't hold.
 
 ---
 
-### After all 6 gates close
+### After all 6 gates pass
 
 1. Update `STATE.md` Resume Note with what was audited, what was fixed, and the final test count.
-2. Update `AGENTS.md` Current Task to "All 6 diamond gates closed. Ready for release."
-3. Update the `## ✅ CURRENT STATUS` block in `IMPLEMENTATION_PLAN_v0.4.md` to reflect gate completions.
+2. Update `AGENTS.md` Current Task to "All 6 release verification gates closed. Ready for release."
+3. Update the `## CURRENT STATUS` block in `docs/Archived/IMPLEMENTATION_PLAN_v0.4.md` if that archived closeout tracker is being maintained.
 4. Do NOT commit. Stop and report to the human.
 
 ---
 
 ## Last Task
-Diamond gate closeout completed and verified. First-run wizard, doctor findings, settings save flow, write-back queue/stale handling, watcher config/error handling, repo-root startup parsing, and release notes are aligned. `npm run build && npm run lint && npm test` passes with 67 tests.
+Release verification closeout completed and verified. First-run wizard, doctor findings, settings save flow, write-back queue/stale handling, watcher config/error handling, repo-root startup parsing, and release notes are aligned. `npm run build && npm run lint && npm test` passes with 67 tests.

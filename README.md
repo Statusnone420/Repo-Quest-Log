@@ -2,7 +2,7 @@
 
 A local-first CLI + TUI + desktop + VS Code shell that makes repo intent legible at a glance — and hands that intent to whichever coding agent you open next.
 
-It reads your planning markdown (`PLAN.md`, `STATE.md`, `AGENTS.md`, etc.) and builds a live structured HUD of what's happening now, what's next, and what's blocked. No server, no LLM calls, no account.
+It reads your planning markdown (`PLAN.md`, `STATE.md`, `AGENTS.md`, etc.) and builds a live structured HUD of what's happening now, what's next, and what's blocked. No server or account required; the optional on-demand Digest uses a user-supplied OpenRouter key and is off by default.
 
 ---
 
@@ -110,6 +110,20 @@ Heading patterns that the scanner recognises: `## Objective`, `## Now`, `## Next
 
 ---
 
+## Repository layout
+
+The root is kept for runtime entry points, package metadata, current planning state, and agent-discovery files. Longer product notes, implementation plans, screenshots, archived handoffs, and design references live under [`docs/`](docs/README.md).
+
+Agent instruction files (`AGENTS.md`, `CLAUDE.md`, and `GEMINI.md`) intentionally remain in the root so coding-agent tools can find them.
+
+---
+
+## AI-assisted workflow
+
+This project uses documented AI-assisted development workflows. Files such as `AGENTS.md`, `CLAUDE.md`, and `GEMINI.md` define repo conventions, verification steps, and agent responsibilities. They are part of the development process, not runtime requirements.
+
+---
+
 ## "Tune this repo" — Score and Fix
 
 ```bash
@@ -139,7 +153,7 @@ Press **Ctrl+O** (or File → Open Repo…) to point the app at any folder. The 
 npm install
 npm run build      # TypeScript compile
 npm run lint       # type-check
-npm test           # Vitest (42 tests)
+npm test           # Vitest suite
 npm run desktop:build   # Electron installer → release/
 npm run pack:vscode     # VS Code .vsix → release/
 ```
@@ -148,7 +162,7 @@ npm run pack:vscode     # VS Code .vsix → release/
 
 ## Contributing
 
-Fork it, build on it, ship it. All I ask is that you keep the copyright notice in the LICENSE — that's it. PRs, forks, and totally different directions are all welcome.
+Forks, pull requests, and alternate product directions are welcome. Please keep the copyright notice in the LICENSE.
 
 ---
 

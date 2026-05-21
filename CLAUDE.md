@@ -1,12 +1,12 @@
 # CLAUDE.md
 
-Instructions for Claude (Claude Code) working in this repo. "RepoLog"
+Instructions for Claude (Claude Code) working in this repo. Product name: RepoLog.
 
 ## Role
-**Planner + implementer (unlocked).** You draft specs, PRDs, schemas, and plans AND you write implementation code. Keep scope tight, and verify with `npm run build && npm run lint && npm test` before declaring a pass done. UI/UX changes are in scope when they serve the active plan.
+**Planner and implementer.** You draft specs, PRDs, schemas, and plans, and you write implementation code. Keep scope tight, and verify with `npm run build && npm run lint && npm test` before declaring a pass done. UI/UX changes are in scope when they serve the active plan.
 
 ## Owned Areas
-- `PRD.md`, `PLAN.md`, `STATE.md`
+- `docs/product/PRD.md`, `PLAN.md`, `STATE.md`
 - `docs/**` (except `docs/design/**` — that's human-owned)
 - Schema design in `docs/SCHEMA.md`
 - `src/**`, `apps/**`, `extensions/**`, `tests/**`
@@ -14,10 +14,10 @@ Instructions for Claude (Claude Code) working in this repo. "RepoLog"
 - `STATE.md` `CLAUDE.md` - these are for you, update them after each task you complete. Keep them updated and current.
 
 ## Do
-- Read `PRD.md`, `PLAN.md`, `STATE.md`, `docs/SCHEMA.md`, and `plan_implementation.md` before starting any task
-- Treat `plan_implementation.md` as the live source of truth for remaining work; update percentages after each completed pass
+- Read `docs/product/PRD.md`, `PLAN.md`, `STATE.md`, `docs/SCHEMA.md`, and `docs/plans/plan_implementation.md` before starting any task
+- Treat `docs/plans/plan_implementation.md` as the live source of truth for remaining work; update percentages after each completed pass
 - Work top-down through the execution tracker
-- Keep plans short. Kill filler.
+- Keep plans short and remove filler.
 - Propose schema changes in `docs/SCHEMA.md` with version bumps
 - Update `STATE.md` with a resume note at the end of every session
 - Keep the app flow going; ship incremental v0.x releases
@@ -26,13 +26,13 @@ Instructions for Claude (Claude Code) working in this repo. "RepoLog"
 
 ## Do Not
 - **NEVER commit or push to git.** The human is the only one who commits. Git is how they audit and revert AI work. Finish your work, verify build/lint/tests, then stop — the human will commit.
-- Expand scope beyond the active pass in `plan_implementation.md` (unless the user asks you to)
+- Expand scope beyond the active pass in `docs/plans/plan_implementation.md` (unless the user asks you to)
 - Touch `docs/design/**` — that's the human's and describes the UI spec
 - Add new runtime dependencies without a note
 - Redesign landed work unless source disagrees with docs
 
 ## Objective
-v0.4 feature pass complete: honest Agents roster, OpenRouter Digest, Light/Dark theme, font picker, layout restructured, settings panel fully themed. Ready for human release review. Next explicit work items are in PLAN.md → Next.
+v0.4 feature pass complete: frontmatter-based Agents roster, OpenRouter Digest, Light/Dark theme, font picker, layout restructured, settings panel fully themed. Ready for human release review. Next explicit work items are in PLAN.md → Next.
 
 ## UI copy rule
 The product is "RepoLog". Panel labels are literal — Objective, Now, Next, Blocked, Agents, Recent changes. Do not introduce quest / mission / XP / progression language in UI copy. The RPG metaphor is a brand hook only.
@@ -43,5 +43,5 @@ The product is "RepoLog". Panel labels are literal — Objective, Now, Next, Blo
 - Stop and report if blocked; keep the blocker narrowly defined.
 
 ## Plan Ownership
-- `plan_implementation.md` is the live handoff doc for the rest of this effort.
+- `docs/plans/plan_implementation.md` is the live handoff doc for the rest of this effort.
 - Keep the percent tracker in that file updated after each pass.

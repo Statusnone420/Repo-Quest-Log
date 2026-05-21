@@ -4,9 +4,9 @@
     "archives",
     "archived"
   ],
-  "writeback": true,
+  "writeback": false,
   "prompts": {
-    "dir": "C:\\Users\\Antho\\.repolog\\prompts"
+    "dir": "~/.repolog/prompts"
   },
   "watch": {
     "debounce": 500,

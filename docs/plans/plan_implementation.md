@@ -8,11 +8,11 @@
 
 ## Objective
 
-Three things wrong right now:
+Three issues to resolve:
 
-1. **Agents section lies.** Mtime heuristics say Gemini is working when Claude and Codex are. The "heuristic feed" rows are noise, not signal. Tear it out and replace with honest data from the actual .md files.
-2. **Theme doesn't propagate into settings panel.** Hardcoded bg colors on palette/toast elements break the illusion. Also: user wants Light/Dark only (not Slate/Dim), a font picker, and font size that actually works past 126%.
-3. **No LLM layer.** An on-demand "Digest" button should bundle all repo context → POST to OpenRouter (free model, user-supplied key) → display a 3-part summary in the agents panel. No auto-fire, no token churn, no chat.
+1. **Agents section is misleading.** Mtime heuristics can show the wrong agent as active. Remove the heuristic feed rows and replace them with data from the actual .md files.
+2. **Theme doesn't propagate into settings panel.** Hardcoded bg colors on palette/toast elements break theme consistency. Also: user wants Light/Dark only (not Slate/Dim), a font picker, and font size that actually works past 126%.
+3. **No LLM layer.** An on-demand "Digest" button should bundle all repo context → POST to OpenRouter (free model, user-supplied key) → display a 3-part summary in the agents panel. No auto-fire, no background token usage, no chat.
 
 ---
 
@@ -213,20 +213,20 @@ if (fs.existsSync(digestPath)) {
 — AGENTS                          3 registered   [✦ Digest]
 ─────────────────────────────────────────────────────────
  [CX]  Codex   Implementer of Backend Code...   • idle
-       All 6 diamond gates closed. Ready for release.
+       All 6 release verification gates closed. Ready for release.
        AGENTS.md · src/engine/** — parser, normalizer...
 ─────────────────────────────────────────────────────────
- [CL]  Claude  Planner + implementer (unlocked) • idle
-       v0.4 diamond gates are closed and ready for human review.
-       CLAUDE.md · PRD.md, PLAN.md, STATE.md...
+ [CL]  Claude  Planner and implementer • idle
+       v0.4 release verification gates are closed and ready for human review.
+       CLAUDE.md · docs/product/PRD.md, PLAN.md, STATE.md...
 ─────────────────────────────────────────────────────────
- [GM]  Gemini  High-End Planner & Architect     • idle
+ [GM]  Gemini  Strategic Planner & Architect    • idle
        Architect the v0.4 implementation pass...
        GEMINI.md · System Architecture & Design...
 ─────────────────────────────────────────────────────────
  Last digest · 14m ago
  v0.4 gates are all closed. Repo is release-ready.
- Stuck: npm package needs npm org + CI secrets.
+ Stuck: npm package needs npm organization access and CI environment configuration.
  Next: npm run desktop:build → smoke test → tag v0.4.0.
 ```
 
@@ -238,7 +238,7 @@ if (fs.existsSync(digestPath)) {
   - `"idle"` — everything else
 - **Tile header** right side: replace `"heuristic feed"` meta span with a Digest button:
   ```html
-  <button class="digest-btn" data-action="run-digest" 
+  <button class="digest-btn" data-action="run-digest"
           title="${hasKey ? 'Run AI digest of current repo state' : 'Add OpenRouter key in Settings to enable'}">
     ✦ Digest
   </button>
@@ -427,12 +427,12 @@ Add a new card in the settings grid (after DENSITY card, ~line 1806):
   <div class="detail">Powers the Digest button. Get a free key at openrouter.ai.</div>
   <div class="field">
     <label>API Key</label>
-    <input type="password" data-or-field="key" placeholder="sk-or-..." 
+    <input type="password" data-or-field="key" placeholder="sk-or-..."
            value="" autocomplete="off" spellcheck="false" />
   </div>
   <div class="field">
     <label>Model</label>
-    <input type="text" data-or-field="model" 
+    <input type="text" data-or-field="model"
            placeholder="nvidia/nemotron-3-super-120b-a12b:free"
            value="" spellcheck="false" />
   </div>

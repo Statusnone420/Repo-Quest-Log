@@ -9,11 +9,11 @@ owner: claude
 Live "where we are." Update this as work progresses. The normalizer reads this to build the Resume Note.
 
 ## Current Focus
-v0.4 feature pass complete. Agents tile restructured (honest per-agent status from frontmatter, not digest timing). Layout: col 1 = Now+Blocked, col 2 = Next+Changes+Decisions, col 3 = Agents full-height. Settings panel now themes correctly in Light mode. OpenRouter Digest wired and confirmed working. 67 tests green.
+v0.4 feature pass complete. Agents tile restructured (per-agent status from frontmatter, not digest timing). Layout: col 1 = Now+Blocked, col 2 = Next+Changes+Decisions, col 3 = Agents full-height. Settings panel now themes correctly in Light mode. OpenRouter Digest wired and confirmed working. 67 tests green.
 
 ## Resume Note
 
-> Session 2026-04-23 (v0.4): Full feature pass — honest Agents roster (status from .md frontmatter, not mtime heuristics), on-demand Digest via OpenRouter (nemotron-free default, key in Electron userData), Light/Dark theme, font picker (System/Mono/Serif), density clamp raised 1.32→1.5 (fixes 126% ceiling). Layout restructured: Agents own the third column full-height; Decisions moved to col 2 alongside Next+Recent Changes. Settings panel background now uses `--bg-elevated` (themes correctly in Light mode). Agent status uses `agent.status` from frontmatter directly (no more global roster status overriding all agents). Click delegation bug fixed (Save + Digest buttons used `data-action` instead of `data-ui-action`). SVG info icons replace janky letter-in-circle. Dropdown `option` colors added for dark/light. `npm run build && npm run lint && npm test` passes with 67 tests across 17 files.
+> Session 2026-04-23 (v0.4): Full feature pass — frontmatter-based Agents roster (status from .md frontmatter, not mtime heuristics), on-demand Digest via OpenRouter (nemotron-free default, key in Electron userData), Light/Dark theme, font picker (System/Mono/Serif), density clamp raised 1.32→1.5 (fixes 126% ceiling). Layout restructured: Agents own the third column full-height; Decisions moved to col 2 alongside Next+Recent Changes. Settings panel background now uses `--bg-elevated` (themes correctly in Light mode). Agent status uses `agent.status` from frontmatter directly (global roster status no longer overrides all agents). Click delegation bug fixed (Save + Digest buttons used `data-action` instead of `data-ui-action`). SVG info icons replace letter-in-circle markers. Dropdown `option` colors added for dark/light. `npm run build && npm run lint && npm test` passes with 67 tests across 17 files.
 
 ## Last Session — UI polish pass (2026-04-22)
 - **Settings rack**: Removed filler description copy and Ctrl+ chip row; removed Standup button and extra Refresh from the rack. Rack now shows only Open Settings + Open Repo.
@@ -59,7 +59,7 @@ v0.4 feature pass complete. Agents tile restructured (honest per-agent status fr
 
 ## Last Session
 - Standup export landed across CLI, shared engine formatting, TUI, desktop, and VS Code webview. New CLI: `repolog standup [--since=today|yesterday|7d] [--copy] [--json]`. Standup copy hotkey is now `Ctrl+Shift+C` in the shared renderer, with the prompt-palette toast styling and a 2s timeout.
-- CLAUDE.md role unlocked: Claude now plans AND implements (build/lint/test gate still required).
+- CLAUDE.md role expanded: Claude now plans AND implements (build/lint/test gate still required).
 - Foundation pass closed: TUI visual parity confirmed landed in `src/tui/App.tsx`, PLAN.md reconciled to source, tracker bumped to 100% for that pass.
 - Prompt externalization landed: `loadPromptPresets` in `src/engine/prompts.ts` merges built-ins with `~/.repolog/prompts/*.md` (user) and `<repo>/.repolog/prompts/*.md` (repo-wins). Markdown frontmatter + `{{var}}` template rendering.
 - `RepoConfig` expanded: now parses `writeback: boolean` and `prompts.dir?: string` from `.repolog.json` (still back-compat with plain excludes files).
@@ -73,9 +73,9 @@ v0.4 feature pass complete. Agents tile restructured (honest per-agent status fr
 - `npm run build`, `npm run lint`, `npm test` all green (30 tests, 13 files).
 
 ## Resume Note
-> v0.4 handler regression is fixed. Init/config/wizard click paths are guarded again and verified; next agent should continue with the remaining v0.4 first-run/config/write-back polish from `IMPLEMENTATION_PLAN_v0.4.md`.
+> v0.4 handler regression is fixed. Init/config/wizard click paths are guarded again and verified; next agent should continue with the remaining v0.4 first-run/config/write-back polish from `docs/Archived/IMPLEMENTATION_PLAN_v0.4.md`.
 
-Last touched: `IMPLEMENTATION_PLAN_v0.4.md`, `STATE.md`, `src/web/render.ts`
+Last touched: `docs/Archived/IMPLEMENTATION_PLAN_v0.4.md`, `STATE.md`, `src/web/render.ts`
 
 ## Recent Decisions
 - 2026-04-21 — `repolog doctor` is the trust layer for messy repos: it explains *why* state looks sparse and which exact heading to add. The CLI exits 1 when any warn-level finding fires, so CI can gate on it.

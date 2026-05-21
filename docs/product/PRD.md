@@ -53,7 +53,7 @@ The product is "Repo Quest Log". Panels use literal labels — **Objective**, **
 
 ## v0.2 — the agent-integration wedge
 
-Everything in v0.2 is about making Repo Quest Log *disappear into the agent workflow*. The thing the user loves most today is the one-click "resume prompt" paste. Lean into that.
+Everything in v0.2 is about making Repo Quest Log fit naturally into the agent workflow. The most useful workflow today is the one-click "resume prompt" paste. Prioritize that.
 
 **Do:**
 1. **Resume-prompt palette (⌘K / Ctrl+K).** Presets that copy a ready-to-paste message to the clipboard:
@@ -64,7 +64,7 @@ Everything in v0.2 is about making Repo Quest Log *disappear into the agent work
    - Blocker summary (for a human or an agent)
    - Repo intent briefing (for a fresh agent session)
    Each preset is a small, editable template under `~/.repolog/prompts/`.
-2. **Live git panel.** Branch, ahead/behind, dirty-file count, last commit subject + relative time. Calm, one row, no dashboard vibes.
+2. **Live git panel.** Branch, ahead/behind, dirty-file count, last commit subject + relative time. Calm, one row, not a dashboard.
 3. **Agent activity feed.** Infer "which agent most likely touched which file, when" from file mtimes × `AGENTS.md` / `CLAUDE.md` / `GEMINI.md` owned-areas. Surfaces as a compact feed under the Agents rail.
 4. **Standup export.** One keypress → markdown of done-today (newly-checked items since midnight) + currently-active Now items, copied to clipboard.
 5. **Opt-in write-back (checkbox toggles only).** Disabled by default. Enabled via `.repolog.json` → `"writeback": true`. When on: checking a Now / Next / Blocked item in TUI or desktop rewrites `- [ ]` → `- [x]` in the source markdown and nothing else. A persistent banner shows "write-back ON" so it is never silent. No free-text edits. No reordering. No adds or deletes.
@@ -112,7 +112,7 @@ Stable regions, stable placement, same order on every surface:
 
 1. **Mission** — one sentence
 2. **Objective** — current top outcome + progress (internal schema key remains `activeQuest` until schema v2)
-3. **Resume Note** — the ADHD killer feature; feeds the resume-prompt palette
+3. **Resume Note** — the core focus feature; feeds the resume-prompt palette
 4. **Now** — max 3 items
 5. **Next** — max 5 items
 6. **Blocked** — waiting-on list with reasons
@@ -130,7 +130,7 @@ Stable regions, stable placement, same order on every surface:
 - Beautiful onboarding (still)
 - Marketing site
 - Settings UI beyond `.repolog.json`
-- Themes (single calm palette for v0.2; theme hook only if it falls out cheap)
+- Themes (single calm palette for v0.2; theme hook only if it can be implemented with low risk)
 - Plugin marketplace
 - Timers, pomodoros, streaks, XP, any gamification
 - Free-text write-back to markdown (only checkbox toggles, opt-in)
@@ -145,7 +145,7 @@ Stable regions, stable placement, same order on every surface:
 - **Heuristic extraction fails on messy repos.** Mitigation: structured mode; v0.1 fixture coverage for noisy repos.
 - **Feature creep into agent orchestration.** Mitigation: this PRD. "Legibility, not orchestration" is the line.
 - **Write-back silently corrupts a user's markdown.** Mitigation: default off, explicit opt-in flag, checkbox-only, persistent banner, touches only the exact line matched by the task's `doc` + `line`.
-- **Resume-prompt palette becomes yet-another-snippet-manager.** Mitigation: ship with 6 good presets, make editing one-file-per-preset, no UI for template management.
+- **Resume-prompt palette becomes a generic snippet manager.** Mitigation: ship with 6 good presets, make editing one-file-per-preset, no UI for template management.
 
 ## Decision log
 

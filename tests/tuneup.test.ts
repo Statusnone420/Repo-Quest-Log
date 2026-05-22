@@ -219,6 +219,48 @@ describe("buildTuneup", () => {
     expect(result.prompt).toContain("test-app");
   });
 
+  it("scores generic repos as useful raw context but missing agent-ready structure", async () => {
+    const root = await makeRepo({
+      "README.md": "# Widget API\n\nA small TypeScript service for tracking warehouse widgets.\n",
+      "package.json": JSON.stringify({
+        name: "widget-api",
+        version: "2.0.0",
+        description: "Tracks warehouse widgets",
+      }, null, 2),
+      "src/index.ts": "export function trackWidget() { return true; }\n",
+    });
+    const report = await runDoctor(root);
+    const result = await buildTuneup(report.state, report, root);
+
+    expect(result.repoLogStructureScore).toBeLessThan(70);
+    expect(result.contextUsefulnessScore).toBeGreaterThanOrEqual(60);
+    expect(result.agentReadinessScore).toBeLessThan(70);
+    expect(result.summary).toContain("Good raw context, missing agent-ready structure.");
+  });
+
+  it("one-shot repair prompt tells agents exactly how to create agent-ready docs", async () => {
+    const root = await makeRepo({
+      "README.md": "# Widget API\n\nA small TypeScript service for tracking warehouse widgets.\n",
+      "package.json": JSON.stringify({ name: "widget-api", description: "Tracks warehouse widgets" }, null, 2),
+    });
+    const report = await runDoctor(root);
+    const result = await buildTuneup(report.state, report, root);
+
+    expect(result.prompt).toContain("Inspect README, package/manifest files, git log, and source tree");
+    expect(result.prompt).toContain("Do not touch code unless needed for documentation inference.");
+    expect(result.prompt).toContain("Do not invent fake project details.");
+    expect(result.prompt).toContain("Mark uncertain items as assumptions.");
+    expect(result.prompt).toContain("Exact files to change");
+    expect(result.prompt).toContain("PLAN.md");
+    expect(result.prompt).toContain("STATE.md");
+    expect(result.prompt).toContain("AGENTS.md");
+    expect(result.prompt).toContain(".repolog/CHARTER.md only if the human explicitly asks");
+    expect(result.prompt).toContain("Acceptance criteria");
+    expect(result.generatedDocs["PLAN.md"]).toContain("## Now");
+    expect(result.generatedDocs["STATE.md"]).toContain("## Resume Note");
+    expect(result.generatedDocs["AGENTS.md"]).toContain("## Owned Areas");
+  });
+
   it("content quality prompt shows Now/Problem/Write per issue", async () => {
     const root = await makeRepo({
       "PLAN.md":

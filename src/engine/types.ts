@@ -80,6 +80,28 @@ export interface DigestResult {
   model: string;
 }
 
+export interface RepoContext {
+  repoType: string;
+  manifestType?: "package.json" | "pyproject.toml" | "Cargo.toml" | "go.mod" | "pom.xml" | "Gemfile";
+  packageName?: string;
+  packageDescription?: string;
+  packageVersion?: string;
+  readmePreview?: string;
+  entryPointPreview?: string;
+  entryPointFile?: string;
+  recentCommits: string[];
+  rootFiles: string[];
+  sourceTree: string[];
+  docsFound: string[];
+}
+
+export interface RepoReadinessScores {
+  repoLogStructureScore: number;
+  contextUsefulnessScore: number;
+  agentReadinessScore: number;
+  summary: string;
+}
+
 export interface Objective {
   title: string;
   doc: string;
@@ -138,4 +160,6 @@ export interface QuestState {
   agentActivity: AgentActivity[];
   config: RepoConfigSnapshot;
   lastDigest?: DigestResult;
+  repoContext?: RepoContext;
+  readiness?: RepoReadinessScores;
 }

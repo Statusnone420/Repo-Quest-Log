@@ -1,6 +1,6 @@
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
@@ -21,6 +21,19 @@ describe("CLI command parsing", () => {
       targets: ["plan", "state", "config"],
     });
   });
+
+  it("defaults desktop snapshots to the app cache, not the target repo", async () => {
+    const root = await mkdtemp(join(tmpdir(), "repolog-cli-desktop-"));
+    try {
+      const command = readCommand(["desktop", root]);
+      expect(command).toMatchObject({ mode: "desktop", rootDir: resolve(root) });
+      if (command.mode !== "desktop") throw new Error("expected desktop command");
+      expect(command.outputFile.startsWith(resolve(root))).toBe(false);
+      expect(command.outputFile).toContain("desktop-preview.html");
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
 });
 
 describe("init templates", () => {
@@ -37,6 +50,11 @@ describe("init templates", () => {
     try {
       const outputs = await writeInitTemplates(root, ["plan", "state", "config"], { write: true, force: true });
       expect(outputs).toHaveLength(3);
+      expect(outputs.map((output) => output.filePath)).toEqual([
+        join(root, "PLAN.md"),
+        join(root, "STATE.md"),
+        join(root, ".repolog.json"),
+      ]);
       expect(await readFile(join(root, "PLAN.md"), "utf8")).toContain("## Objective");
       expect(await readFile(join(root, "STATE.md"), "utf8")).toContain("## Resume Note");
       expect(await readFile(join(root, ".repolog.json"), "utf8")).toContain("\"schemaVersion\": 2");

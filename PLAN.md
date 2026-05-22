@@ -7,11 +7,13 @@ One sentence: **what this repo is trying to become.**
 Ship v0.4: frontmatter-based Agents roster (status from .md frontmatter), on-demand LLM Digest via OpenRouter, Light/Dark theme, font picker, font size fix, and polished 3-column layout. Keep the local-first, markdown-first philosophy intact.
 
 ## Current Focus
-v0.4 feature pass complete and verified. Agents section uses per-agent status from frontmatter, Digest works (OpenRouter, confirmed live hit), layout restructured (Agents own col 3, Decisions in col 2), Settings panel themes correctly in Light mode. 67 tests green.
+Post-v0.4 trust pass complete: RepoLog no longer dirties target repos on open/scan/render/analyze, app runtime/digest state lives in app-owned cache, generic repos get a useful agent-readiness onboarding dashboard, and Analyze/Tuneup produces a one-shot repair prompt plus generated docs previews.
 
 **Objective Sync Rule:** When PLAN.md's `## Objective` changes, review and update all agent objectives (CLAUDE.md, GEMINI.md, AGENTS.md) to align with the new direction. Each agent's objective should support the repo objective from their specific angle (e.g., Claude = execution, Gemini = architecture).
 
 ## Now
+- [x] Trust pass: keep repo open/scan/render/analyze read-only and move runtime/digest state out of target repos
+- [x] Generic repo onboarding: show repo context, readiness scores, missing docs, and a one-shot agent-ready docs prompt
 - [x] Theme: Light/Dark only, fix density clamp (126% → 150%), add font picker
 - [x] Agents: per-agent status from .md frontmatter, remove inferred confidence feed
 - [x] OpenRouter: API key in Electron userData, model config, `repolog:run-digest` IPC handler

@@ -1,7 +1,8 @@
-import { access, mkdir, writeFile } from "node:fs/promises";
+import { access, mkdir, rename } from "node:fs/promises";
 import { basename, resolve } from "node:path";
 
 import { defaultRepoConfig } from "./config.js";
+import { assertSafeRepoWriteTarget, cleanupTempFile, writeAtomicExclusive } from "./safe-fs.js";
 
 export type InitTarget = "plan" | "state" | "config";
 
@@ -9,6 +10,7 @@ export interface InitTemplateResult {
   target: InitTarget;
   fileName: string;
   content: string;
+  filePath?: string;
 }
 
 export function buildInitTemplates(rootDir: string): InitTemplateResult[] {
@@ -125,7 +127,15 @@ export async function writeInitTemplates(
       }
     }
 
-    await writeFile(filePath, template.content, "utf8");
+    await assertSafeRepoWriteTarget(rootDir, filePath);
+    const tempPath = await writeAtomicExclusive(filePath, template.content);
+    try {
+      await rename(tempPath, filePath);
+    } catch (error) {
+      await cleanupTempFile(tempPath);
+      throw error;
+    }
+    template.filePath = filePath;
   }
 
   return selected;

@@ -61,6 +61,9 @@ contextBridge.exposeInMainWorld("repologDesktop", {
   writeTuneupCharter(charter) {
     return ipcRenderer.invoke("repolog:write-tuneup-charter", charter);
   },
+  applyGeneratedDocs(docs) {
+    return ipcRenderer.invoke("repolog:apply-generated-docs", docs);
+  },
   copyStandup() {
     return ipcRenderer.invoke("repolog:copy-standup");
   },

@@ -1,7 +1,6 @@
-import { basename, join, resolve } from "node:path";
+import { basename, resolve } from "node:path";
 import { execFileSync } from "node:child_process";
 import { stat } from "node:fs/promises";
-import { existsSync, readFileSync } from "node:fs";
 
 import { inferAgentActivity } from "./activity.js";
 import { extractAgentProfiles } from "./agents.js";
@@ -9,8 +8,10 @@ import { isExcludedPath, readRepoConfig } from "./config.js";
 import { readGitContext } from "./git.js";
 import { normalizeQuestState } from "./normalize.js";
 import { parseRepo } from "./parse.js";
+import { assessRepoReadiness } from "./readiness.js";
+import { gatherRepoContext } from "./repo-context.js";
 import { relativeSince } from "./time.js";
-import type { DigestResult, FileChange, QuestState } from "./types.js";
+import type { FileChange, QuestState } from "./types.js";
 
 export interface ScanOptions {
   recentChanges?: readonly FileChange[];
@@ -26,41 +27,36 @@ export async function scanRepo(rootDir: string, options: ScanOptions = {}): Prom
   const recentChanges = buildRecentChanges(docs, options.recentChanges, resolvedRoot, config.excludes);
   const agents = extractAgentProfiles(docs);
   const agentActivity = inferAgentActivity(agents, recentChanges);
+  const repoContext = await gatherRepoContext(resolvedRoot);
 
   const charterPresent = await fileExists(resolve(resolvedRoot, ".repolog", "CHARTER.md"));
   const hasFrontmatter = docs.some(
     (doc) => doc.frontmatter && Object.keys(doc.frontmatter).length > 0,
   );
 
-   const state = normalizeQuestState(docs, {
-     repoRoot: resolvedRoot,
-     repoName: basename(resolvedRoot),
-     branch: gitContext?.branch ?? readBranchName(resolvedRoot),
-     lastScan: new Date().toISOString(),
-     recentChanges,
-     lastTouchedFile: options.lastTouchedFile,
-     lastTouchedAt: options.lastTouchedAt,
-     gitContext,
-     agentActivity,
-     config: {
-       excludes: config.excludes,
-       writeback: config.writeback,
-       prompts: config.prompts,
-       watch: config.watch,
-       charterPresent,
-       hasFrontmatter,
-     },
-   });
+  const state = normalizeQuestState(docs, {
+    repoRoot: resolvedRoot,
+    repoName: basename(resolvedRoot),
+    branch: gitContext?.branch ?? readBranchName(resolvedRoot),
+    lastScan: new Date().toISOString(),
+    recentChanges,
+    lastTouchedFile: options.lastTouchedFile,
+    lastTouchedAt: options.lastTouchedAt,
+    gitContext,
+    agentActivity,
+    config: {
+      excludes: config.excludes,
+      writeback: config.writeback,
+      prompts: config.prompts,
+      watch: config.watch,
+      charterPresent,
+      hasFrontmatter,
+    },
+  });
+  state.repoContext = repoContext;
+  state.readiness = assessRepoReadiness(state, repoContext);
 
-   // Load persisted digest into scan
-   const digestPath = join(resolvedRoot, ".repolog", "digest.json");
-   if (existsSync(digestPath)) {
-     try {
-       state.lastDigest = JSON.parse(readFileSync(digestPath, "utf8")) as DigestResult;
-     } catch { /* corrupt digest, ignore */ }
-   }
-
-   return state;
+  return state;
 }
 
 async function fileExists(path: string): Promise<boolean> {

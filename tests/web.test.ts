@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cp, rm } from "node:fs/promises";
+import { cp, mkdir, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
@@ -102,6 +102,30 @@ describe("web renderers", () => {
       expect(html).toContain("Create STATE.md");
       expect(html).toContain("Create .repolog.json");
       expect(html).toContain("Skip for now");
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  it("renders a useful onboarding dashboard for generic repos", async () => {
+    const root = join(tmpdir(), `repo-quest-log-generic-${Date.now()}-${Math.random().toString(16).slice(2)}`);
+    await mkdir(join(root, "src"), { recursive: true });
+    await writeFile(join(root, "README.md"), "# Widget API\n\nA small TypeScript service for tracking warehouse widgets.\n", "utf8");
+    await writeFile(join(root, "package.json"), JSON.stringify({ name: "widget-api", description: "Tracks warehouse widgets" }, null, 2), "utf8");
+    await writeFile(join(root, "src", "index.ts"), "export const widget = true;\n", "utf8");
+
+    try {
+      const state = await scanRepo(root);
+      const html = renderDesktopHtml(state, { liveBridge: "desktop" });
+
+      expect(html).toContain("This repo is not agent-ready yet");
+      expect(html).toContain("Docs not initialized");
+      expect(html).toContain("TypeScript");
+      expect(html).toContain("widget-api");
+      expect(html).toContain("Good raw context, missing agent-ready structure.");
+      expect(html).toContain("Generate agent-ready docs prompt");
+      expect(html).toContain("PLAN.md");
+      expect(html).toContain("STATE.md");
     } finally {
       await rm(root, { recursive: true, force: true });
     }

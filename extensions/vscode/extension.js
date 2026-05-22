@@ -75,7 +75,7 @@ class RepoQuestViewProvider {
             const modules = await this.loadModules();
             const state = this.currentState || await modules.scanRepo(this.rootDir);
             const report = await modules.runDoctor(this.rootDir);
-            const tuneup = modules.buildTuneup(state, report);
+            const tuneup = await modules.buildTuneup(state, report, this.rootDir);
             await this.view.webview.postMessage({ type: "repolog:tuneup", data: tuneup });
           } catch (e) {
             const errorText = e instanceof Error ? e.message : String(e);
@@ -88,13 +88,19 @@ class RepoQuestViewProvider {
 
         if (message.type === "writeTuneupCharter") {
           try {
-            const fs = require("node:fs");
-            const nodePath = require("node:path");
-            const charterDir = nodePath.join(this.rootDir, ".repolog");
-            const charterPath = nodePath.join(charterDir, "CHARTER.md");
-            fs.mkdirSync(charterDir, { recursive: true });
-            fs.writeFileSync(charterPath, message.charter || "", "utf8");
-            await this.view.webview.postMessage({ type: "repolog:toast", message: "CHARTER.md written" });
+            const modules = await this.loadModules();
+            const charterDir = path.join(this.rootDir, ".repolog");
+            const charterPath = path.join(charterDir, "CHARTER.md");
+            await modules.ensureSafeDirectory(this.rootDir, charterDir);
+            await modules.assertSafeRepoWriteTarget(this.rootDir, charterPath);
+            const tempPath = await modules.writeAtomicExclusive(charterPath, message.charter || "");
+            try {
+              await fs.promises.rename(tempPath, charterPath);
+            } catch (error) {
+              await modules.cleanupTempFile(tempPath);
+              throw error;
+            }
+            await this.view.webview.postMessage({ type: "repolog:toast", message: `CHARTER.md written: ${charterPath}` });
           } catch (e) {
             const errorText = e instanceof Error ? e.message : String(e);
             await this.view.webview.postMessage({ type: "repolog:toast", message: `failed to write CHARTER.md: ${errorText}` });
@@ -111,6 +117,33 @@ class RepoQuestViewProvider {
           } catch (e) {
             const errorText = e instanceof Error ? e.message : String(e);
             await this.view.webview.postMessage({ type: "error", message: `Settings save failed: ${errorText}` });
+          }
+        }
+
+        if (message.type === "applyGeneratedDocs") {
+          try {
+            const modules = await this.loadModules();
+            const docs = message.docs || {};
+            const allowed = new Set(["PLAN.md", "STATE.md", "AGENTS.md"]);
+            const files = [];
+            for (const [fileName, content] of Object.entries(docs)) {
+              if (!allowed.has(fileName)) continue;
+              const filePath = path.join(this.rootDir, fileName);
+              await modules.assertSafeRepoWriteTarget(this.rootDir, filePath);
+              const tempPath = await modules.writeAtomicExclusive(filePath, typeof content === "string" ? content : "");
+              try {
+                await fs.promises.rename(tempPath, filePath);
+              } catch (error) {
+                await modules.cleanupTempFile(tempPath);
+                throw error;
+              }
+              files.push(filePath);
+            }
+            await this.refresh();
+            await this.view.webview.postMessage({ type: "repolog:toast", message: `Generated docs written: ${files.join(", ")}` });
+          } catch (e) {
+            const errorText = e instanceof Error ? e.message : String(e);
+            await this.view.webview.postMessage({ type: "error", message: `Generated docs write failed: ${errorText}` });
           }
         }
 
@@ -199,7 +232,8 @@ class RepoQuestViewProvider {
         import(pathToFileURL(path.join(repoRoot, "dist", "engine", "standup.js")).href),
         import(pathToFileURL(path.join(repoRoot, "dist", "engine", "doctor.js")).href),
         import(pathToFileURL(path.join(repoRoot, "dist", "engine", "tuneup.js")).href),
-      ]).then(([changes, scan, watcher, config, init, web, prompts, standup, doctor, tuneup]) => ({
+        import(pathToFileURL(path.join(repoRoot, "dist", "engine", "safe-fs.js")).href),
+      ]).then(([changes, scan, watcher, config, init, web, prompts, standup, doctor, tuneup, safeFs]) => ({
         mergeChanges: changes.mergeChanges,
         scanRepo: scan.scanRepo,
         startWatcher: watcher.startWatcher,
@@ -210,6 +244,10 @@ class RepoQuestViewProvider {
         buildStandupMarkdown: standup.buildStandupMarkdown,
         runDoctor: doctor.runDoctor,
         buildTuneup: tuneup.buildTuneup,
+        assertSafeRepoWriteTarget: safeFs.assertSafeRepoWriteTarget,
+        ensureSafeDirectory: safeFs.ensureSafeDirectory,
+        writeAtomicExclusive: safeFs.writeAtomicExclusive,
+        cleanupTempFile: safeFs.cleanupTempFile,
       }));
     }
 
@@ -262,7 +300,7 @@ function activate(context) {
         }
         const state = provider.currentState || await modules.scanRepo(rootDir);
         const report = await modules.runDoctor(rootDir);
-        const tuneup = modules.buildTuneup(state, report);
+        const tuneup = await modules.buildTuneup(state, report, rootDir);
 
         const action = await vscode.window.showQuickPick(
           [
@@ -283,12 +321,18 @@ function activate(context) {
           await vscode.env.clipboard.writeText(tuneup.prompt);
           vscode.window.showInformationMessage("Tuneup prompt copied to clipboard.");
         } else if (action.id === "charter") {
-          const nodePath = require("node:path");
-          const nodeFs = require("node:fs");
-          const charterDir = nodePath.join(rootDir, ".repolog");
-          nodeFs.mkdirSync(charterDir, { recursive: true });
-          nodeFs.writeFileSync(nodePath.join(charterDir, "CHARTER.md"), tuneup.charter, "utf8");
-          vscode.window.showInformationMessage("CHARTER.md written to .repolog/");
+          const charterDir = path.join(rootDir, ".repolog");
+          const charterPath = path.join(charterDir, "CHARTER.md");
+          await modules.ensureSafeDirectory(rootDir, charterDir);
+          await modules.assertSafeRepoWriteTarget(rootDir, charterPath);
+          const tempPath = await modules.writeAtomicExclusive(charterPath, tuneup.charter);
+          try {
+            await fs.promises.rename(tempPath, charterPath);
+          } catch (error) {
+            await modules.cleanupTempFile(tempPath);
+            throw error;
+          }
+          vscode.window.showInformationMessage(`CHARTER.md written: ${charterPath}`);
         } else if (action.id.startsWith("agent-")) {
           const agentId = action.id.slice("agent-".length);
           const prompt = tuneup.perAgent[agentId] || tuneup.prompt;

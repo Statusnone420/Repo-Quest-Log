@@ -1,18 +1,20 @@
 #!/usr/bin/env node
-import { mkdir, readFileSync, realpathSync, writeFile } from "node:fs";
-import { mkdir as mkdirAsync, writeFile as writeFileAsync } from "node:fs/promises";
+import { readFileSync, realpathSync } from "node:fs";
+import { mkdir as mkdirAsync, rename, writeFile as writeFileAsync } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import React from "react";
 import { render } from "ink";
 
 import { renderDesktopHtml } from "../desktop/render.js";
+import { desktopPreviewPath } from "../engine/app-cache.js";
 import { copyTextToClipboard } from "../engine/clipboard.js";
 import { buildInitTemplates, writeInitTemplates, type InitTarget } from "../engine/init.js";
 import { formatDoctorReport, runDoctor } from "../engine/doctor.js";
 import { loadPromptPresets } from "../engine/prompts.js";
 import { buildStandupForRepo, type StandupSince } from "../engine/standup.js";
 import { scanRepo } from "../engine/scan.js";
+import { assertSafeRepoWriteTarget, cleanupTempFile, ensureSafeDirectory, writeAtomicExclusive } from "../engine/safe-fs.js";
 import { buildTuneup } from "../engine/tuneup.js";
 import { formatStaticFrame, WatchApp } from "../tui/App.js";
 
@@ -87,8 +89,15 @@ async function main(): Promise<void> {
 
       if (command.writeCharter) {
         const charterPath = resolve(command.rootDir, ".repolog", "CHARTER.md");
-        await mkdirAsync(resolve(command.rootDir, ".repolog"), { recursive: true });
-        await writeFileAsync(charterPath, tuneup.charter, "utf8");
+        await ensureSafeDirectory(command.rootDir, resolve(command.rootDir, ".repolog"));
+        await assertSafeRepoWriteTarget(command.rootDir, charterPath);
+        const tempPath = await writeAtomicExclusive(charterPath, tuneup.charter);
+        try {
+          await rename(tempPath, charterPath);
+        } catch (error) {
+          await cleanupTempFile(tempPath);
+          throw error;
+        }
         process.stderr.write(`wrote ${charterPath}\n`);
       }
 
@@ -238,7 +247,7 @@ export function readCommand(args: string[]): Command {
     const outIndex = args.indexOf("--out");
     const outputFile = outIndex >= 0 && args[outIndex + 1]
       ? resolve(args[outIndex + 1]!)
-      : resolve(rootDir, ".repolog", "desktop-preview.html");
+      : desktopPreviewPath(rootDir);
     return { mode: "desktop", rootDir, outputFile };
   }
   if (first === "init") {

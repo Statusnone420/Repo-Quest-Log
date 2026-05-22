@@ -254,4 +254,31 @@ describe("desktop digest hardening", () => {
     expect(source).toContain("skippedFiles");
     expect(source).toContain("planningLimit = 20000");
   });
+
+  it("does not write live HTML or digest cache into the opened repo", async () => {
+    const source = await readFile(join(process.cwd(), "apps", "desktop", "main.cjs"), "utf8");
+
+    expect(source).toContain("loadURL");
+    expect(source).toContain("data:text/html;charset=utf-8,");
+    expect(source).not.toContain('path.join(targetRoot, ".repolog", "desktop-live.html")');
+    expect(source).not.toContain('path.join(targetRoot, ".repolog", "digest.json")');
+  });
+
+  it("passes targetRoot into tuneup so generic repos get repository context", async () => {
+    const desktopSource = await readFile(join(process.cwd(), "apps", "desktop", "main.cjs"), "utf8");
+    const vscodeSource = await readFile(join(process.cwd(), "extensions", "vscode", "extension.js"), "utf8");
+
+    expect(desktopSource).toContain("buildTuneup(state, report, targetRoot)");
+    expect(vscodeSource).toContain("buildTuneup(state, report, this.rootDir)");
+    expect(vscodeSource).toContain("buildTuneup(state, report, rootDir)");
+  });
+
+  it("explicit repo writes return the exact files they write", async () => {
+    const source = await readFile(join(process.cwd(), "apps", "desktop", "main.cjs"), "utf8");
+
+    expect(source).toContain("files: outputs.map");
+    expect(source).toContain("files: [repoConfigFile()]");
+    expect(source).toContain("files: [charterPath]");
+    expect(source).toContain("repolog:apply-generated-docs");
+  });
 });

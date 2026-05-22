@@ -41,7 +41,7 @@ Ship v0.4: frontmatter-based Agents roster (status from .md content), on-demand 
 
 ## Current Task
 
-v0.4 feature pass complete. Layout restructured (Agents own col 3, Decisions moved to col 2). Agent status uses per-agent frontmatter. Settings panel themes correctly in Light mode. OpenRouter Digest wired and working. 67 tests green.
+Major product correctness pass complete and verified: app open/scan/render/analyze are read-only for target repos, runtime and digest state moved to app-owned cache, generic repos render agent-readiness onboarding, and Tuneup generates a one-shot repair prompt with generated docs previews. `npm run build`, `npm run lint`, `npm test` (82 tests), and desktop smoke against a generic repo passed.
 
 ---
 
@@ -137,4 +137,4 @@ Fix anything that doesn't hold.
 ---
 
 ## Last Task
-Release verification closeout completed and verified. First-run wizard, doctor findings, settings save flow, write-back queue/stale handling, watcher config/error handling, repo-root startup parsing, and release notes are aligned. `npm run build && npm run lint && npm test` passes with 67 tests.
+Product trust pass completed and covered by tests. Repo-local runtime writes found: `.repolog/desktop-live.html`, `.repolog/digest.json`, `.repolog/CHARTER.md`, `.repolog.json`, first-run state, window bounds, last-root, and OpenRouter config. Runtime writes moved to userData/cache; `.repolog/CHARTER.md`, `.repolog.json`, PLAN.md, STATE.md, and AGENTS.md remain explicit user-triggered writes.

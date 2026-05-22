@@ -1,7 +1,7 @@
 import { readFile, rename } from "node:fs/promises";
 import { homedir } from "node:os";
 import { resolve } from "node:path";
-import { assertRegularFilePath, cleanupTempFile, writeAtomicExclusive } from "./safe-fs.js";
+import { assertRegularFilePath, assertSafeRepoWriteTarget, cleanupTempFile, writeAtomicExclusive } from "./safe-fs.js";
 
 export interface RepoConfig {
   excludes: string[];
@@ -103,7 +103,7 @@ export async function writeRepoConfig(
 `;
 
   try {
-    await assertRegularFilePath(rootDir, filePath);
+    await assertSafeRepoWriteTarget(rootDir, filePath);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     if (!message.includes("ENOENT")) {

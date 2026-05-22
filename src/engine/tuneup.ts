@@ -35,16 +35,23 @@ export interface RepoContext {
   rootFiles: string[];
   // Code files in recognized source dirs (for display/filtering)
   sourceTree: string[];
+  // Markdown/docs discovered outside RepoLog-specific structure
+  docsFound: string[];
 }
 
 export interface TuneupResult {
   score: number;
   contentScore: number;
+  repoLogStructureScore: number;
+  contextUsefulnessScore: number;
+  agentReadinessScore: number;
+  summary: string;
   gaps: Gap[];
   contentGaps: Gap[];
   prompt: string;
   charter: string;
   perAgent: Record<string, string>;
+  generatedDocs: Record<"PLAN.md" | "STATE.md" | "AGENTS.md", string>;
 }
 
 const WEIGHTS = {
@@ -148,10 +155,14 @@ export async function gatherRepoContext(rootDir: string): Promise<RepoContext> {
     recentCommits: [],
     rootFiles: [],
     sourceTree: [],
+    docsFound: [],
   };
 
   // 1. Scan root-level files — this works for ANY repo
   context.rootFiles = await scanRootFiles(rootDir);
+  context.docsFound = context.rootFiles
+    .filter((file) => /\.(md|rst|txt)$/i.test(file))
+    .map((file) => file.replace(/\/$/, ""));
 
   // 2. Detect repo type from what's actually there
   context.repoType = detectRepoType(context.rootFiles);
@@ -492,11 +503,28 @@ export async function buildTuneup(
   }
 
   const contentScore = Math.max(0, 100 - contentPenalty);
+  const contextUsefulnessScore = scoreContextUsefulness(context);
+  const agentReadinessScore = Math.round((score * 0.65) + (contextUsefulnessScore * 0.35));
+  const summary = summarizeReadiness(score, contextUsefulnessScore);
+  const generatedDocs = buildGeneratedDocs(state, context);
   const charter = buildCharter(state, context);
-  const prompt = buildPrompt(state, gaps, contentGaps, score, contentScore, charter, context);
+  const prompt = buildPrompt(state, gaps, contentGaps, score, contentScore, charter, context, contextUsefulnessScore, agentReadinessScore, summary, generatedDocs);
   const perAgent = buildPerAgentPrompts(state, gaps, contentGaps, context);
 
-  return { score, contentScore, gaps, contentGaps, prompt, charter, perAgent };
+  return {
+    score,
+    contentScore,
+    repoLogStructureScore: score,
+    contextUsefulnessScore,
+    agentReadinessScore,
+    summary,
+    gaps,
+    contentGaps,
+    prompt,
+    charter,
+    perAgent,
+    generatedDocs,
+  };
 }
 
 // ── Detection helpers ────────────────────────────────────────────────────────
@@ -656,6 +684,145 @@ function synthesizeObjective(commits: string[]): string {
   return `${first.charAt(0).toUpperCase()}${first.slice(1)}.`;
 }
 
+function scoreContextUsefulness(context: RepoContext | null): number {
+  if (!context) return 0;
+  let score = 0;
+  if (context.readmePreview) score += 30;
+  if (context.manifestType || context.packageName || context.packageDescription) score += 25;
+  if (context.recentCommits.length > 0) score += 20;
+  if (context.docsFound.length > 0) score += 15;
+  if (context.sourceTree.length > 0 || context.entryPointPreview) score += 10;
+  return Math.min(100, score);
+}
+
+function summarizeReadiness(structureScore: number, contextScore: number): string {
+  if (structureScore >= 70 && contextScore >= 50) {
+    return "Agent-ready structure with enough repo context.";
+  }
+  if (contextScore >= 60 && structureScore < 70) {
+    return "Good raw context, missing agent-ready structure.";
+  }
+  if (contextScore < 40 && structureScore < 70) {
+    return "Low raw context and missing agent-ready structure.";
+  }
+  return "Some structure exists, but the repair path needs clearer docs.";
+}
+
+function buildGeneratedDocs(
+  state: QuestState,
+  context: RepoContext | null,
+): Record<"PLAN.md" | "STATE.md" | "AGENTS.md", string> {
+  const repoName = state.name || context?.packageName || "this repo";
+  const mission = extractReadmeMission(context)
+    ?? context?.packageDescription
+    ?? `${repoName}: [assumption - summarize what this repo does after inspecting README/source]`;
+  const objective = context?.recentCommits.length
+    ? synthesizeObjective(context.recentCommits.slice(0, 4))
+    : "[assumption - define the current milestone after inspecting git history and source]";
+  const nowTasks = context?.recentCommits.length
+    ? context.recentCommits.slice(0, 3).map((commit) => `- [ ] Verify or continue: ${commit}`).join("\n")
+    : "- [ ] [assumption - inspect current code/docs and choose the active task]";
+  const nextTasks = context?.sourceTree.length
+    ? `- [ ] Review ${context.sourceTree.slice(0, 3).join(", ")} for follow-up work`
+    : "- [ ] [assumption - add the next concrete follow-up]";
+  const ownedAreas = context?.sourceTree.length
+    ? [...new Set(context.sourceTree.map((file) => `${file.split("/")[0]}/`))]
+        .slice(0, 5)
+        .map((dir) => `- \`${dir}\` — [verify ownership]`)
+        .join("\n")
+    : "- `src/` — [assumption - primary source area if present]\n- `tests/` — [assumption - test coverage if present]";
+
+  return {
+    "PLAN.md": `# PLAN.md
+
+## Mission
+
+${mission}
+
+## Objective
+
+${objective}
+
+## Now
+
+${nowTasks}
+
+## Next
+
+${nextTasks}
+
+## Blocked
+
+- [ ] None known. Update this when a person, decision, credential, or external dependency blocks work.
+
+## Acceptance Criteria
+
+- [ ] README/package/source facts are reflected without invented details.
+- [ ] Now/Next/Blocked describe concrete repo work.
+- [ ] Uncertain details are marked as assumptions.
+`,
+    "STATE.md": `# STATE.md
+
+## Current Focus
+
+${objective}
+
+## Resume Note
+
+> Initial RepoLog setup: inspected README, package/manifest files, git history, and source tree. Next agent should verify assumptions, keep code unchanged unless documentation inference requires inspection, and continue from PLAN.md Now.
+
+## Recent Decisions
+
+- [assumption] RepoLog docs are being initialized so agents can resume this repo safely.
+`,
+    "AGENTS.md": `# AGENTS.md
+
+## Role
+
+Autonomous coding agent for ${repoName}. Preserve existing useful docs and avoid code changes unless needed for documentation inference.
+
+## Owned Areas
+
+${ownedAreas}
+
+## Current Task
+
+Initialize agent-ready planning docs from real repo context.
+
+## Constraints
+
+- Do not invent project details.
+- Mark uncertain details as assumptions.
+- Do not touch code unless needed for documentation inference.
+- Keep changes focused on PLAN.md, STATE.md, and AGENTS.md unless the human explicitly approves more.
+`,
+  };
+}
+
+function buildExactFilesBlock(
+  gaps: Gap[],
+  generatedDocs: Record<"PLAN.md" | "STATE.md" | "AGENTS.md", string>,
+): string {
+  const files = new Set<string>(["PLAN.md", "STATE.md", "AGENTS.md"]);
+  for (const gap of gaps) {
+    if (gap.file && !gap.file.startsWith(".repolog/")) files.add(gap.file);
+  }
+  const list = [...files].sort();
+  return [
+    "## Exact files to change",
+    ...list.map((file) => `- ${file}`),
+    "- .repolog/CHARTER.md only if the human explicitly asks",
+    "",
+    "## Generated docs preview",
+    ...Object.entries(generatedDocs).flatMap(([file, content]) => [
+      `### ${file}`,
+      "```markdown",
+      content.trim(),
+      "```",
+    ]),
+  ].join("\n");
+}
+
 // ── Prompt generation ────────────────────────────────────────────────────────
 
 function buildPrompt(
@@ -666,18 +833,21 @@ function buildPrompt(
   contentScore: number,
   charter: string,
   context: RepoContext | null,
+  contextUsefulnessScore: number,
+  agentReadinessScore: number,
+  summary: string,
+  generatedDocs: Record<"PLAN.md" | "STATE.md" | "AGENTS.md", string>,
 ): string {
   const repoName = state.name || context?.packageName || "this repo";
   const hasAnyGaps = gaps.length > 0 || contentGaps.length > 0;
 
-  const structStatus = gaps.length === 0
-    ? `${score}/100 ✓`
-    : `${score}/100 (${gaps.length} missing)`;
-  const contentStatus = contentGaps.length === 0
-    ? `${contentScore}/100 ✓`
-    : `${contentScore}/100 — ${contentGaps.length} to rewrite`;
-
-  const header = `# RepoLog Tuneup — \`${repoName}\`\nStructural ${structStatus}  ·  Content ${contentStatus}`;
+  const header = [
+    `# RepoLog Agent-Ready Docs Repair — \`${repoName}\``,
+    `Structural ${score}/100 · Content ${contentScore}/100`,
+    `RepoLog structure: ${score}/100 · Context usefulness: ${contextUsefulnessScore}/100 · Agent readiness: ${agentReadinessScore}/100`,
+    summary,
+    "Generated by `repolog tuneup`.",
+  ].join("\n");
 
   const contextBlock = buildContextBlock(context);
 
@@ -685,10 +855,37 @@ function buildPrompt(
     ? buildIssues(gaps, contentGaps, context, state)
     : "\n✓ Nothing to fix — structural and content scores are both clean.";
 
-  const afterLine = "After: update `STATE.md` resume note · run `repolog doctor` · commit.";
-  const charterBlock = `## CHARTER.md — Agent Conventions\n\n\`\`\`markdown\n${charter}\n\`\`\``;
+  const exactFiles = buildExactFilesBlock(gaps, generatedDocs);
+  const acceptance = [
+    "## Acceptance criteria",
+    "- PLAN.md explains the repo mission, current objective, Now/Next/Blocked checklists, and concrete acceptance criteria.",
+    "- STATE.md includes Current Focus and a Resume Note another agent can continue from.",
+    "- AGENTS.md documents role, owned areas, constraints, and current task for future agents.",
+    "- Existing useful README/docs are preserved and referenced, not replaced with invented details.",
+    "- Uncertain details are explicitly labeled as assumptions.",
+  ].join("\n");
+  const rules = [
+    "## Instructions for the agent",
+    "Inspect README, package/manifest files, git log, and source tree before writing docs.",
+    "Create or update PLAN.md, STATE.md, and AGENTS.md.",
+    "Optionally create .repolog/CHARTER.md only if the human explicitly asks to write it.",
+    "Preserve existing useful docs.",
+    "Do not invent fake project details.",
+    "Mark uncertain items as assumptions.",
+    "Add concrete Now/Next/Blocked checklists.",
+    "Add a Resume Note that lets another agent continue.",
+    "Include acceptance criteria.",
+    "Do not touch code unless needed for documentation inference.",
+  ].join("\n");
+  const charterBlock = [
+    "## Optional CHARTER.md preview",
+    "Write `.repolog/CHARTER.md` only after an explicit user action.",
+    "```markdown",
+    charter,
+    "```",
+  ].join("\n");
 
-  return [header, contextBlock, body, "---", afterLine, "---", charterBlock]
+  return [header, rules, contextBlock, exactFiles, body, acceptance, charterBlock]
     .filter(Boolean)
     .join("\n\n");
 }

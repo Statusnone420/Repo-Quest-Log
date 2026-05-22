@@ -1940,6 +1940,46 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     .empty-missing .slot .mark { font-weight: 600; }
     @media (max-width: 1099px) { .empty-grid { grid-template-columns: 1fr; } }
 
+    .onboarding-dashboard {
+      flex: 1; min-height: 0;
+      display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
+      gap: var(--tile-gap);
+      padding: var(--pad-y) var(--pad-x) var(--pad-x);
+      overflow-y: auto;
+    }
+    .onboarding-hero, .onboarding-panel {
+      background: var(--tile);
+      border: 1px solid var(--tile-border);
+      border-radius: 8px;
+      padding: var(--tile-pad);
+      min-width: 0;
+    }
+    .onboarding-hero { display: flex; flex-direction: column; gap: 14px; }
+    .onboarding-title { font-size: var(--hero-size); line-height: 1.05; color: var(--ink); margin: 0; letter-spacing: 0; }
+    .onboarding-copy { color: var(--muted); line-height: 1.45; margin: 0; max-width: 76ch; }
+    .onboarding-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+    .onboarding-actions button {
+      appearance: none; border: 1px solid var(--tile-border); border-radius: 6px;
+      background: var(--accent-soft); color: var(--accent); padding: 7px 10px;
+      font: inherit; font-size: var(--small-size); cursor: pointer;
+    }
+    .onboarding-actions button.primary { background: var(--accent); color: #071019; border-color: transparent; font-weight: 650; }
+    .onboarding-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+    .onboarding-stat { padding: 9px; border: 1px solid var(--tile-border); border-radius: 7px; background: var(--faint); }
+    .onboarding-stat .label { color: var(--dim); font-size: var(--tiny-size); text-transform: uppercase; letter-spacing: .05em; }
+    .onboarding-stat .value { color: var(--ink); font-size: var(--headline-size); font-weight: 700; margin-top: 3px; }
+    .onboarding-panel { display: flex; flex-direction: column; gap: 10px; }
+    .onboarding-list { display: flex; flex-direction: column; gap: 6px; margin: 0; padding: 0; list-style: none; }
+    .onboarding-list li { display: flex; justify-content: space-between; gap: 10px; color: var(--muted); font-size: var(--small-size); }
+    .onboarding-list code { color: var(--ink); font-family: var(--mono); }
+    .onboarding-docs { display: flex; flex-wrap: wrap; gap: 6px; }
+    .onboarding-docs span { border: 1px solid var(--tile-border); border-radius: 6px; padding: 4px 6px; color: var(--muted); font-size: var(--tiny-size); }
+    .onboarding-docs .missing { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 45%, transparent); }
+    @media (max-width: 1099px) {
+      .onboarding-dashboard { grid-template-columns: 1fr; }
+      .onboarding-grid { grid-template-columns: 1fr; }
+    }
+
     /* ---- DECISIONS ---- */
     .decision-row {
       display: grid; grid-template-columns: 84px minmax(0, 1fr);
@@ -2084,7 +2124,7 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     </header>
     ${renderSettingsRack(state, options.liveBridge)}
     ${renderSettingsPanel(state, options.liveBridge)}
-    ${isEmptyRepo(state) ? renderEmptyState(state) : `
+    ${isEmptyRepo(state) ? renderEmptyState(state) : shouldRenderOnboarding(state) ? renderOnboardingDashboard(state) : `
     <section class="header-strip">
       <div class="strip-cell mission">
         <div class="kicker">Mission <span class="meta">source: PLAN.md / README.md</span></div>
@@ -2648,6 +2688,8 @@ function renderSettingsPanel(state: QuestState, liveBridge?: SurfaceHtmlOptions[
                 <div class="tuneup-actions" data-tuneup-actions hidden>
                   <button type="button" data-tuneup-action="copy">Copy prompt</button>
                   <button type="button" data-tuneup-action="write-charter">Write CHARTER.md</button>
+                  <button type="button" data-tuneup-action="preview-docs">Preview generated docs</button>
+                  <button type="button" data-tuneup-action="apply-docs">Apply generated docs</button>
                   <button type="button" data-tuneup-action="preview-gaps">Preview gaps</button>
                   <span class="sep"></span>
                   <button type="button" data-tuneup-action="send-claude">→ Claude</button>
@@ -3251,7 +3293,9 @@ function renderSettingsScript(): string {
           if (window.repologDesktop && typeof window.repologDesktop.writeConfig === "function") {
             return Promise.resolve(window.repologDesktop.writeConfig(payload)).then(function (result) {
               if (window.__rqlToast) {
-                window.__rqlToast(result && result.success ? "Settings saved ✓" : "Settings save failed");
+                window.__rqlToast(result && result.success
+                  ? "Settings saved ✓" + (result.files ? " " + result.files.join(", ") : "")
+                  : "Settings save failed");
               }
             }).catch(function (error) {
               var msg = "Settings save failed: " + humanError(error);
@@ -3353,8 +3397,8 @@ function renderSettingsScript(): string {
                 var targetDoc = action === "init-plan" ? "plan" : action === "init-state" ? "state" : "config";
                 setBusy(button, true);
                 if (window.repologDesktop && typeof window.repologDesktop.initTemplate === "function") {
-                  Promise.resolve(window.repologDesktop.initTemplate(targetDoc)).then(function () {
-                    if (window.__rqlToast) window.__rqlToast(targetDoc.toUpperCase() + " created ✓");
+                  Promise.resolve(window.repologDesktop.initTemplate(targetDoc)).then(function (result) {
+                    if (window.__rqlToast) window.__rqlToast(targetDoc.toUpperCase() + " created ✓" + (result && result.files ? " " + result.files.join(", ") : ""));
                     showDoctorAgain();
                   }).catch(function (error) {
                     if (window.__rqlToast) window.__rqlToast("Failed to create " + targetDoc + ": " + humanError(error));
@@ -3836,12 +3880,98 @@ function escapeHtml(value: string): string {
 }
 
 function isEmptyRepo(state: QuestState): boolean {
-  if (state.scannedFiles.length < 2) return true;
-  if (!state.mission.trim() && state.now.length === 0) return true;
-  return false;
+  return state.scannedFiles.length === 0;
 }
 
-  function renderEmptyState(state: QuestState): string {
+function shouldRenderOnboarding(state: QuestState): boolean {
+  const scanned = new Set(state.scannedFiles.map((file) => file.split(/[\\/]/).pop()?.toLowerCase() ?? file.toLowerCase()));
+  const hasPlan = scanned.has("plan.md");
+  const hasState = scanned.has("state.md");
+  const hasAgent = ["agents.md", "claude.md", "gemini.md"].some((file) => scanned.has(file));
+  const hasWork = state.activeQuest.title.trim().length > 0 && (state.now.length > 0 || state.next.length > 0 || state.blocked.length > 0);
+  const structureScore = state.readiness?.repoLogStructureScore ?? (hasPlan && hasState && hasWork ? 70 : 0);
+  return !isEmptyRepo(state) && (!hasPlan || !hasState || !hasWork || structureScore < 70 || (!hasAgent && structureScore < 70));
+}
+
+function renderOnboardingDashboard(state: QuestState): string {
+  const context = state.repoContext;
+  const readiness = state.readiness;
+  const scanned = new Set(state.scannedFiles.map((file) => file.split(/[\\/]/).pop()?.toLowerCase() ?? file.toLowerCase()));
+  const expected = ["PLAN.md", "STATE.md", "AGENTS.md"];
+  const docs = expected.map((file) => {
+    const present = scanned.has(file.toLowerCase());
+    return `<span class="${present ? "present" : "missing"}">${present ? "found" : "missing"} ${escapeHtml(file)}</span>`;
+  }).join("");
+  const docsFound = (context?.docsFound.length ? context.docsFound : state.scannedFiles).slice(0, 12);
+  const docsFoundHtml = docsFound.length
+    ? docsFound.map((file) => `<span>${escapeHtml(file)}</span>`).join("")
+    : `<span class="missing">No docs found</span>`;
+  const manifest = context?.manifestType
+    ? `${context.manifestType}${context.packageName ? ` / ${context.packageName}` : ""}${context.packageVersion ? ` v${context.packageVersion}` : ""}`
+    : "No package manifest found";
+  const readme = summarizeReadme(context?.readmePreview) || state.mission || "No README summary available.";
+  const git = state.gitContext
+    ? `${state.gitContext.branch} / ${state.gitContext.dirtyFiles} dirty file${state.gitContext.dirtyFiles === 1 ? "" : "s"}${state.gitContext.lastCommit ? ` / ${state.gitContext.lastCommit.subject}` : ""}`
+    : context?.recentCommits[0] ?? "Git status unavailable";
+  const missingList = expected.filter((file) => !scanned.has(file.toLowerCase())).join(", ") || "None";
+  const sourceTree = context?.sourceTree.slice(0, 8).join(" / ") || "No source tree summary found.";
+  const summary = readiness?.summary ?? "Docs not initialized";
+
+  return `<section class="onboarding-dashboard">
+    <div class="onboarding-hero">
+      <div>
+        <div class="kicker">Docs not initialized</div>
+        <h1 class="onboarding-title">This repo is not agent-ready yet</h1>
+      </div>
+      <p class="onboarding-copy">${escapeHtml(summary)} RepoLog found raw context, but the planning docs are missing or too weak to let an AI agent resume safely.</p>
+      <div class="onboarding-grid">
+        <div class="onboarding-stat"><div class="label">RepoLog structure</div><div class="value">${readiness?.repoLogStructureScore ?? 0}</div></div>
+        <div class="onboarding-stat"><div class="label">Context usefulness</div><div class="value">${readiness?.contextUsefulnessScore ?? 0}</div></div>
+        <div class="onboarding-stat"><div class="label">Agent readiness</div><div class="value">${readiness?.agentReadinessScore ?? 0}</div></div>
+      </div>
+      <div class="onboarding-actions">
+        <button type="button" class="primary" data-tuneup-action="generate">Generate agent-ready docs prompt</button>
+        <button type="button" data-tuneup-action="copy">Copy prompt</button>
+        <button type="button" data-tuneup-action="preview-docs">Preview generated PLAN.md/STATE.md/AGENTS.md</button>
+        <button type="button" data-tuneup-action="apply-docs">Apply generated docs</button>
+      </div>
+      <textarea class="tuneup-prompt-area" data-onboarding-prompt readonly hidden aria-label="Generated agent-ready docs prompt"></textarea>
+      <div class="onboarding-docs" aria-label="Missing docs">${docs}</div>
+    </div>
+    <aside class="onboarding-panel">
+      <div class="kicker">Detected repo context</div>
+      <ul class="onboarding-list">
+        <li><span>Repo type</span><code>${escapeHtml(context?.repoType ?? "unknown")}</code></li>
+        <li><span>Manifest</span><code>${escapeHtml(manifest)}</code></li>
+        <li><span>Git</span><code>${escapeHtml(git)}</code></li>
+        <li><span>Missing docs</span><code>${escapeHtml(missingList)}</code></li>
+      </ul>
+      <div>
+        <div class="kicker">README summary</div>
+        <p class="onboarding-copy">${escapeHtml(readme)}</p>
+      </div>
+      <div>
+        <div class="kicker">Docs found</div>
+        <div class="onboarding-docs">${docsFoundHtml}</div>
+      </div>
+      <div>
+        <div class="kicker">Source tree</div>
+        <p class="onboarding-copy">${escapeHtml(sourceTree)}</p>
+      </div>
+    </aside>
+  </section>`;
+}
+
+function summarizeReadme(readme?: string): string {
+  if (!readme) return "";
+  const line = readme
+    .split(/\r?\n/)
+    .map((item) => item.trim())
+    .find((item) => item && !item.startsWith("#") && !item.startsWith("[![") && !item.startsWith("<"));
+  return line ?? "";
+}
+
+function renderEmptyState(state: QuestState): string {
   const expectedFiles = ["PLAN.md", "STATE.md", "AGENTS.md", "CLAUDE.md"];
   const scanned = new Set(state.scannedFiles.map((f) => f.split(/[\\/]/).pop()?.toUpperCase()));
   const slots = expectedFiles.map((f) => {
@@ -3982,16 +4112,16 @@ function renderTuneupScript(): string {
     (function () {
       var vscode = typeof acquireVsCodeApi === "function" ? acquireVsCodeApi() : null;
       var card = document.querySelector("[data-tuneup-card]");
-      if (!card) return;
 
-      var meterWrap = card.querySelector("[data-tuneup-meter-wrap]");
-      var fill = card.querySelector("[data-tuneup-fill]");
-      var scoreEl = card.querySelector("[data-tuneup-score]");
-      var placeholder = card.querySelector("[data-tuneup-placeholder]");
-      var promptArea = card.querySelector("[data-tuneup-prompt]");
-      var gapsEl = card.querySelector("[data-tuneup-gaps]");
-      var actionsEl = card.querySelector("[data-tuneup-actions]");
-      var resultsEl = card.querySelector("[data-tuneup-results]");
+      var meterWrap = card && card.querySelector("[data-tuneup-meter-wrap]");
+      var fill = card && card.querySelector("[data-tuneup-fill]");
+      var scoreEl = card && card.querySelector("[data-tuneup-score]");
+      var placeholder = card && card.querySelector("[data-tuneup-placeholder]");
+      var promptArea = card && card.querySelector("[data-tuneup-prompt]");
+      var onboardingPrompt = document.querySelector("[data-onboarding-prompt]");
+      var gapsEl = card && card.querySelector("[data-tuneup-gaps]");
+      var actionsEl = card && card.querySelector("[data-tuneup-actions]");
+      var resultsEl = card && card.querySelector("[data-tuneup-results]");
 
       var tuneupData = null;
 
@@ -4042,6 +4172,10 @@ function renderTuneupScript(): string {
           promptArea.value = data.prompt || "";
           promptArea.setAttribute("data-visible", "true");
         }
+        if (onboardingPrompt) {
+          onboardingPrompt.hidden = false;
+          onboardingPrompt.value = data.prompt || "";
+        }
         if (actionsEl) actionsEl.hidden = false;
         var allGaps = (data.gaps || []).concat(data.contentGaps || []);
         if (gapsEl && allGaps.length > 0) {
@@ -4058,7 +4192,7 @@ function renderTuneupScript(): string {
         applyResult(msg.data);
       });
 
-      card.addEventListener("click", function (event) {
+      document.addEventListener("click", function (event) {
         var btn = event.target.closest && event.target.closest("[data-tuneup-action]");
         if (!btn) return;
         var action = btn.getAttribute("data-tuneup-action");
@@ -4105,8 +4239,8 @@ function renderTuneupScript(): string {
 
         if (action === "write-charter") {
           if (window.repologDesktop && typeof window.repologDesktop.writeTuneupCharter === "function") {
-            Promise.resolve(window.repologDesktop.writeTuneupCharter(tuneupData.charter)).then(function () {
-              if (window.__rqlToast) window.__rqlToast("CHARTER.md written");
+            Promise.resolve(window.repologDesktop.writeTuneupCharter(tuneupData.charter)).then(function (result) {
+              if (window.__rqlToast) window.__rqlToast(result && result.files ? "wrote " + result.files.join(", ") : "CHARTER.md written");
             }).catch(function () {
               if (window.__rqlToast) window.__rqlToast("failed to write CHARTER.md");
             });
@@ -4123,6 +4257,35 @@ function renderTuneupScript(): string {
           var visible = gapsEl.getAttribute("data-visible") === "true";
           gapsEl.setAttribute("data-visible", visible ? "false" : "true");
           btn.textContent = visible ? "Preview gaps" : "Hide gaps";
+          return;
+        }
+
+        if (action === "preview-docs") {
+          if (!onboardingPrompt || !tuneupData) return;
+          var docs = tuneupData.generatedDocs || {};
+          onboardingPrompt.hidden = false;
+          onboardingPrompt.value = Object.keys(docs).map(function (file) {
+            return "## " + file + "\\n\\n" + docs[file];
+          }).join("\\n\\n");
+          return;
+        }
+
+        if (action === "apply-docs") {
+          if (!tuneupData || !tuneupData.generatedDocs) return;
+          var files = Object.keys(tuneupData.generatedDocs);
+          var ok = window.confirm ? window.confirm("Write these repo files now?\\n\\n" + files.join("\\n")) : false;
+          if (!ok) return;
+          if (window.repologDesktop && typeof window.repologDesktop.applyGeneratedDocs === "function") {
+            Promise.resolve(window.repologDesktop.applyGeneratedDocs(tuneupData.generatedDocs)).then(function (result) {
+              if (window.__rqlToast) window.__rqlToast(result && result.files ? "wrote " + result.files.join(", ") : "generated docs written");
+            }).catch(function (err) {
+              if (window.__rqlToast) window.__rqlToast("generated docs write failed: " + String(err));
+            });
+          } else if (vscode) {
+            vscode.postMessage({ type: "applyGeneratedDocs", docs: tuneupData.generatedDocs });
+          } else if (window.__rqlToast) {
+            window.__rqlToast("applying docs requires the desktop or VS Code shell");
+          }
           return;
         }
 

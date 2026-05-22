@@ -2,7 +2,8 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { pathToFileURL } = require("node:url");
 const { spawn } = require("node:child_process");
-const { mkdir, writeFile } = require("node:fs/promises");
+const { createHash } = require("node:crypto");
+const { homedir } = require("node:os");
 
 const { app, BrowserWindow, Menu, dialog, ipcMain, shell, screen, clipboard } = require("electron");
 const { resolveDesktopRepoRoot } = require(path.join(__dirname, "..", "..", "dist", "desktop", "root.js"));
@@ -17,12 +18,24 @@ function appIconPath() {
   return fs.existsSync(candidate) ? candidate : undefined;
 }
 
-function lastRootFile() {
+function appStorageRoot() {
   try {
-    return path.join(app.getPath("userData"), "last-root.txt");
+    return app.getPath("userData");
   } catch {
-    return path.join(repoRoot, ".repolog", "last-root.txt");
+    return path.join(homedir(), ".repolog", "app");
   }
+}
+
+function appCacheRoot() {
+  return path.join(appStorageRoot(), "cache");
+}
+
+function repoStateKey(dir) {
+  return createHash("sha256").update(path.resolve(dir)).digest("hex").slice(0, 24);
+}
+
+function lastRootFile() {
+  return path.join(appStorageRoot(), "last-root.txt");
 }
 
 function readLastRoot() {
@@ -53,11 +66,7 @@ function clearLastRoot() {
 }
 
 function windowBoundsFile() {
-  try {
-    return path.join(app.getPath("userData"), "window-bounds.json");
-  } catch {
-    return path.join(repoRoot, ".repolog", "window-bounds.json");
-  }
+  return path.join(appStorageRoot(), "window-bounds.json");
 }
 
 function readWindowBounds() {
@@ -81,19 +90,11 @@ function saveWindowBounds(win) {
 }
 
 function firstRunStateFile() {
-  try {
-    return path.join(app.getPath("userData"), "first-run-state.json");
-  } catch {
-    return path.join(repoRoot, ".repolog", "first-run-state.json");
-  }
+  return path.join(appStorageRoot(), "first-run-state.json");
 }
 
 function openRouterConfigFile() {
-  try {
-    return path.join(app.getPath("userData"), "openrouter.json");
-  } catch {
-    return path.join(repoRoot, ".repolog", "openrouter.json");
-  }
+  return path.join(appStorageRoot(), "openrouter.json");
 }
 
 let openrouterConfig = { key: "", model: "nvidia/nemotron-3-super-120b-a12b:free" };
@@ -128,27 +129,6 @@ function repoConfigFile() {
   return path.join(targetRoot, ".repolog.json");
 }
 
-function ensureRepoConfigFile() {
-  const file = repoConfigFile();
-  if (fs.existsSync(file)) {
-    return file;
-  }
-
-  const defaultConfig = {
-    excludes: ["archive", "archives", "archived"],
-    writeback: false,
-    prompts: { dir: "~/.repolog/prompts" },
-  };
-
-  try {
-    fs.writeFileSync(file, `${JSON.stringify(defaultConfig, null, 2)}\n`, "utf8");
-  } catch {
-    // best-effort only
-  }
-
-  return file;
-}
-
 let targetRoot = resolveDesktopRepoRoot({
   argv: process.argv.slice(2),
   cwd: process.cwd(),
@@ -163,7 +143,6 @@ let recentChanges = [];
 let currentState = null;
 let modulesPromise = null;
 let revealTimer = null;
-let liveHtmlPath = path.join(targetRoot, ".repolog", "desktop-live.html");
 
 async function loadModules() {
   if (!modulesPromise) {
@@ -180,7 +159,9 @@ async function loadModules() {
       importModule("dist/web/render.js"),
       importModule("dist/engine/prompts.js"),
       importModule("dist/engine/safe-fs.js"),
-    ]).then(([config, init, changes, editor, doctor, scan, watcher, writeback, standup, web, prompts, safeFs]) => ({
+      importModule("dist/engine/digest-cache.js"),
+      importModule("dist/engine/digest.js"),
+    ]).then(([config, init, changes, editor, doctor, scan, watcher, writeback, standup, web, prompts, safeFs, digestCache, digest]) => ({
       readRepoConfig: config.readRepoConfig,
       writeRepoConfig: config.writeRepoConfig,
       writeInitTemplates: init.writeInitTemplates,
@@ -196,8 +177,13 @@ async function loadModules() {
       loadPromptPresets: prompts.loadPromptPresets,
       assertRegularFilePath: safeFs.assertRegularFilePath,
       assertPathInsideRepo: safeFs.assertPathInsideRepo,
+      assertSafeRepoWriteTarget: safeFs.assertSafeRepoWriteTarget,
+      ensureSafeDirectory: safeFs.ensureSafeDirectory,
       writeAtomicExclusive: safeFs.writeAtomicExclusive,
       cleanupTempFile: safeFs.cleanupTempFile,
+      readLastDigest: digestCache.readLastDigest,
+      writeLastDigest: digestCache.writeLastDigest,
+      runOpenRouterDigest: digest.runOpenRouterDigest,
     })).then(async (mods) => {
       const tuneup = await importModule("dist/engine/tuneup.js");
       return { ...mods, buildTuneup: tuneup.buildTuneup };
@@ -279,7 +265,7 @@ function revealWindow() {
 }
 
 async function refresh(changes = []) {
-  const { mergeChanges, scanRepo, renderDesktopHtml, loadPromptPresets } = await loadModules();
+  const { mergeChanges, scanRepo, renderDesktopHtml, loadPromptPresets, readLastDigest } = await loadModules();
   recentChanges = mergeChanges(changes, recentChanges);
 
   try {
@@ -287,6 +273,10 @@ async function refresh(changes = []) {
       recentChanges,
       lastTouchedFile: recentChanges[0] && recentChanges[0].file,
     });
+    const lastDigest = await readLastDigest(appCacheRoot(), targetRoot);
+    if (lastDigest) {
+      currentState.lastDigest = lastDigest;
+    }
     const presets = await loadPromptPresets(currentState, { rootDir: targetRoot });
     const html = renderDesktopHtml(currentState, { liveBridge: "desktop", presets, appVersion, openrouterConfigured: !!(openrouterConfig.key) });
     await pushHtml(html);
@@ -302,9 +292,7 @@ async function pushHtml(html) {
   }
 
   if (!initialLoadComplete) {
-    await mkdir(path.dirname(liveHtmlPath), { recursive: true });
-    await writeFile(liveHtmlPath, html, "utf8");
-    await win.loadFile(liveHtmlPath);
+    await win.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`);
     return;
   }
 
@@ -368,13 +356,15 @@ async function startWatcherForTarget() {
 
 function readFirstRunForTarget() {
   const state = readFirstRunState();
-  return state && state.repos && state.repos[targetRoot] ? state.repos[targetRoot] : {};
+  const key = repoStateKey(targetRoot);
+  return state && state.repos && state.repos[key] ? state.repos[key] : {};
 }
 
 function writeFirstRunForTarget(data) {
   const state = readFirstRunState();
   const repos = state && typeof state.repos === "object" ? state.repos : {};
-  repos[targetRoot] = { ...(repos[targetRoot] || {}), ...data };
+  const key = repoStateKey(targetRoot);
+  repos[key] = { ...(repos[key] || {}), repoRoot: targetRoot, ...data };
   writeFirstRunState({ ...state, repos });
 }
 
@@ -390,7 +380,13 @@ async function openRepoPicker() {
 }
 
 async function openRepoConfig() {
-  const filePath = ensureRepoConfigFile();
+  const filePath = repoConfigFile();
+  if (!fs.existsSync(filePath)) {
+    if (win && !win.isDestroyed()) {
+      win.webContents.send("repolog:toast", { message: "No .repolog.json yet. Save settings or choose Create .repolog.json to write it." });
+    }
+    return;
+  }
   await openDoc(filePath, 1);
 }
 
@@ -414,7 +410,6 @@ async function firstRunCheck() {
 
 async function switchRoot(newRoot) {
   targetRoot = path.resolve(newRoot);
-  liveHtmlPath = path.join(targetRoot, ".repolog", "desktop-live.html");
   recentChanges = [];
   writeLastRoot(targetRoot);
   if (win && !win.isDestroyed()) {
@@ -542,10 +537,10 @@ ipcMain.handle("repolog:init-template", async (_event, payload = {}) => {
   const { writeInitTemplates } = await loadModules();
   const target = payload && typeof payload.target === "string" ? payload.target : "plan";
   const force = payload && payload.force === true;
-  await writeInitTemplates(targetRoot, [target], { write: true, force });
+  const outputs = await writeInitTemplates(targetRoot, [target], { write: true, force });
   await refresh();
   await startWatcherForTarget();
-  return { success: true };
+  return { success: true, files: outputs.map((output) => output.filePath || path.join(targetRoot, output.fileName)) };
 });
 
 ipcMain.handle("repolog:write-config", async (_event, payload = {}) => {
@@ -556,7 +551,7 @@ ipcMain.handle("repolog:write-config", async (_event, payload = {}) => {
   if (win && !win.isDestroyed()) {
     win.webContents.send("repolog:config-changed", { ok: true });
   }
-  return { success: true };
+  return { success: true, files: [repoConfigFile()] };
 });
 
 ipcMain.handle("repolog:run-doctor", async () => {
@@ -585,14 +580,49 @@ ipcMain.handle("repolog:run-tuneup", async () => {
   const { runDoctor, buildTuneup, scanRepo } = await loadModules();
   const state = currentState ?? await scanRepo(targetRoot);
   const report = await runDoctor(targetRoot);
-  return buildTuneup(state, report);
+  return buildTuneup(state, report, targetRoot);
 });
 
 ipcMain.handle("repolog:write-tuneup-charter", async (_event, charter) => {
+  const { assertSafeRepoWriteTarget, ensureSafeDirectory, writeAtomicExclusive, cleanupTempFile } = await loadModules();
   const charterDir = path.join(targetRoot, ".repolog");
-  fs.mkdirSync(charterDir, { recursive: true });
-  fs.writeFileSync(path.join(charterDir, "CHARTER.md"), typeof charter === "string" ? charter : "", "utf8");
-  return { ok: true };
+  const charterPath = path.join(charterDir, "CHARTER.md");
+  await ensureSafeDirectory(targetRoot, charterDir);
+  await assertSafeRepoWriteTarget(targetRoot, charterPath);
+  const tempPath = await writeAtomicExclusive(charterPath, typeof charter === "string" ? charter : "");
+  try {
+    await fs.promises.rename(tempPath, charterPath);
+  } catch (error) {
+    await cleanupTempFile(tempPath);
+    throw error;
+  }
+  return { ok: true, files: [charterPath] };
+});
+
+ipcMain.handle("repolog:apply-generated-docs", async (_event, docs = {}) => {
+  const { assertSafeRepoWriteTarget, writeAtomicExclusive, cleanupTempFile } = await loadModules();
+  const allowed = new Set(["PLAN.md", "STATE.md", "AGENTS.md"]);
+  const files = [];
+  for (const [fileName, content] of Object.entries(docs)) {
+    if (!allowed.has(fileName)) {
+      continue;
+    }
+    const filePath = path.join(targetRoot, fileName);
+    await assertSafeRepoWriteTarget(targetRoot, filePath);
+    const tempPath = await writeAtomicExclusive(filePath, typeof content === "string" ? content : "");
+    try {
+      await fs.promises.rename(tempPath, filePath);
+    } catch (error) {
+      await cleanupTempFile(tempPath);
+      throw error;
+    }
+    files.push(filePath);
+  }
+  if (files.length > 0) {
+    await refresh();
+    await startWatcherForTarget();
+  }
+  return { ok: true, files };
 });
 
 ipcMain.handle("repolog:save-openrouter-config", async (_event, payload = {}) => {
@@ -626,7 +656,7 @@ ipcMain.handle("repolog:run-digest", async () => {
   if (!openrouterConfig.key) return { error: "No OpenRouter API key configured. Add one in Settings." };
   if (!targetRoot) return { error: "No repo open." };
 
-  const { assertRegularFilePath, writeAtomicExclusive, cleanupTempFile } = await loadModules();
+  const { assertRegularFilePath, runOpenRouterDigest } = await loadModules();
   const planningLimit = 20000;
   const skippedFiles = [];
 
@@ -697,96 +727,24 @@ Skipped files: ${skippedFiles.join("; ") || "none"}
 Based on the git commits and Now/Blocked tasks, return exactly this JSON — be specific, avoid restating the plan docs verbatim:
 {"summary":"What actually happened recently and where things stand (2 sentences max, reference specific features or files)","stuck":"The most concrete blocker or risk right now, or 'Nothing blocked'","next":"The single most actionable next step (name a specific file, command, or decision — not vague advice)"}`;
 
-  try {
-    const resp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${openrouterConfig.key}`,
-        "Content-Type": "application/json",
-        "HTTP-Referer": "https://github.com/statusnone420/repo-quest-log",
-        "X-Title": "RepoLog",
-      },
-      body: JSON.stringify({
-        model: openrouterConfig.model || "nvidia/nemotron-3-super-120b-a12b:free",
-        messages: [{ role: "user", content: contextPrompt }],
-        response_format: { type: "json_object" },
-        max_tokens: 400,
-        temperature: 0.3,
-      }),
-    });
-
-    if (!resp.ok) {
-      let friendly = `OpenRouter error ${resp.status}`;
-      try {
-        const errData = await resp.json();
-        const msg = errData?.error?.message ?? "";
-        if (resp.status === 429) {
-          friendly = msg.includes("free-models-per-day")
-            ? "Daily free-model limit reached. Add $10 credits at openrouter.ai → Account → Credits — credits are NOT spent on free models, they just raise your daily cap to 1000 requests."
-            : "Rate limited. Wait a minute and try again.";
-        } else if (resp.status === 404) {
-          friendly = `Model not found on OpenRouter — pick a different one in Settings. (${openrouterConfig.model})`;
-        } else if (resp.status === 401 || resp.status === 403) {
-          friendly = "Invalid or expired API key — check your OpenRouter key in Settings.";
-        } else if (msg) {
-          friendly = `OpenRouter: ${msg.slice(0, 120)}`;
-        }
-      } catch { /* keep generic message */ }
-      return { error: friendly };
-    }
-
-    const data = await resp.json();
-    const rawContent = data.choices?.[0]?.message?.content ?? "{}";
-    let parsed = {};
-    try { parsed = JSON.parse(rawContent); } catch { parsed = {}; }
-
-    const result = {
-      summary: typeof parsed.summary === "string" ? parsed.summary : "No summary returned.",
-      stuck: typeof parsed.stuck === "string" ? parsed.stuck : "Unknown.",
-      next: typeof parsed.next === "string" ? parsed.next : "Unknown.",
-      generatedAt: new Date().toISOString(),
-      model: openrouterConfig.model || "nvidia/nemotron-3-super-120b-a12b:free",
-    };
-
-    const digestDir = path.join(targetRoot, ".repolog");
-    try {
-      const digestDirStat = await fs.promises.lstat(digestDir);
-      if (!digestDirStat.isDirectory() || digestDirStat.isSymbolicLink()) {
-        throw new Error("Digest directory is not a regular directory.");
-      }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      if (!message.includes("ENOENT")) {
-        throw error;
-      }
-      fs.mkdirSync(digestDir, { recursive: true });
-    }
-    const digestFile = path.join(digestDir, "digest.json");
-    try {
-      await assertRegularFilePath(targetRoot, digestFile);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      if (!message.includes("ENOENT")) {
-        throw error;
-      }
-    }
-    const tempPath = await writeAtomicExclusive(digestFile, JSON.stringify(result, null, 2));
-    try {
-      await fs.promises.rename(tempPath, digestFile);
-    } catch (error) {
-      await cleanupTempFile(tempPath);
-      throw error;
-    }
-
-    if (skippedFiles.length > 0) {
-      result.skippedFiles = skippedFiles;
-      console.warn("Digest skipped planning files:", skippedFiles.join("; "));
-    }
-
-    return { result, skippedFiles };
-  } catch (err) {
-    return { error: `Digest failed: ${err.message || String(err)}` };
+  const digest = await runOpenRouterDigest({
+    apiKey: openrouterConfig.key,
+    model: openrouterConfig.model || "nvidia/nemotron-3-super-120b-a12b:free",
+    prompt: contextPrompt,
+    cacheRoot: appCacheRoot(),
+    repoRoot: targetRoot,
+  });
+  if (digest.error) {
+    return { error: digest.error };
   }
+  if (digest.result && currentState) {
+    currentState.lastDigest = digest.result;
+  }
+  if (digest.result && skippedFiles.length > 0) {
+    digest.result.skippedFiles = skippedFiles;
+    console.warn("Digest skipped planning files:", skippedFiles.join("; "));
+  }
+  return { ...digest, skippedFiles };
 });
 
 ipcMain.on("repolog:remember-startup-root", () => {

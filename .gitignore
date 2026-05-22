@@ -13,3 +13,4 @@ coverage/
 .repolog/desktop-live.html
 /.repolog
 repolog/repolog.xcodeproj/project.xcworkspace/xcuserdata/anthonygagliardo.xcuserdatad/UserInterfaceState.xcuserstate
+.repolog.json

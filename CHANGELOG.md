@@ -16,6 +16,7 @@
 - Source-only repos with no markdown docs now render the normal HUD instead of the first-run empty state.
 - Generic-repo web coverage now asserts the standard board remains visible and setup help is inline.
 - Packaged desktop `--repo-root <path>` now works again instead of dropping the flag and falling back to the saved last-opened repo.
+- Desktop now has an explicit top-bar `Switch Repo` button, because the repo name was only text and was not a working affordance.
 - Added `npm run test:release-smoke` for disposable temp-repo checks before release uploads.
 
 ### Breaking Changes

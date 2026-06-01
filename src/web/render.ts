@@ -240,7 +240,35 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       border-color: var(--tile-border);
       background: rgba(255,255,255,0.035);
     }
-    .topbar-action.settings { color: var(--ink); }
+     .topbar-action.settings { color: var(--ink); }
+     .topbar-action.repo-switch {
+       color: var(--ink);
+       border-color: var(--tile-border);
+       background: rgba(88,166,255,0.07);
+     }
+     .topbar-action.repo-switch:hover {
+       color: var(--accent);
+       border-color: rgba(88,166,255,0.42);
+       background: rgba(88,166,255,0.12);
+     }
+     .topbar-action .kbd-inline {
+       display: inline-flex;
+       align-items: center;
+       gap: 2px;
+       margin-left: 2px;
+       font-family: var(--mono);
+       font-size: var(--tiny-size);
+       color: var(--muted);
+     }
+     .topbar-action kbd {
+       font-family: var(--mono);
+       font-size: var(--tiny-size);
+       padding: 1px 5px;
+       border: 1px solid var(--tile-border);
+       border-radius: 3px;
+       background: rgba(255,255,255,0.04);
+       color: var(--ink);
+     }
 
     /* ---- SETTINGS RACK ---- */
     .settings-rack {
@@ -2475,6 +2503,7 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
         <span class="repo-path">${escapeHtml(state.name)}</span>
         <span class="branch">${escapeHtml(state.branch)}</span>
       </div>
+      ${options.liveBridge === "desktop" ? `<button type="button" class="topbar-action repo-switch" data-ui-action="open-repo" data-role="topbar-switch-repo" title="Switch repo folder (Ctrl+O)">Switch Repo <span class="kbd-inline"><kbd>Ctrl</kbd><kbd>O</kbd></span></button>` : ""}
       <div class="topbar-spacer"></div>
       <button type="button" class="topbar-action" data-ui-action="refresh" title="Refresh (Ctrl+R)">↻ Rescan <span style="color:var(--dim)">(${escapeHtml(state.lastScan)})</span></button>
       <button type="button" class="topbar-action settings" data-ui-action="open-settings" title="Open settings">⚙ Settings</button>

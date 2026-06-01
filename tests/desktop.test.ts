@@ -19,6 +19,8 @@ describe("renderDesktopHtml", () => {
     expect(html).toContain("Why this matters");
     expect(html).toContain("Settings");
     expect(html).toContain("Open Repo");
+    expect(html).toContain('data-role="topbar-switch-repo"');
+    expect(html).toContain("Switch Repo");
     expect(html).toContain("Ctrl+O");
     expect(html).toContain("Ctrl+Shift+C");
     expect(html).toContain("Prompt dir");

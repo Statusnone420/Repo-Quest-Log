@@ -1,6 +1,7 @@
 import type { AgentProfile, RecentActivityEvent, Task, WorkspaceSignals } from "./types.js";
 
 const EDIT_RATE_WINDOW_MS = 60_000;
+const SCOPE_DRIFT_WINDOW_MS = 60_000;
 const SPREAD_WINDOW_MS = 10 * 60_000;
 const TREND_WINDOW_MS = 30 * 60_000;
 const TREND_BUCKETS = 30;
@@ -20,7 +21,9 @@ export function computeWorkspaceSignals(
   const repeated = repeatedEditFiles(changeEvents);
   const scopeActive = scope.length > 0;
   const scopeDriftCount = scopeActive
-    ? withinSpread.filter((event) => isOutsideScope(event.file, scope)).length
+    ? new Set(recent
+      .filter((event) => now - event.ts <= SCOPE_DRIFT_WINDOW_MS && isOutsideScope(event.file, scope))
+      .map((event) => normalizePath(event.file).toLowerCase())).size
     : 0;
   const filesTouched = new Set(withinSpread.map((event) => normalizePath(event.file))).size;
   const thrashLevel = classifyThrash(changeEvents);

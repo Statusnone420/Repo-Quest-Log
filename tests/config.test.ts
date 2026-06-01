@@ -29,6 +29,7 @@ describe("config validation", () => {
     expect(config.watch.debounce).toBe(500);
     expect(config.watch.reportFileChanges).toBe(true);
     expect(config.schemaVersion).toBe(2);
+    expect(config.prompts.dir).toBe("~/.repolog/prompts");
   });
 
   it("rejects invalid writeback values", () => {
@@ -86,6 +87,7 @@ describe("config validation", () => {
       expect(next.watch.reportFileChanges).toBe(false);
       expect(raw).toContain("\"writeback\": true");
       expect(raw).toContain("\"excludes\"");
+      expect(raw).toContain("\"dir\": \"~/.repolog/prompts\"");
       expect(raw).not.toContain(".tmp");
     } finally {
       await rm(root, { recursive: true, force: true });

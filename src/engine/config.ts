@@ -1,5 +1,4 @@
 import { readFile, rename } from "node:fs/promises";
-import { homedir } from "node:os";
 import { resolve } from "node:path";
 import { assertRegularFilePath, assertSafeRepoWriteTarget, cleanupTempFile, writeAtomicExclusive } from "./safe-fs.js";
 
@@ -139,7 +138,7 @@ function readPromptsConfig(value: unknown): { dir?: string } {
     return cloneConfig(DEFAULT_CONFIG).prompts;
   }
 
-  return { dir: expandHome(dir.trim()) };
+  return { dir: dir.trim() };
 }
 
 function readWatchConfig(value: unknown): RepoConfig["watch"] {
@@ -197,20 +196,8 @@ function normalizePath(value: string): string {
   return value.trim().replace(/\\/g, "/").replace(/^\/+|\/+$/g, "").toLowerCase();
 }
 
-function expandHome(value: string): string {
-  if (value === "~") {
-    return homedir();
-  }
-
-  if (value.startsWith("~/")) {
-    return resolve(homedir(), value.slice(2));
-  }
-
-  return value;
-}
-
 function defaultPromptDir(): string {
-  return resolve(homedir(), ".repolog", "prompts");
+  return "~/.repolog/prompts";
 }
 
 function assertBoolean(value: unknown, field: string): boolean {

@@ -44,6 +44,24 @@ describe("workspace signals", () => {
     expect(annotated.find((item) => item.file === "README.md")?.outsideScope).toBe(true);
   });
 
+  it("keeps scope drift brief and counts unique files", () => {
+    const events: RecentActivityEvent[] = [
+      event("repolog-layout-ping.md", "add", 5),
+      event("repolog-layout-ping.md", "change", 12),
+      event("repolog-layout-ping.md", "unlink", 45),
+      event("README.md", "change", 90),
+    ];
+
+    const signals = computeWorkspaceSignals(events, ["src/web"], now);
+
+    expect(signals.scopeDriftCount).toBe(1);
+    expect(signals.state).toBe("Drifting");
+
+    const settled = computeWorkspaceSignals(events, ["src/web"], now + 70_000);
+    expect(settled.scopeDriftCount).toBe(0);
+    expect(settled.state).toBe("Focused");
+  });
+
   it("classifies repeated same-file edits as thrash", () => {
     const events: RecentActivityEvent[] = [
       event("src/web/render.ts", "change", 5),

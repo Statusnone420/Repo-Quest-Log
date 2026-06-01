@@ -1594,7 +1594,7 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     /* ---- BOARD (3 cols, single row, fits viewport) ---- */
     .board {
       display: grid;
-      grid-template-columns: minmax(0, 0.96fr) minmax(0, 1fr) minmax(0, 1fr);
+      grid-template-columns: minmax(280px, 0.92fr) minmax(360px, 1fr) minmax(420px, 1.14fr);
       grid-template-rows: minmax(0, 1fr);
       gap: 10px;
       padding: 8px var(--pad-x) var(--pad-x);
@@ -1606,19 +1606,28 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       min-height: 0; min-width: 0;
     }
     /* Col 2: Next gets most space, changes + decisions share the rest */
+    .col:nth-child(1) .tile[data-area="now"] {
+      flex: 1 1 230px;
+      min-height: 190px;
+    }
+    .col:nth-child(1) .tile[data-area="blocked"] {
+      flex: 0 0 auto;
+    }
     .col:nth-child(2) .tile[data-area="next"] {
-      flex: 0.8 1 130px;
-      min-height: 118px;
+      flex: 0 0 auto;
+      min-height: 0;
     }
     .col:nth-child(2) .tile[data-area="activity"],
     .col:nth-child(2) .tile[data-area="prompts"] {
       flex: 0 0 auto;
     }
     .col:nth-child(2) .tile.tight[data-area="changes"] {
-      flex: 0.55 1 0;
+      flex: 0.7 1 120px;
+      min-height: 96px;
     }
     .col:nth-child(2) .tile[data-area="decisions"] {
-      flex: 0 1 auto;
+      flex: 1 1 180px;
+      min-height: 130px;
     }
     /* Col 3: agents fills the full column */
     .col:nth-child(3) .tile[data-area="agents"] {
@@ -1817,14 +1826,14 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     }
     .agent-doc-table {
       display: grid;
-      gap: 8px;
+      gap: 0;
     }
     .agent-doc-row {
       display: grid;
-      grid-template-columns: minmax(82px, 0.7fr) minmax(0, 1fr) minmax(0, 1fr);
-      gap: 10px;
+      grid-template-columns: minmax(86px, 0.5fr) minmax(150px, 0.92fr) minmax(180px, 1.18fr);
+      gap: 14px;
       align-items: start;
-      padding: 9px 0;
+      padding: 11px 0;
       border-bottom: 1px solid rgba(255,255,255,0.05);
       font-size: var(--small-size);
     }
@@ -1838,7 +1847,12 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     }
     .agent-doc-row:last-child { border-bottom: 0; }
     .agent-doc-file { font-family: var(--mono); color: var(--ink); overflow: hidden; text-overflow: ellipsis; }
-    .agent-doc-role, .agent-doc-task { color: var(--muted); line-height: 1.35; overflow-wrap: anywhere; }
+    .agent-doc-role, .agent-doc-task {
+      color: var(--muted);
+      line-height: 1.35;
+      overflow-wrap: anywhere;
+      max-width: 72ch;
+    }
     .digest-btn {
       background: rgba(255,255,255,0.04); border: 1px solid var(--tile-border); border-radius: 7px;
       color: var(--ink); font-size: var(--body-size); padding: 7px 12px;
@@ -2250,13 +2264,31 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
         grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 7px;
       }
+      .board {
+        grid-template-columns: minmax(0, 0.9fr) minmax(0, 1fr) minmax(360px, 1.05fr);
+      }
       .signal-cell { padding: 8px 10px; }
       .trend-bars { height: 18px; }
+    }
+    @media (min-width: 1560px) {
+      .board {
+        grid-template-columns: minmax(360px, 0.86fr) minmax(430px, 0.98fr) minmax(560px, 1.32fr);
+      }
+      .col:nth-child(2) .tile[data-area="decisions"] {
+        flex-basis: 220px;
+      }
     }
     @media (max-width: 920px) {
       .board {
         grid-template-columns: minmax(0, 1fr);
         grid-template-rows: minmax(0, 1fr);
+        overflow-y: auto;
+      }
+      .col:nth-child(1) .tile[data-area="now"],
+      .col:nth-child(2) .tile.tight[data-area="changes"],
+      .col:nth-child(2) .tile[data-area="decisions"],
+      .col:nth-child(3) .tile[data-area="agents"] {
+        flex: 0 0 auto;
       }
     }
     @media (max-width: 820px) {

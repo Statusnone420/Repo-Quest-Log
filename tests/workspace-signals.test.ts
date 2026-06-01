@@ -91,6 +91,16 @@ describe("workspace signals", () => {
     expect(deriveWorkspaceScope([], agents)).toEqual(["src/web", "apps/desktop", "docs"]);
   });
 
+  it("keeps archived agent docs out of fallback workspace scope", () => {
+    const agents: AgentProfile[] = [
+      agent("codex", "src/web/**"),
+      { ...agent("claude", "docs/**"), status: "archived" },
+      { ...agent("gemini", "architecture/**"), status: "archived" },
+    ];
+
+    expect(deriveWorkspaceScope([], agents)).toEqual(["src/web"]);
+  });
+
   it("accepts bare directory and list-style owned areas", () => {
     const agents: AgentProfile[] = [
       agent("codex", "- src\n- docs\n- `apps/desktop/**`\n- general"),

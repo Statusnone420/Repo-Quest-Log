@@ -10,10 +10,10 @@ import type { QuestState } from "../src/engine/types.js";
 
 describe("renderDesktopHtml", () => {
   it("renders the desktop HUD shell from QuestState", () => {
-    const html = renderDesktopHtml(sampleState(), { appVersion: "0.0.4" });
+    const html = renderDesktopHtml(sampleState(), { appVersion: "0.5.0" });
 
     expect(html).toContain("repo quest log");
-    expect(html).toContain("v0.0.4");
+    expect(html).toContain("v0.5.0");
     expect(html).toContain("Ship v0.1");
     expect(html).toContain("Current focus");
     expect(html).toContain("Why this matters");
@@ -44,7 +44,7 @@ describe("renderDesktopHtml", () => {
     const state = sampleState();
     state.scannedFiles = ["PLAN.md"];
 
-    const html = renderDesktopHtml(state, { appVersion: "0.0.4" });
+    const html = renderDesktopHtml(state, { appVersion: "0.5.0" });
 
     expect(html).not.toContain('<div class="settings-panel-card" data-setup-card>');
   });
@@ -53,7 +53,7 @@ describe("renderDesktopHtml", () => {
     const state = sampleState();
     state.scannedFiles = ["README.md"];
 
-    const html = renderDesktopHtml(state, { appVersion: "0.0.4" });
+    const html = renderDesktopHtml(state, { appVersion: "0.5.0" });
 
     expect(html).toContain('<div class="settings-panel-card" data-setup-card>');
     expect(html).toContain('data-ui-action="run-doctor-again"');

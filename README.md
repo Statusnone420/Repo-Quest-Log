@@ -75,7 +75,7 @@ Download the latest installer from [GitHub Releases](https://github.com/Statusno
 
 ### VS Code extension
 ```bash
-code --install-extension repo-quest-log-0.0.4.vsix
+code --install-extension repo-quest-log-0.5.0.vsix
 ```
 Download the `.vsix` from the same release page, then run the command above.
 
@@ -160,7 +160,7 @@ RepoLog reads standard markdown files it finds in the repo root. No config requi
 |---|---|
 | `PLAN.md` | Objective, Now / Next / Blocked task lists |
 | `STATE.md` | Current focus, resume note, recent decisions |
-| `AGENTS.md` / `CLAUDE.md` / `GEMINI.md` | Agent roles, owned areas, activity feed |
+| `AGENTS.md` / `CLAUDE.md` / `GEMINI.md` | Active agent roles, owned areas, activity feed when those tools are in use |
 | `.repolog.json` | Optional: `writeback`, `prompts.dir`, `excludes` |
 | `.repolog/CHARTER.md` | Agent onboarding doc (generate with `repolog tuneup --write-charter`) |
 
@@ -170,15 +170,15 @@ Heading patterns that the scanner recognises: `## Objective`, `## Now`, `## Next
 
 ## Repository layout
 
-The root is kept for runtime entry points, package metadata, current planning state, and agent-discovery files. Longer product notes, implementation plans, screenshots, archived handoffs, and design references live under [`docs/`](docs/README.md).
+The root is kept for runtime entry points, package metadata, current planning state, and active agent-discovery files. Longer product notes, implementation plans, screenshots, archived handoffs, and design references live under [`docs/`](docs/README.md).
 
-Agent instruction files (`AGENTS.md`, `CLAUDE.md`, and `GEMINI.md`) intentionally remain in the root so coding-agent tools can find them.
+Retired agent instruction files belong in [`docs/Archived/agent-docs/`](docs/Archived/agent-docs/README.md). That keeps historical Claude/Gemini guidance available without letting unused tools shape active repo context.
 
 ---
 
 ## AI-assisted workflow
 
-This project uses documented AI-assisted development workflows. Files such as `AGENTS.md`, `CLAUDE.md`, and `GEMINI.md` define repo conventions, verification steps, and agent responsibilities. They are part of the development process, not runtime requirements.
+This project uses documented AI-assisted development workflows. Root files such as `AGENTS.md`, and optionally `CLAUDE.md` or `GEMINI.md` when those tools are active, define repo conventions, verification steps, and agent responsibilities. Archived tool docs are historical references, not runtime requirements.
 
 ---
 

@@ -92,9 +92,13 @@ function findSectionByHeading(
 function normalizeAgentStatus(
   status: unknown,
   agentId: string,
-): "active" | "working" | "idle" {
-  if (status === "active" || status === "working" || status === "idle") {
-    return status;
+): AgentProfile["status"] {
+  const normalized = typeof status === "string" ? status.trim().toLowerCase() : status;
+  if (normalized === "active" || normalized === "working" || normalized === "idle" || normalized === "archived") {
+    return normalized;
+  }
+  if (normalized === "inactive" || normalized === "reference" || normalized === "paused") {
+    return "archived";
   }
   return "idle";
 }

@@ -1,3 +1,16 @@
+---
+owner: claude
+name: Claude
+status: archived
+role: Reference-only historical implementer notes
+area: docs
+objective: Keep for historical context; Codex is the active implementer for v0.5.
+---
+
+# Archived Agent Doc
+
+This file was moved out of the repo root on 2026-06-01. Keep it as historical Claude guidance only. It should not be treated as an active RepoLog agent doc or workspace-scope source.
+
 # CLAUDE.md
 
 Instructions for Claude (Claude Code) working in this repo. Product name: RepoLog.
@@ -32,7 +45,7 @@ Instructions for Claude (Claude Code) working in this repo. Product name: RepoLo
 - Redesign landed work unless source disagrees with docs
 
 ## Objective
-v0.4 feature pass complete: frontmatter-based Agents roster, OpenRouter Digest, Light/Dark theme, font picker, layout restructured, settings panel fully themed. Ready for human release review. Next explicit work items are in PLAN.md → Next.
+Reference only. Claude is not an active agent for the v0.5 HUD consistency pass; keep this file for historical instructions unless the human explicitly deletes it.
 
 ## UI copy rule
 The product is "RepoLog". Panel labels are literal — Objective, Now, Next, Blocked, Agents, Recent changes. Do not introduce quest / mission / XP / progression language in UI copy. The RPG metaphor is a brand hook only.

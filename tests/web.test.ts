@@ -81,7 +81,7 @@ describe("web renderers", () => {
     expect(html).toContain("PLAN.md");
     expect(html).toContain("STATE.md");
     expect(html).toContain("AGENTS.md");
-    expect(html).toContain("CLAUDE.md");
+    expect(html).not.toContain("CLAUDE.md");
     expect(html).toContain("Create PLAN.md");
   });
 
@@ -123,7 +123,7 @@ describe("web renderers", () => {
     }
   });
 
-  it("renders a useful onboarding dashboard for generic repos", async () => {
+  it("renders the normal HUD with inline help for generic repos", async () => {
     const root = join(tmpdir(), `repo-quest-log-generic-${Date.now()}-${Math.random().toString(16).slice(2)}`);
     await mkdir(join(root, "src"), { recursive: true });
     await writeFile(join(root, "README.md"), "# Widget API\n\nA small TypeScript service for tracking warehouse widgets.\n", "utf8");
@@ -134,14 +134,45 @@ describe("web renderers", () => {
       const state = await scanRepo(root);
       const html = renderDesktopHtml(state, { liveBridge: "desktop" });
 
-      expect(html).toContain("This repo is not agent-ready yet");
-      expect(html).toContain("Docs not initialized");
+      expect(html).toContain('class="header-strip"');
+      expect(html).toContain('class="board"');
+      expect(html).toContain("Objective");
+      expect(html).toContain("Now");
+      expect(html).toContain("Agent Docs");
+      expect(html).toContain("Repo Context");
+      expect(html).not.toContain("onboarding-dashboard");
+      expect(html).not.toContain("This repo is not agent-ready yet");
+      expect(html).not.toContain("Docs not initialized");
       expect(html).toContain("TypeScript");
       expect(html).toContain("widget-api");
       expect(html).toContain("Good raw context, missing agent-ready structure.");
-      expect(html).toContain("Generate agent-ready docs prompt");
+      expect(html).toContain("Add planning docs when you want better resume prompts.");
+      expect(html).toContain("Generate setup prompt");
       expect(html).toContain("PLAN.md");
       expect(html).toContain("STATE.md");
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  it("renders the normal HUD for source-only repos with no markdown docs", async () => {
+    const root = join(tmpdir(), `repo-quest-log-source-only-${Date.now()}-${Math.random().toString(16).slice(2)}`);
+    await mkdir(join(root, "src"), { recursive: true });
+    await writeFile(join(root, "package.json"), JSON.stringify({ name: "source-only-api", description: "Tracks inventory events" }, null, 2), "utf8");
+    await writeFile(join(root, "src", "index.ts"), "export const service = true;\n", "utf8");
+
+    try {
+      const state = await scanRepo(root);
+      const html = renderDesktopHtml(state, { liveBridge: "desktop" });
+
+      expect(state.scannedFiles).toEqual([]);
+      expect(html).toContain('class="header-strip"');
+      expect(html).toContain('class="board"');
+      expect(html).toContain("Repo Context");
+      expect(html).toContain("source-only-api");
+      expect(html).toContain("No objective set yet");
+      expect(html).toContain("No current task set");
+      expect(html).not.toContain('class="empty-state"');
     } finally {
       await rm(root, { recursive: true, force: true });
     }
@@ -176,6 +207,17 @@ describe("web renderers", () => {
     expect(html).not.toContain("agent-status");
     expect(html).not.toContain(">working<");
     expect(html).not.toContain(">idle<");
+  });
+
+  it("labels archived agent docs as reference docs", () => {
+    const state = sampleState();
+    state.agents[0]!.status = "archived";
+
+    const html = renderDesktopHtml(state, { liveBridge: "desktop" });
+
+    expect(html).toContain("Reference");
+    expect(html).toContain("Declared role");
+    expect(html).toContain("Last written task");
   });
 
   it("renders empty Now as an actionable current-task warning", () => {

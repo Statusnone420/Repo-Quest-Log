@@ -4,12 +4,12 @@ One sentence: **what this repo is trying to become.**
 > A local-first CLI + TUI + desktop + VS Code shell that makes repo intent legible at a glance and hands that intent to whichever coding agent you open next.
 
 ## Objective
-Ship v0.4: frontmatter-based Agents roster (status from .md frontmatter), on-demand LLM Digest via OpenRouter, Light/Dark theme, font picker, font size fix, and polished 3-column layout. Keep the local-first, markdown-first philosophy intact.
+Ship v0.5: consistent desktop HUD for every repo, graceful sparse states for messy projects, inline repo-context setup help, archived reference handling for retired agent docs, and release metadata ready for the next package train.
 
 ## Current Focus
-Post-v0.4 trust pass complete: RepoLog no longer dirties target repos on open/scan/render/analyze, app runtime/digest state lives in app-owned cache, generic repos get a useful agent-readiness onboarding dashboard, and Analyze/Tuneup produces a one-shot repair prompt plus generated docs previews.
+v0.5 HUD consistency pass: RepoLog keeps the same desktop shell and board for generic or weakly documented repos, fills gaps with detected repo context, archives retired root Claude/Gemini docs as reference-only material, and offers setup help inline instead of replacing the app with an onboarding takeover.
 
-**Objective Sync Rule:** When PLAN.md's `## Objective` changes, review and update all agent objectives (CLAUDE.md, GEMINI.md, AGENTS.md) to align with the new direction. Each agent's objective should support the repo objective from their specific angle (e.g., Claude = execution, Gemini = architecture).
+**Objective Sync Rule:** When PLAN.md's `## Objective` changes, update the active root `AGENTS.md` objective. Retired tool docs under `docs/Archived/agent-docs/` are historical reference only; do not move them back to the repo root unless that tool becomes active again.
 
 ## Now
 - [x] Trust pass: keep repo open/scan/render/analyze read-only and move runtime/digest state out of target repos
@@ -22,6 +22,7 @@ Post-v0.4 trust pass complete: RepoLog no longer dirties target repos on open/sc
 - [x] Light mode: settings panel background uses CSS vars, fully themed
 
 ## Next
+- [ ] Agent-doc stale hint setting: user-adjustable "stale after N days" label only, with explicit keep-as-reference/delete choices and no automatic archival
 - [ ] macOS host decision and prototyping
 - [ ] Publish binary to npm via GitHub releases
 

@@ -46,7 +46,7 @@ export interface AgentProfile {
   area: string;
   objective: string;
   constraints: string[];
-  status: "active" | "working" | "idle";
+  status: "active" | "working" | "idle" | "archived";
   currentTask?: string;
   lastTask?: string;
 }

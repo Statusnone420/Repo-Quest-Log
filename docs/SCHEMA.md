@@ -33,7 +33,7 @@ export interface AgentProfile {
   area: string;
   objective: string;
   constraints: string[];
-  status: "active" | "working" | "idle";
+  status: "active" | "working" | "idle" | "archived";
   lastTask?: string;
 }
 
@@ -213,6 +213,8 @@ Fix chat tab scrolling and font issues
 ```
 
 When frontmatter is present, it wins over heuristics.
+
+Agent docs can use `status: archived` when the file should stay in the repo as historical/reference context but should not define active workspace scope. `status: inactive`, `status: reference`, and `status: paused` are normalized to `archived`.
 
 ## Versioning
 

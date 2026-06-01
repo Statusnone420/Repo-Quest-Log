@@ -114,7 +114,7 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     .shell {
       width: 100vw; height: 100vh;
       display: grid;
-      grid-template-rows: auto auto auto auto auto auto minmax(0, 1fr);
+      grid-template-rows: auto auto auto minmax(0, 1fr) auto;
       overflow: hidden;
       border: 1px solid rgba(88,166,255,0.18);
       background: var(--bg);
@@ -123,7 +123,7 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     /* ---- TOP BAR ---- */
     .topbar {
       display: flex; align-items: center; gap: 14px;
-      min-height: 54px;
+      min-height: 60px;
       padding: 0 var(--pad-x);
       border-bottom: 1px solid var(--tile-border);
       min-width: 0;
@@ -132,7 +132,7 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     .brand {
       display: flex; align-items: center; gap: 10px;
       color: var(--ink);
-      font-size: calc(20px * var(--rql-density));
+      font-size: calc(17px * var(--rql-density));
       font-weight: 700;
       letter-spacing: 0;
       text-transform: none;
@@ -140,19 +140,21 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     .brand svg {
       width: 32px;
       height: 32px;
-      padding: 7px;
-      border-radius: 6px;
-      background: rgba(88,166,255,0.18);
-      border: 1px solid rgba(88,166,255,0.22);
+      padding: 6px;
+      border-radius: 3px;
+      background: rgba(88,166,255,0.08);
+      border: 1px solid rgba(88,166,255,0.7);
     }
     .divider { width: 1px; height: 14px; background: var(--tile-border); }
-    .repo-meta { display: flex; align-items: baseline; gap: 10px; font-size: var(--body-size); color: var(--muted); min-width: 0; }
+    .repo-meta { display: flex; align-items: center; gap: 14px; font-size: var(--body-size); color: var(--muted); min-width: 0; }
     .repo-meta .repo-path { max-width: 28vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .repo-meta .branch { color: var(--muted); display: inline-flex; align-items: center; gap: 6px; }
-    .repo-meta .branch::before { content: "⌘"; color: var(--dim); font-family: var(--mono); }
+    .repo-meta .repo-path::before { content: "▭"; color: var(--muted); margin-right: 8px; font-family: var(--mono); }
+    .repo-meta .branch { color: var(--ink); display: inline-flex; align-items: center; gap: 7px; }
+    .repo-meta .branch::before { content: "⎇"; color: var(--muted); font-family: var(--mono); }
+    .repo-meta .branch::after { content: "⌄"; color: var(--dim); font-family: var(--mono); font-size: var(--tiny-size); }
     .app-version {
       display: inline-flex; align-items: center;
-      margin-left: auto;
+      margin-left: 0;
       font-family: var(--mono); font-size: var(--small-size);
       color: var(--muted);
     }
@@ -174,6 +176,7 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       font-size: var(--small-size); color: var(--ok);
       white-space: nowrap;
     }
+    .topbar-spacer { flex: 1 1 auto; min-width: 12px; }
     .surface-controls {
       display: inline-flex; align-items: center; gap: 4px;
       font-family: var(--mono); font-size: var(--small-size);
@@ -218,10 +221,30 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       font-weight: 700;
     }
     .dot { width: 6px; height: 6px; border-radius: 999px; background: var(--ok); display: inline-block; }
+    .topbar-action {
+      appearance: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--muted);
+      border-radius: 6px;
+      padding: 8px 10px;
+      font: inherit;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .topbar-action:hover {
+      color: var(--accent);
+      border-color: var(--tile-border);
+      background: rgba(255,255,255,0.035);
+    }
+    .topbar-action.settings { color: var(--ink); }
 
     /* ---- SETTINGS RACK ---- */
     .settings-rack {
-      display: grid;
+      display: none;
       grid-template-columns: auto auto auto minmax(0, 1fr);
       gap: 8px;
       padding: 8px var(--pad-x);
@@ -1360,85 +1383,85 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       .settings-panel-footer { overflow-x: auto; }
     }
 
-    /* ---- HEADER STRIP (mission + objective + resume in ONE row) ---- */
+    /* ---- HEADER STRIP (current focus + objective + agent docs) ---- */
     .header-strip {
       display: grid;
-      grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr) minmax(0, 1.03fr);
+      grid-template-columns: minmax(420px, 1.42fr) minmax(300px, 0.88fr) minmax(360px, 1.04fr);
       gap: 14px;
-      padding: 10px var(--pad-x) 8px;
+      padding: 18px var(--pad-x) 12px;
       min-width: 0;
-      align-items: start;
+      align-items: stretch;
     }
     .strip-cell {
       position: relative;
-      padding: 12px 16px;
+      padding: 18px 20px;
       background: var(--tile-2);
       border: 1px solid var(--tile-border);
       border-radius: 7px;
-      min-height: 98px;
+      min-height: 166px;
       min-width: 0;
-      display: flex; flex-direction: column; gap: 4px;
+      display: flex; flex-direction: column; gap: 10px;
       overflow: hidden;
-      align-self: start;
-      justify-content: center;
+      justify-content: flex-start;
     }
-    .strip-cell.objective {
+    .strip-cell.objective,
+    .strip-cell.focus {
       background: #0f1a22;
       border-color: rgba(88,166,255,0.3);
     }
-    .strip-cell.mission::before,
-    .strip-cell.objective::before,
-    .strip-cell.resume::before {
-      content: "";
-      position: absolute;
-      left: 18px;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 28px;
-      height: 28px;
-      border-radius: 999px;
-      border: 2px solid var(--accent);
-    }
-    .strip-cell.objective::before {
-      width: 13px;
-      height: 13px;
-      box-shadow: 0 18px 0 -1px var(--accent);
-    }
-    .strip-cell.resume::before { display: none; }
+    .strip-cell::before { content: none; }
     .kicker {
-      font-family: var(--mono); font-size: var(--body-size); letter-spacing: 0;
+      font-family: var(--sans); font-size: calc(18px * var(--rql-density)); letter-spacing: 0;
       text-transform: none; color: var(--muted);
       display: flex; align-items: center; gap: 8px;
-      padding-left: 42px;
+      padding-left: 0;
+      font-weight: 750;
     }
-    .strip-cell.resume .kicker,
-    .strip-cell.resume .strip-headline,
-    .strip-cell.resume .strip-subline,
-    .strip-cell.resume .strip-why,
-    .strip-cell.resume .resume-freshline { padding-left: 0; }
+    .strip-cell.focus .kicker,
+    .strip-cell.objective .kicker { color: var(--accent); }
+    .strip-link {
+      margin-left: auto;
+      appearance: none;
+      border: 0;
+      background: transparent;
+      color: var(--accent);
+      font: inherit;
+      font-size: var(--small-size);
+      cursor: pointer;
+      padding: 0;
+    }
     .kicker .meta { display: none; }
     .strip-headline {
-      font-size: var(--headline-size); font-weight: 700; line-height: 1.22;
+      font-size: calc(18px * var(--rql-density)); font-weight: 750; line-height: 1.36;
       overflow: hidden; text-overflow: ellipsis;
-      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
-      padding-left: 42px;
+      display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+      padding-left: 0;
+    }
+    .strip-cell.objective .strip-headline {
+      font-size: calc(14px * var(--rql-density));
+      font-weight: 450;
+      color: var(--ink);
+      line-height: 1.55;
+      -webkit-line-clamp: 4;
     }
     .strip-subline {
-      font-family: var(--mono); font-size: var(--small-size); color: var(--muted);
+      font-family: var(--sans); font-size: calc(14px * var(--rql-density)); color: var(--ink);
       overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-      padding-left: 42px;
+      padding-left: 0;
     }
     .strip-why {
       font-family: var(--sans); font-size: var(--small-size); color: var(--muted);
       overflow: hidden; text-overflow: ellipsis;
       display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
-      padding-left: 42px;
+      padding-left: 0;
+      line-height: 1.45;
     }
+    .strip-why strong { color: var(--accent); font-weight: 650; }
     .strip-tags {
       display: flex;
       flex-wrap: wrap;
       gap: 7px;
-      padding-left: 42px;
+      padding-left: 0;
       margin-top: 7px;
     }
     .strip-tag {
@@ -1453,8 +1476,22 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       font-size: var(--small-size);
       white-space: nowrap;
     }
+    .progress-line {
+      width: min(100%, 280px);
+      height: 8px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: rgba(88,166,255,0.14);
+      margin-top: auto;
+    }
+    .progress-line span {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--ok), color-mix(in srgb, var(--ok) 72%, var(--accent)));
+    }
     .strip-actions {
-      position: absolute; right: 16px; bottom: 12px;
+      position: absolute; right: 20px; bottom: 18px;
       display: flex; gap: 6px;
     }
     .icon-btn {
@@ -1471,16 +1508,9 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     }
     .icon-btn.warn:hover { color: #fff; border-color: rgba(88,166,255,0.9); }
 
-    .strip-cell.resume { min-height: 82px; }
-    .strip-cell.resume.fresh {
-      min-height: 74px;
-      padding-top: calc(var(--tile-pad) * 0.6);
-      background: rgba(233,185,115,0.03);
-      border-color: rgba(233,185,115,0.18);
-    }
     .resume-freshline {
       display: inline-flex; align-items: center; gap: 8px;
-      font-family: var(--mono); font-size: var(--tiny-size);
+      font-family: var(--sans); font-size: var(--small-size);
       color: var(--muted); letter-spacing: 0.8px; text-transform: uppercase;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
@@ -1594,10 +1624,10 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     /* ---- BOARD (3 cols, single row, fits viewport) ---- */
     .board {
       display: grid;
-      grid-template-columns: minmax(280px, 0.92fr) minmax(360px, 1fr) minmax(420px, 1.14fr);
+      grid-template-columns: minmax(320px, 0.92fr) minmax(420px, 1.2fr) minmax(360px, 1.05fr);
       grid-template-rows: minmax(0, 1fr);
-      gap: 10px;
-      padding: 8px var(--pad-x) var(--pad-x);
+      gap: 12px;
+      padding: 12px var(--pad-x) 14px;
       min-height: 0;
       overflow: hidden;
     }
@@ -1605,33 +1635,31 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       display: flex; flex-direction: column; gap: var(--tile-gap);
       min-height: 0; min-width: 0;
     }
-    /* Col 2: Next gets most space, changes + decisions share the rest */
     .col:nth-child(1) .tile[data-area="now"] {
-      flex: 1 1 230px;
-      min-height: 190px;
+      flex: 0 0 226px;
+      min-height: 206px;
     }
     .col:nth-child(1) .tile[data-area="blocked"] {
-      flex: 0 0 auto;
+      flex: 1 1 190px;
     }
-    .col:nth-child(2) .tile[data-area="next"] {
-      flex: 0 0 auto;
-      min-height: 0;
-    }
-    .col:nth-child(2) .tile[data-area="activity"],
-    .col:nth-child(2) .tile[data-area="prompts"] {
-      flex: 0 0 auto;
+    .col:nth-child(2) .tile[data-area="activity"] {
+      flex: 1 1 0;
     }
     .col:nth-child(2) .tile.tight[data-area="changes"] {
-      flex: 0.7 1 120px;
+      flex: 0 0 112px;
       min-height: 96px;
     }
-    .col:nth-child(2) .tile[data-area="decisions"] {
-      flex: 1 1 180px;
-      min-height: 130px;
+    .col:nth-child(3) .tile[data-area="prompts"] {
+      flex: 0 0 auto;
+      min-height: 210px;
     }
-    /* Col 3: agents fills the full column */
-    .col:nth-child(3) .tile[data-area="agents"] {
+    .col:nth-child(3) .tile[data-area="digest"] {
+      flex: 0 0 auto;
+      min-height: 150px;
+    }
+    .col:nth-child(3) .tile[data-area="repo-context"] {
       flex: 1 1 0;
+      min-height: 160px;
     }
 
     .tile {
@@ -1646,6 +1674,20 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     }
     .tile.tight { flex: 0 1 auto; }
     .tile.hot { border-color: var(--tile-border-hot); }
+    .header-strip > .tile {
+      min-height: 166px;
+      flex: 0 0 auto;
+      background: #0f1a22;
+      border-color: rgba(120,135,150,0.22);
+    }
+    .header-strip > .tile .tile-body {
+      padding: 10px 18px 12px;
+      gap: 0;
+    }
+    .header-strip > .tile .tile-header {
+      min-height: 48px;
+      padding: 12px 18px;
+    }
 
     .tile-header {
       display: flex; align-items: center; justify-content: space-between; gap: 10px;
@@ -1830,7 +1872,7 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     }
     .agent-doc-row {
       display: grid;
-      grid-template-columns: minmax(86px, 0.5fr) minmax(150px, 0.92fr) minmax(180px, 1.18fr);
+      grid-template-columns: minmax(92px, 0.5fr) minmax(84px, 0.32fr) minmax(150px, 0.9fr) minmax(180px, 1.18fr);
       gap: 14px;
       align-items: start;
       padding: 11px 0;
@@ -1847,6 +1889,21 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     }
     .agent-doc-row:last-child { border-bottom: 0; }
     .agent-doc-file { font-family: var(--mono); color: var(--ink); overflow: hidden; text-overflow: ellipsis; }
+    .agent-doc-status {
+      font-family: var(--mono);
+      font-size: var(--tiny-size);
+      color: var(--muted);
+      border: 1px solid var(--tile-border);
+      border-radius: 999px;
+      padding: 2px 7px;
+      width: fit-content;
+      background: rgba(255,255,255,0.035);
+    }
+    .agent-doc-status.archived {
+      color: var(--warn);
+      border-color: rgba(230,191,69,0.28);
+      background: rgba(230,191,69,0.08);
+    }
     .agent-doc-role, .agent-doc-task {
       color: var(--muted);
       line-height: 1.35;
@@ -1931,27 +1988,33 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       margin: 0 var(--pad-x);
       display: grid;
       grid-template-columns: 1.1fr repeat(4, minmax(0, 1fr)) 1.2fr;
-      gap: var(--tile-gap);
+      gap: 0;
       align-items: stretch;
+      border: 1px solid var(--tile-border);
+      border-radius: 7px;
+      background: var(--tile);
+      overflow: hidden;
     }
     .signal-cell {
       min-width: 0;
-      padding: 10px 12px;
-      border: 1px solid var(--tile-border);
-      border-radius: 8px;
-      background: var(--tile);
+      padding: 13px 18px;
+      border: 0;
+      border-left: 1px solid var(--tile-border);
+      border-radius: 0;
+      background: transparent;
     }
+    .signal-cell:first-child { border-left: 0; }
     .signal-label {
-      color: var(--dim);
-      font-family: var(--mono);
-      font-size: var(--tiny-size);
-      text-transform: uppercase;
-      letter-spacing: .04em;
-      margin-bottom: 5px;
+      color: var(--muted);
+      font-family: var(--sans);
+      font-size: var(--small-size);
+      text-transform: none;
+      letter-spacing: 0;
+      margin-bottom: 6px;
     }
     .signal-value {
-      color: var(--ink);
-      font-size: calc(18px * var(--rql-density));
+      color: var(--ok);
+      font-size: calc(21px * var(--rql-density));
       line-height: 1.05;
       font-weight: 750;
       white-space: nowrap;
@@ -1962,7 +2025,7 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       margin-top: 5px;
       color: var(--muted);
       font-size: var(--tiny-size);
-      font-family: var(--mono);
+      font-family: var(--sans);
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -2063,6 +2126,32 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       cursor: pointer;
     }
     .now-empty-actions button:hover { background: var(--accent-soft); color: var(--accent); }
+    .desktop-footer {
+      min-height: 38px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 0.72fr) minmax(0, 0.72fr) auto;
+      border-top: 1px solid var(--tile-border);
+      color: var(--muted);
+      font-size: var(--small-size);
+      background: var(--chrome);
+    }
+    .desktop-footer > span {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      padding: 0 18px;
+      border-left: 1px solid var(--tile-border);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .desktop-footer > span:first-child { border-left: 0; }
+    .desktop-footer .version {
+      justify-content: flex-end;
+      font-family: var(--mono);
+      color: var(--muted);
+    }
 
     /* ---- EMPTY STATE ---- */
     .empty-state {
@@ -2104,44 +2193,88 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     .empty-missing .slot .mark { font-weight: 600; }
     @media (max-width: 1099px) { .empty-grid { grid-template-columns: 1fr; } }
 
-    .onboarding-dashboard {
-      flex: 1; min-height: 0;
-      display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
-      gap: var(--tile-gap);
-      padding: var(--pad-y) var(--pad-x) var(--pad-x);
-      overflow-y: auto;
-    }
-    .onboarding-hero, .onboarding-panel {
-      background: var(--tile);
-      border: 1px solid var(--tile-border);
-      border-radius: 8px;
-      padding: var(--tile-pad);
-      min-width: 0;
-    }
-    .onboarding-hero { display: flex; flex-direction: column; gap: 14px; }
-    .onboarding-title { font-size: var(--hero-size); line-height: 1.05; color: var(--ink); margin: 0; letter-spacing: 0; }
-    .onboarding-copy { color: var(--muted); line-height: 1.45; margin: 0; max-width: 76ch; }
-    .onboarding-actions { display: flex; flex-wrap: wrap; gap: 8px; }
-    .onboarding-actions button {
-      appearance: none; border: 1px solid var(--tile-border); border-radius: 6px;
-      background: var(--accent-soft); color: var(--accent); padding: 7px 10px;
-      font: inherit; font-size: var(--small-size); cursor: pointer;
-    }
-    .onboarding-actions button.primary { background: var(--accent); color: #071019; border-color: transparent; font-weight: 650; }
-    .onboarding-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-    .onboarding-stat { padding: 9px; border: 1px solid var(--tile-border); border-radius: 7px; background: var(--faint); }
-    .onboarding-stat .label { color: var(--dim); font-size: var(--tiny-size); text-transform: uppercase; letter-spacing: .05em; }
-    .onboarding-stat .value { color: var(--ink); font-size: var(--headline-size); font-weight: 700; margin-top: 3px; }
-    .onboarding-panel { display: flex; flex-direction: column; gap: 10px; }
-    .onboarding-list { display: flex; flex-direction: column; gap: 6px; margin: 0; padding: 0; list-style: none; }
-    .onboarding-list li { display: flex; justify-content: space-between; gap: 10px; color: var(--muted); font-size: var(--small-size); }
-    .onboarding-list code { color: var(--ink); font-family: var(--mono); }
     .onboarding-docs { display: flex; flex-wrap: wrap; gap: 6px; }
     .onboarding-docs span { border: 1px solid var(--tile-border); border-radius: 6px; padding: 4px 6px; color: var(--muted); font-size: var(--tiny-size); }
     .onboarding-docs .missing { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 45%, transparent); }
-    @media (max-width: 1099px) {
-      .onboarding-dashboard { grid-template-columns: 1fr; }
-      .onboarding-grid { grid-template-columns: 1fr; }
+    .repo-context-card {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .repo-context-summary {
+      color: var(--ink);
+      font-size: var(--small-size);
+      line-height: 1.42;
+      margin: 0;
+      overflow-wrap: anywhere;
+      text-wrap: pretty;
+    }
+    .repo-context-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 6px;
+    }
+    .repo-context-row {
+      display: grid;
+      grid-template-columns: 76px minmax(0, 1fr);
+      gap: 8px;
+      align-items: baseline;
+      color: var(--muted);
+      font-size: var(--small-size);
+      min-width: 0;
+    }
+    .repo-context-row span:first-child {
+      color: var(--dim);
+      font-family: var(--mono);
+      font-size: var(--tiny-size);
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    .repo-context-row code {
+      color: var(--ink);
+      font-family: var(--mono);
+      font-size: var(--tiny-size);
+      overflow-wrap: anywhere;
+    }
+    .repo-context-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .repo-context-actions button {
+      appearance: none;
+      border: 1px solid var(--tile-border);
+      border-radius: 6px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      padding: 6px 8px;
+      font: inherit;
+      font-size: var(--tiny-size);
+      cursor: pointer;
+    }
+    .repo-context-actions button:hover {
+      border-color: rgba(138,180,255,0.42);
+      color: var(--ink);
+    }
+    .repo-context-actions button.primary {
+      background: var(--accent);
+      color: #071019;
+      border-color: transparent;
+      font-weight: 700;
+    }
+    .repo-context-preview {
+      width: 100%;
+      min-height: 110px;
+      border: 1px solid var(--tile-border);
+      border-radius: 6px;
+      background: rgba(255,255,255,0.025);
+      color: var(--ink);
+      font: inherit;
+      font-family: var(--mono);
+      font-size: var(--tiny-size);
+      line-height: 1.45;
+      padding: 8px;
+      resize: vertical;
     }
 
     /* ---- DECISIONS ---- */
@@ -2256,8 +2389,7 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
         padding: 8px var(--pad-x) 7px;
       }
       .strip-cell { min-height: 86px; padding: 10px 13px; }
-      .strip-cell.mission { display: none; }
-      .strip-cell.resume { min-height: 86px; }
+      .header-strip > .tile { min-height: 86px; }
       .strip-headline { -webkit-line-clamp: 2; }
       .strip-tags { margin-top: 5px; gap: 5px; }
       .signals-strip {
@@ -2274,9 +2406,6 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       .board {
         grid-template-columns: minmax(360px, 0.86fr) minmax(430px, 0.98fr) minmax(560px, 1.32fr);
       }
-      .col:nth-child(2) .tile[data-area="decisions"] {
-        flex-basis: 220px;
-      }
     }
     @media (max-width: 920px) {
       .board {
@@ -2286,8 +2415,7 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       }
       .col:nth-child(1) .tile[data-area="now"],
       .col:nth-child(2) .tile.tight[data-area="changes"],
-      .col:nth-child(2) .tile[data-area="decisions"],
-      .col:nth-child(3) .tile[data-area="agents"] {
+      .col:nth-child(3) .tile[data-area="repo-context"] {
         flex: 0 0 auto;
       }
     }
@@ -2311,22 +2439,23 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
         padding-top: 7px;
         padding-bottom: 7px;
       }
-      .header-strip { padding-top: 7px; }
-      .header-strip { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
-      .strip-cell { min-height: 86px; }
-      .strip-cell.mission { display: none; }
-      .strip-cell.mission .strip-why,
-      .strip-cell.objective .strip-why { display: none; }
+      .header-strip {
+        padding-top: 7px;
+        grid-template-columns: minmax(330px, 1.34fr) minmax(250px, 0.82fr) minmax(310px, 1fr);
+      }
+      .strip-cell,
+      .header-strip > .tile { min-height: 138px; }
+      .strip-cell { padding: 12px 14px; }
+      .strip-cell.objective .strip-headline { -webkit-line-clamp: 3; }
+      .strip-cell.focus .strip-why { -webkit-line-clamp: 1; }
       .strip-tags { margin-top: 5px; }
       .signal-cell { padding-top: 8px; padding-bottom: 8px; }
       .tile-header { min-height: 38px; }
       .tile-body { padding-top: 7px; padding-bottom: 7px; }
-      .tile[data-area="decisions"] { display: none; }
       .prompt-sub { display: none; }
     }
     @media (max-height: 640px) {
-      .header-strip { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
-      .strip-cell.mission { display: none; }
+      .header-strip { grid-template-columns: minmax(0, 1fr); }
       .signals-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     }
   </style>
@@ -2346,15 +2475,14 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
         <span class="repo-path">${escapeHtml(state.name)}</span>
         <span class="branch">${escapeHtml(state.branch)}</span>
       </div>
-      ${options.appVersion ? `<span class="app-version">v${escapeHtml(options.appVersion)}</span>` : ""}
-      <button type="button" class="kbd-hint" data-palette-open title="Copy a ready-to-paste resume prompt">
-        <kbd>Ctrl</kbd><kbd>K</kbd><span>resume prompts</span>
-      </button>
+      <div class="topbar-spacer"></div>
+      <button type="button" class="topbar-action" data-ui-action="refresh" title="Refresh (Ctrl+R)">↻ Rescan <span style="color:var(--dim)">(${escapeHtml(state.lastScan)})</span></button>
+      <button type="button" class="topbar-action settings" data-ui-action="open-settings" title="Open settings">⚙ Settings</button>
       <div class="watch-meta">
         <span class="dot"></span>
-        <span>File watcher: Active</span>
-        <span style="color: var(--dim)">· ${escapeHtml(state.lastScan)}</span>
+        <span>Watcher: Active</span>
       </div>
+      ${options.appVersion ? `<span class="app-version">v${escapeHtml(options.appVersion)}</span>` : ""}
       <div class="surface-controls" aria-label="Display controls">
         <span class="label">Size</span>
         <button type="button" data-ui-action="smaller" aria-label="Smaller">A-</button>
@@ -2365,40 +2493,41 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     </header>
     ${renderSettingsRack(state, options.liveBridge)}
     ${renderSettingsPanel(state, options.liveBridge)}
-    ${isEmptyRepo(state) ? renderEmptyState(state) : shouldRenderOnboarding(state) ? renderOnboardingDashboard(state) : `
+    ${isEmptyRepo(state) ? renderEmptyState(state) : `
     <section class="header-strip">
-      <div class="strip-cell mission">
-        <div class="kicker">Mission <span class="meta">source: PLAN.md / README.md</span></div>
-        <div class="strip-headline">${escapeHtml(state.mission)}</div>
-      </div>
+        <div class="strip-cell focus${isResumeFresh(state.resumeNote.since) ? " fresh" : ""}">
+          <div class="kicker">Current Focus <button type="button" class="strip-link" data-palette-open>Why this task?</button></div>
+          <span class="sr-only">Current focus</span>
+          <span class="sr-only">${escapeHtml(resolveResumeSource(state))}</span>
+          <div class="strip-headline">${escapeHtml(resolveResumeText(state))}</div>
+          <div class="strip-subline">${escapeHtml(resolveMissionText(state))}</div>
+          <div class="strip-why"><strong>Why this task?</strong> <span class="sr-only">Why this matters</span>${escapeHtml(state.resumeNote.thought ?? getWhyNowLine(state))}</div>
+          <div class="strip-tags">
+            ${renderSourceDocTags(state)}
+          </div>
+          <div class="strip-actions">
+            <button type="button" class="icon-btn warn" data-copy-context="${escapeHtml(buildContextPrompt(state))}" title="Copy resume context to clipboard">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
+              Copy Resume Prompt
+            </button>
+          </div>
+        </div>
         <div class="strip-cell objective">
-          <div class="kicker">Objective <span class="meta">${state.activeQuest.progress.done}/${state.activeQuest.progress.total} · source: PLAN.md</span></div>
-          <div class="strip-headline">${escapeHtml(state.activeQuest.title)}</div>
+          <div class="kicker">Objective <button type="button" class="strip-link" data-palette-open>Why this exists?</button></div>
+          <span class="sr-only">${escapeHtml(resolveObjectiveSource(state))}</span>
+          <div class="strip-headline">${escapeHtml(resolveObjectiveText(state))}</div>
+          <div class="progress-line" aria-label="Objective progress">
+            <span style="width:${objectiveProgressPercent(state)}%"></span>
+          </div>
           <div class="strip-tags">
             <span class="strip-tag">${state.activeQuest.progress.done}/${state.activeQuest.progress.total} complete</span>
             <span class="strip-tag">${state.now.length} Now</span>
             <span class="strip-tag">${state.next.length} Next</span>
           </div>
         </div>
-        <div class="strip-cell resume${isResumeFresh(state.resumeNote.since) ? " fresh" : ""}">
-        ${isResumeFresh(state.resumeNote.since) ? `<div class="resume-freshline"><span class="pulse"></span>fresh · last touch ${escapeHtml(state.resumeNote.lastTouched)} · ${escapeHtml(state.resumeNote.since)}</div>` : ""}
-        <div class="strip-actions">
-          <button type="button" class="icon-btn warn" data-copy-context="${escapeHtml(buildContextPrompt(state))}" title="Copy resume context to clipboard">
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
-            copy
-          </button>
-          <button type="button" class="icon-btn" data-palette-open title="Open resume-prompt palette (Ctrl+K)">
-            ⌘K
-          </button>
-        </div>
-          <div class="kicker">Current focus / Resume <span class="meta">· last touch ${escapeHtml(state.resumeNote.since)} · source: STATE.md resume note</span></div>
-          <div class="strip-headline">${escapeHtml(state.resumeNote.task)}</div>
-          <div class="strip-subline">↳ ${escapeHtml(state.resumeNote.lastTouched)} · ${escapeHtml(state.resumeNote.doc)}</div>
-          <div class="strip-why">Why this matters: ${escapeHtml(state.resumeNote.thought ?? getWhyNowLine(state))}</div>
-        </div>
+        ${renderAgentDocsTile(state)}
     </section>
 
-      ${renderGitStrip(state)}
       ${renderWorkspaceSignalsStrip(state.workspaceSignals)}
 
       <section class="board">
@@ -2407,16 +2536,16 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
         ${renderBlockedTile(state.blocked, !!state.config?.writeback, options.liveBridge)}
       </div>
       <div class="col">
-        ${renderTaskTile("next", "Next", state.next.length, state.next, false, !!state.config?.writeback, options.liveBridge)}
         ${renderRecentActivityTile(state.recentActivity ?? [])}
-        ${renderPromptPaletteTile(presets)}
         ${renderChangesTile(state.recentChanges)}
-        ${renderDecisionsTile(state.decisions)}
       </div>
       <div class="col">
-        ${renderAgentDocsTile(state, options.openrouterConfigured ?? false)}
+        ${renderPromptPaletteTile(presets)}
+        ${renderDigestTile(state, options.openrouterConfigured ?? false)}
+        ${renderRepoContextTile(state)}
       </div>
       </section>
+      ${renderDesktopFooter(state, options.appVersion)}
     `}
   </div>
 
@@ -2614,6 +2743,79 @@ export function renderVSCodeHtml(state: QuestState, options: SurfaceHtmlOptions 
 </html>`;
 }
 
+function resolveMissionText(state: QuestState): string {
+  const mission = state.mission.trim();
+  if (mission) return mission;
+  const context = state.repoContext;
+  const readme = summarizeReadme(context?.readmePreview);
+  if (readme) return readme;
+  if (context?.packageDescription) return context.packageDescription;
+  return "No mission found yet. RepoLog will keep showing repo activity while you add planning docs.";
+}
+
+function resolveMissionSource(state: QuestState): string {
+  if (state.mission.trim()) return "source: PLAN.md / README.md";
+  if (state.repoContext?.readmePreview || state.repoContext?.packageDescription) return "source: README / package context";
+  return "add PLAN.md for a stronger mission";
+}
+
+function resolveObjectiveText(state: QuestState): string {
+  const title = state.activeQuest.title.trim();
+  if (title) return title;
+  return "No objective set yet";
+}
+
+function resolveObjectiveSource(state: QuestState): string {
+  if (state.activeQuest.title.trim()) {
+    return `${state.activeQuest.progress.done}/${state.activeQuest.progress.total} · source: PLAN.md`;
+  }
+  return "add PLAN.md when you want RepoLog to track a clear objective";
+}
+
+function resolveResumeText(state: QuestState): string {
+  const task = state.resumeNote.task.trim();
+  if (task) return task;
+  return "No resume note yet";
+}
+
+function resolveResumeSource(state: QuestState): string {
+  if (state.resumeNote.task.trim()) {
+    return `· last touch ${state.resumeNote.since} · source: STATE.md resume note`;
+  }
+  return "add STATE.md to preserve the next handoff";
+}
+
+function objectiveProgressPercent(state: QuestState): number {
+  const total = state.activeQuest.progress.total;
+  if (!Number.isFinite(total) || total <= 0) return 0;
+  const done = Math.max(0, Math.min(total, state.activeQuest.progress.done));
+  return Math.round((done / total) * 100);
+}
+
+function renderSourceDocTags(state: QuestState): string {
+  const scannedFiles = new Set(state.scannedFiles.map((file) => file.toLowerCase()));
+  const docs = uniqueStrings([
+    state.resumeNote.doc,
+    state.activeQuest.doc,
+    "AGENTS.md",
+  ].filter((doc) => doc && scannedFiles.has(doc.toLowerCase())));
+  if (docs.length === 0) {
+    return `<span class="strip-tag">No source docs yet</span>`;
+  }
+  return docs.slice(0, 4).map((doc) => `<span class="strip-tag">${escapeHtml(doc)}</span>`).join("");
+}
+
+function renderDesktopFooter(state: QuestState, appVersion?: string): string {
+  const cacheHint = state.config?.prompts?.dir ? `prompts: ${state.config.prompts.dir}` : "prompts: built-in";
+  const activityCount = state.recentActivity?.length ?? 0;
+  return `<footer class="desktop-footer" aria-label="Repository status">
+    <span>▭ Repo: ${escapeHtml(state.name)}</span>
+    <span><span class="dot"></span>${escapeHtml(cacheHint)}</span>
+    <span>Events: ${activityCount} (${escapeHtml(state.lastScan)})</span>
+    <span class="version">${appVersion ? `v${escapeHtml(appVersion)}` : ""}</span>
+  </footer>`;
+}
+
 function renderTaskTile(
   area: string,
   title: string,
@@ -2753,45 +2955,71 @@ function isNoneBlocker(task: BlockedTask): boolean {
   return text === "none none" || text === "none" || text === "blocked: none none" || /^none\b/.test(text);
 }
 
-function renderAgentDocsTile(state: QuestState, hasKey: boolean): string {
+function renderAgentDocsTile(state: QuestState): string {
   const agents = state.agents;
-  const digestBtnDisabled = !hasKey ? ' title="Add OpenRouter key in Settings to enable"' : ' title="Run AI digest of current repo state"';
   return `<section class="tile" data-area="agents">
     <div class="tile-header">
       <h3 class="tile-title agents"><span class="accent-bar"></span>Agent Docs</h3>
       <span class="tile-meta">${agents.length}</span>
-      <button class="digest-btn" data-ui-action="run-digest"${digestBtnDisabled}${!hasKey ? ' disabled' : ''}>✦ Digest</button>
     </div>
   <div class="tile-body">
     ${agents.length === 0 ? `<div class="agent-doc-task">No agent docs discovered. Add AGENTS.md, CLAUDE.md, GEMINI.md, or CODEX.md when a repo needs explicit ownership.</div>` : `
       <div class="agent-doc-table">
         <div class="agent-doc-row head">
           <span>Document</span>
+          <span>Status</span>
           <span>Declared role</span>
           <span>Last written task</span>
         </div>
         ${agents.map((agent) => `
           <div class="agent-doc-row">
             <span class="agent-doc-file">${escapeHtml(agent.file)}</span>
+            <span class="agent-doc-status ${agent.status === "archived" ? "archived" : ""}">${escapeHtml(agent.status === "archived" ? "Reference" : "Active")}</span>
             <span class="agent-doc-role">${escapeHtml(agent.role || agent.area || "Unspecified")}</span>
             <span class="agent-doc-task">${escapeHtml(resolveAgentTask(agent, state.agentActivity) || agent.currentTask || agent.lastTask || agent.objective || "No task declared")}</span>
           </div>
         `).join("")}
       </div>
     `}
-    ${state.lastDigest ? `
-    <div class="digest-panel">
-      <span class="digest-label">Last digest · ${digestAge(state.lastDigest.generatedAt)}</span>
-      <p class="digest-summary">${escapeHtml(state.lastDigest.summary)}</p>
-      <p class="digest-detail"><strong>Stuck:</strong> ${escapeHtml(state.lastDigest.stuck)}</p>
-      <p class="digest-detail"><strong>Next:</strong> ${escapeHtml(state.lastDigest.next)}</p>
-      <span class="digest-model">${escapeHtml(state.lastDigest.model)}</span>
-    </div>
-    ` : `
-    <p class="digest-empty">Press Digest for an AI summary · requires OpenRouter key in Settings</p>
-    `}
   </div>
   </section>`;
+}
+
+function renderDigestTile(state: QuestState, hasKey: boolean): string {
+  const digestBtnDisabled = !hasKey ? ' title="Add OpenRouter key in Settings to enable"' : ' title="Run AI digest of current repo state"';
+  return `<section class="tile tight" data-area="digest">
+    <div class="tile-header">
+      <h3 class="tile-title changes"><span class="accent-bar"></span>Digest</h3>
+      <button class="digest-btn" data-ui-action="run-digest"${digestBtnDisabled}${!hasKey ? ' disabled' : ""}>Latest</button>
+    </div>
+    <div class="tile-body">
+      ${state.lastDigest ? `
+        <div class="digest-panel inline">
+          <span class="digest-label">Last digest · ${digestAge(state.lastDigest.generatedAt)}</span>
+          <p class="digest-summary">${escapeHtml(state.lastDigest.summary)}</p>
+          <p class="digest-detail"><strong>Stuck:</strong> ${escapeHtml(state.lastDigest.stuck)}</p>
+          <p class="digest-detail"><strong>Next:</strong> ${escapeHtml(state.lastDigest.next)}</p>
+          <span class="digest-model">${escapeHtml(state.lastDigest.model)}</span>
+        </div>
+      ` : `
+        <div class="digest-panel inline">
+          <p class="digest-summary">${escapeHtml(buildDigestFallback(state))}</p>
+          <p class="digest-detail">Scope drift: ${escapeHtml(state.workspaceSignals?.scopeActive ? String(state.workspaceSignals.scopeDriftCount) : "not declared")}</p>
+          <p class="digest-detail">Recent activity: ${state.recentActivity?.length ?? 0} watcher events</p>
+          <span class="digest-model">Add OpenRouter key in Settings for AI digest</span>
+        </div>
+      `}
+    </div>
+  </section>`;
+}
+
+function buildDigestFallback(state: QuestState): string {
+  const now = state.now[0]?.text || "No current task set.";
+  const change = state.recentChanges[0]?.file || state.recentActivity?.[0]?.file;
+  if (change) {
+    return `${now} Latest local change: ${change}.`;
+  }
+  return `${now} RepoLog is watching local activity.`;
 }
 
 function renderAgentAvatar(agent: AgentProfile): string {
@@ -3194,6 +3422,55 @@ function renderPromptPaletteTile(presets: readonly PromptPreset[]): string {
           <button type="button" class="prompt-copy" data-copy-context="${escapeHtml(preset.body)}">copy</button>
         </div>
       `).join("")}
+    </div>
+  </section>`;
+}
+
+function renderRepoContextTile(state: QuestState): string {
+  const context = state.repoContext;
+  const readiness = state.readiness;
+  const repoType = context?.repoType ?? "unknown";
+  const manifest = context?.manifestType
+    ? `${context.manifestType}${context.packageName ? ` / ${context.packageName}` : ""}${context.packageVersion ? ` v${context.packageVersion}` : ""}`
+    : "No package manifest found";
+  const summary = context?.packageDescription || summarizeReadme(context?.readmePreview) || state.mission || "RepoLog can show local repo activity while planning docs are added.";
+  const git = state.gitContext
+    ? `${state.gitContext.branch} / ${state.gitContext.dirtyFiles} dirty file${state.gitContext.dirtyFiles === 1 ? "" : "s"}`
+    : context?.recentCommits[0] ?? "Git status unavailable";
+  const docs = context?.docsFound.length ? context.docsFound.slice(0, 8) : state.scannedFiles.slice(0, 8);
+  const source = context?.sourceTree.slice(0, 5).join(" / ") || "No source tree summary found.";
+  const scanned = new Set(state.scannedFiles.map((file) => file.split(/[\\/]/).pop()?.toLowerCase() ?? file.toLowerCase()));
+  const missingDocs = ["PLAN.md", "STATE.md", "AGENTS.md"].filter((file) => !scanned.has(file.toLowerCase()));
+  const docsHtml = docs.length
+    ? docs.map((file) => `<span>${escapeHtml(file)}</span>`).join("")
+    : `<span class="missing">No docs found</span>`;
+  const missingText = missingDocs.length ? missingDocs.join(", ") : "None";
+  const helpCopy = readiness && readiness.agentReadinessScore < 70
+    ? `${readiness.summary} Add planning docs when you want better resume prompts.`
+    : "RepoLog has enough planning structure for daily resume prompts.";
+
+  return `<section class="tile tight repo-context-card" data-area="repo-context">
+    <div class="tile-header">
+      <h3 class="tile-title"><span class="accent-bar"></span>Repo Context</h3>
+      <span class="tile-meta">${escapeHtml(repoType)}</span>
+    </div>
+    <div class="tile-body repo-context-card">
+      <p class="repo-context-summary">${escapeHtml(summary)}</p>
+      <div class="repo-context-grid">
+        <div class="repo-context-row"><span>Manifest</span><code>${escapeHtml(manifest)}</code></div>
+        <div class="repo-context-row"><span>Git</span><code>${escapeHtml(git)}</code></div>
+        <div class="repo-context-row"><span>Missing</span><code>${escapeHtml(missingText)}</code></div>
+        <div class="repo-context-row"><span>Source</span><code>${escapeHtml(source)}</code></div>
+      </div>
+      <div class="onboarding-docs" aria-label="Detected docs">${docsHtml}</div>
+      <p class="repo-context-summary">${escapeHtml(helpCopy)}</p>
+      <div class="repo-context-actions">
+        <button type="button" class="primary" data-tuneup-action="generate" data-tuneup-complete-label="Refresh setup prompt" data-tuneup-fallback-label="Generate setup prompt">Generate setup prompt</button>
+        <button type="button" data-tuneup-action="copy">Copy prompt</button>
+        <button type="button" data-tuneup-action="preview-docs">Preview docs</button>
+        <button type="button" data-tuneup-action="apply-docs">Write docs</button>
+      </div>
+      <textarea class="repo-context-preview" data-onboarding-prompt readonly hidden aria-label="Generated setup prompt"></textarea>
     </div>
   </section>`;
 }
@@ -4195,86 +4472,15 @@ function escapeHtml(value: string): string {
 }
 
 function isEmptyRepo(state: QuestState): boolean {
-  return state.scannedFiles.length === 0;
-}
-
-function shouldRenderOnboarding(state: QuestState): boolean {
-  const scanned = new Set(state.scannedFiles.map((file) => file.split(/[\\/]/).pop()?.toLowerCase() ?? file.toLowerCase()));
-  const hasPlan = scanned.has("plan.md");
-  const hasState = scanned.has("state.md");
-  const hasAgent = ["agents.md", "claude.md", "gemini.md"].some((file) => scanned.has(file));
-  const hasWork = state.activeQuest.title.trim().length > 0 && (state.now.length > 0 || state.next.length > 0 || state.blocked.length > 0);
-  const structureScore = state.readiness?.repoLogStructureScore ?? (hasPlan && hasState && hasWork ? 70 : 0);
-  return !isEmptyRepo(state) && (!hasPlan || !hasState || !hasWork || structureScore < 70 || (!hasAgent && structureScore < 70));
-}
-
-function renderOnboardingDashboard(state: QuestState): string {
   const context = state.repoContext;
-  const readiness = state.readiness;
-  const scanned = new Set(state.scannedFiles.map((file) => file.split(/[\\/]/).pop()?.toLowerCase() ?? file.toLowerCase()));
-  const expected = ["PLAN.md", "STATE.md", "AGENTS.md"];
-  const docs = expected.map((file) => {
-    const present = scanned.has(file.toLowerCase());
-    return `<span class="${present ? "present" : "missing"}">${present ? "found" : "missing"} ${escapeHtml(file)}</span>`;
-  }).join("");
-  const docsFound = (context?.docsFound.length ? context.docsFound : state.scannedFiles).slice(0, 12);
-  const docsFoundHtml = docsFound.length
-    ? docsFound.map((file) => `<span>${escapeHtml(file)}</span>`).join("")
-    : `<span class="missing">No docs found</span>`;
-  const manifest = context?.manifestType
-    ? `${context.manifestType}${context.packageName ? ` / ${context.packageName}` : ""}${context.packageVersion ? ` v${context.packageVersion}` : ""}`
-    : "No package manifest found";
-  const readme = summarizeReadme(context?.readmePreview) || state.mission || "No README summary available.";
-  const git = state.gitContext
-    ? `${state.gitContext.branch} / ${state.gitContext.dirtyFiles} dirty file${state.gitContext.dirtyFiles === 1 ? "" : "s"}${state.gitContext.lastCommit ? ` / ${state.gitContext.lastCommit.subject}` : ""}`
-    : context?.recentCommits[0] ?? "Git status unavailable";
-  const missingList = expected.filter((file) => !scanned.has(file.toLowerCase())).join(", ") || "None";
-  const sourceTree = context?.sourceTree.slice(0, 8).join(" / ") || "No source tree summary found.";
-  const summary = readiness?.summary ?? "Docs not initialized";
-
-  return `<section class="onboarding-dashboard">
-    <div class="onboarding-hero">
-      <div>
-        <div class="kicker">Docs not initialized</div>
-        <h1 class="onboarding-title">This repo is not agent-ready yet</h1>
-      </div>
-      <p class="onboarding-copy">${escapeHtml(summary)} RepoLog found raw context, but the planning docs are missing or too weak to let an AI agent resume safely.</p>
-      <div class="onboarding-grid">
-        <div class="onboarding-stat"><div class="label">RepoLog structure</div><div class="value">${readiness?.repoLogStructureScore ?? 0}</div></div>
-        <div class="onboarding-stat"><div class="label">Context usefulness</div><div class="value">${readiness?.contextUsefulnessScore ?? 0}</div></div>
-        <div class="onboarding-stat"><div class="label">Agent readiness</div><div class="value">${readiness?.agentReadinessScore ?? 0}</div></div>
-      </div>
-      <div class="onboarding-actions">
-        <button type="button" class="primary" data-tuneup-action="generate">Generate agent-ready docs prompt</button>
-        <button type="button" data-tuneup-action="copy">Copy prompt</button>
-        <button type="button" data-tuneup-action="preview-docs">Preview generated PLAN.md/STATE.md/AGENTS.md</button>
-        <button type="button" data-tuneup-action="apply-docs">Apply generated docs</button>
-      </div>
-      <textarea class="tuneup-prompt-area" data-onboarding-prompt readonly hidden aria-label="Generated agent-ready docs prompt"></textarea>
-      <div class="onboarding-docs" aria-label="Missing docs">${docs}</div>
-    </div>
-    <aside class="onboarding-panel">
-      <div class="kicker">Detected repo context</div>
-      <ul class="onboarding-list">
-        <li><span>Repo type</span><code>${escapeHtml(context?.repoType ?? "unknown")}</code></li>
-        <li><span>Manifest</span><code>${escapeHtml(manifest)}</code></li>
-        <li><span>Git</span><code>${escapeHtml(git)}</code></li>
-        <li><span>Missing docs</span><code>${escapeHtml(missingList)}</code></li>
-      </ul>
-      <div>
-        <div class="kicker">README summary</div>
-        <p class="onboarding-copy">${escapeHtml(readme)}</p>
-      </div>
-      <div>
-        <div class="kicker">Docs found</div>
-        <div class="onboarding-docs">${docsFoundHtml}</div>
-      </div>
-      <div>
-        <div class="kicker">Source tree</div>
-        <p class="onboarding-copy">${escapeHtml(sourceTree)}</p>
-      </div>
-    </aside>
-  </section>`;
+  const hasDetectedContext = !!context && (
+    context.rootFiles.length > 0 ||
+    context.sourceTree.length > 0 ||
+    !!context.manifestType ||
+    !!context.packageName ||
+    !!context.readmePreview
+  );
+  return state.scannedFiles.length === 0 && !hasDetectedContext;
 }
 
 function summarizeReadme(readme?: string): string {
@@ -4287,7 +4493,7 @@ function summarizeReadme(readme?: string): string {
 }
 
 function renderEmptyState(state: QuestState): string {
-  const expectedFiles = ["PLAN.md", "STATE.md", "AGENTS.md", "CLAUDE.md"];
+  const expectedFiles = ["PLAN.md", "STATE.md", "AGENTS.md"];
   const scanned = new Set(state.scannedFiles.map((f) => f.split(/[\\/]/).pop()?.toUpperCase()));
   const slots = expectedFiles.map((f) => {
     const present = scanned.has(f.toUpperCase());
@@ -4500,26 +4706,28 @@ function renderTuneupScript(): string {
         var action = btn.getAttribute("data-tuneup-action");
 
         if (action === "generate") {
+          var completeLabel = btn.getAttribute("data-tuneup-complete-label") || "Re-analyze repo";
+          var fallbackLabel = btn.getAttribute("data-tuneup-fallback-label") || "Analyze repo";
           btn.disabled = true;
           btn.textContent = "Analyzing…";
           if (window.repologDesktop && typeof window.repologDesktop.runTuneup === "function") {
             Promise.resolve(window.repologDesktop.runTuneup()).then(function (data) {
               applyResult(data);
               btn.disabled = false;
-              btn.textContent = "Re-analyze repo";
+              btn.textContent = completeLabel;
             }).catch(function (err) {
               if (window.__rqlToast) window.__rqlToast("tuneup failed: " + String(err));
               btn.disabled = false;
-              btn.textContent = "Analyze repo";
+              btn.textContent = fallbackLabel;
             });
           } else if (vscode) {
             vscode.postMessage({ type: "runTuneup" });
             btn.disabled = false;
-            btn.textContent = "Re-analyze repo";
+            btn.textContent = completeLabel;
           } else {
             if (window.__rqlToast) window.__rqlToast("tuneup requires the desktop or VS Code shell");
             btn.disabled = false;
-            btn.textContent = "Analyze repo";
+            btn.textContent = fallbackLabel;
           }
           return;
         }

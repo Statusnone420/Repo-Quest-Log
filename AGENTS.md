@@ -20,7 +20,7 @@ Instructions for any coding agent working in this repo (Codex, generic agents, C
 - Write tests against the fixture repos under `tests/fixtures/` before marking a task done
 - Update `STATE.md` when you finish a task. Keep all relevant md's updated when finishing tasks.
 - Run `npm run lint && npm test` before committing
-- Check `CLAUDE.md` to keep agent responsibilities aligned without interfering with active Claude work.
+- Treat root-level agent docs as active tool instructions. Retired tool docs belong in `docs/Archived/agent-docs/` as reference-only material.
 
 ## Do Not
 - Add source-code parsing (v0.2+)
@@ -37,102 +37,34 @@ Instructions for any coding agent working in this repo (Codex, generic agents, C
 
 ## Current Objective
 
-Ship the daily-use desktop rescue: markdown-first repo context, observable Workspace Signals, corrected Agent Docs, prompt resume flow, and README/product proof that makes the value obvious in 30 seconds.
+Ship the v0.5 daily-use desktop rescue: same RepoLog shell for every repo, inline setup help for sparse/messy repos, archived reference handling for retired agent docs, observable Workspace Signals, corrected Agent Docs, prompt resume flow, and README/product proof that makes the value obvious in 30 seconds.
 
 ## Current Task
 
-Workspace Signals rescue implemented and verified: desktop now shows observable repo activity (`workspaceSignals`, `recentActivity`) instead of fake agent liveness, Agent Docs list document/role/last written task, empty Now is actionable, `Blocked: None` is filtered from HUD and prompts, Prompt Palette is visible, README is pain-first with a current rendered screenshot, Electron startup/window smoke passed with Computer, and `npm run build`, `npm run lint`, `npm test` pass (93 tests).
+v0.5 HUD consistency pass verified: desktop keeps the normal RepoLog shell for every non-empty repo, degrades sparse markdown state inline, shows detected repo context as useful fallback data, archives retired Claude/Gemini root docs under `docs/Archived/agent-docs/`, moves the desktop HUD closer to the accepted mockup structure, bumps release metadata to 0.5.0, and passes `npm run build`, `npm run lint`, and `npm test` (104 tests / 22 files). Browser/app visual QA was intentionally skipped per human direction.
 
 ---
 
-## Agent Execution Protocol — v0.4 Release Verification
+## Agent Execution Protocol — v0.5 Release Handoff
 
-**Read this section before touching any file.**
+**Read this section before touching release files.**
 
 ### Core rule
-Audit the actual code first. Never assume spec = implementation. Read the file, report what's real vs. stub, then fix. Run `npm run build && npm run lint && npm test` after closing each gate. Anything failing = gate is not closed.
+Audit the actual code first. Never assume docs equal implementation. Read the file, report what is real, then fix. Before handoff, run `npm run build`, `npm run lint`, and `npm test`. Anything failing means the pass is not ready.
 
-### Gate order (strict — do not skip ahead)
+### v0.5 handoff checks
+1. Desktop renderer keeps the normal RepoLog shell for non-empty generic, messy, and source-only repos.
+2. Sparse repos get inline Repo Context setup help, not a full-screen onboarding takeover.
+3. Retired Claude/Gemini guidance stays under `docs/Archived/agent-docs/` unless the human explicitly reactivates those tools.
+4. Root setup guidance defaults to `PLAN.md`, `STATE.md`, and `AGENTS.md`; `CLAUDE.md` and `GEMINI.md` are optional active-tool docs.
+5. Archived/reference agent statuses do not define active workspace scope.
+6. Version metadata and `CHANGELOG.md` stay aligned with `package.json`.
+7. Browser/app visual QA is optional only when the human explicitly asks not to run it; otherwise compare the renderer against the accepted mockup.
 
----
-
-**GATE 1 — First-run wizard reliability**
-Audit `apps/desktop/main.cjs` and `src/web/render.ts`. Verify:
-1. `repolog:first-run-check` IPC handler exists and checks `PLAN.md` presence at repo root.
-2. Wizard renders **only** when `hasPlanMd === false`. Healthy fixture must NOT show the wizard.
-3. `repolog:wizard-dismiss` writes `lastWizardRun: Date.now()` to `~/.repolog/first-run-state.json` in Electron userData (not in repo). On next startup, wizard is suppressed for that repo.
-4. Every wizard action button (`init-plan`, `init-state`, `init-config`) disables itself and shows a spinner immediately on click, before the IPC call resolves.
-5. IPC errors surface as a one-sentence human-readable toast, not `[object Object]` or a raw stack trace.
-6. After a file is created, a "Run Doctor Again?" button appears and re-runs doctor in place.
-
-Fix anything that doesn't hold. Tests: `tests/desktop.test.ts` must cover startup check (healthy = no wizard, noisy = wizard), dismiss persistence, and error toast shape.
-
----
-
-**GATE 2 — Doctor output is actionable**
-Audit `src/engine/doctor.ts`. For every finding, verify:
-1. A `why` field or inline sentence exists: one line explaining what breaks without it.
-2. A `fix` or `example` field exists: exactly what the user should type or add.
-3. Findings are emitted in this severity order: PLAN.md missing → STATE.md missing → Objective → Now → structural → formatting. No finding above its severity peer.
-4. No finding text contains internal variable names, import paths, or jargon a first-time user wouldn't know.
-
-Rewrite any finding that fails. Tests: `tests/doctor.test.ts` must assert on `why` and `fix` presence, and on sort order across finding types.
-
----
-
-**GATE 3 — Settings UI works end-to-end**
-Audit `src/web/render.ts` (settings card) and `apps/desktop/main.cjs` (`repolog:write-config` handler). Verify:
-1. On settings panel open, all fields are populated from current `.repolog.json` (or defaults if file missing). Fields must not be blank or show `undefined`.
-2. Clicking Save with invalid input (e.g., non-numeric debounce) shows an error banner inline — no silent failure, no toast-only.
-3. `repolog:write-config` writes atomically: read current → merge → validate via `validateAndFillConfig` → write `.repolog.json.tmp` → `fs.renameSync` → emit `repolog:config-changed` → trigger rescan.
-4. On success: toast "Settings saved ✓" appears and watcher rescans immediately (visible as an updated "Recent changes" timestamp or file count).
-5. On write failure (permissions, disk): error banner in settings panel states what failed.
-6. VS Code: `writeConfig` message handler in `extensions/vscode/extension.js` writes the file and sends back `{ type: "configSaved" }` or `{ type: "error", message: "..." }`.
-
-Fix anything that doesn't hold. Tests: `tests/config.test.ts` must cover atomic write path, merge behavior, and validation rejection.
-
----
-
-**GATE 4 — Write-back avoids silent clobbering**
-Audit `src/engine/writeback.ts`. Verify:
-1. Every task toggle write follows: read original → write to `${file}.tmp` → `fs.renameSync(tmp, file)` → read back → SHA-256 compare → rollback on mismatch.
-2. Stale-line detection: if the target line changed since last scan, the write is rejected with `"Line has changed since last read; re-scan required"` — not silently applied.
-3. Concurrent writes to the same file are queued (a per-file `Promise` chain), not raced.
-4. On any failure, the renderer receives `{ error: "..." }` with a human-readable message, then triggers `repolog:rescan`.
-
-Fix anything that doesn't hold. Tests: `tests/writeback.test.ts` must cover atomic path, SHA mismatch rollback, stale-line rejection, and concurrent write queuing.
-
----
-
-**GATE 5 — Watcher responsiveness**
-Audit `src/engine/watcher.ts`. Verify:
-1. `add`, `change`, `unlink`, and `unlinkDir` events all trigger a debounced rescan.
-2. Debounce value is `Math.max(config.watch.debounce ?? 500, 500)` ms — never lower.
-3. Rapid-fire events (5 in 100ms) collapse to exactly 1 rescan after the debounce window.
-4. On chokidar `error` event: log to stderr with file + event context, emit an `error` event that the desktop/TUI consumer can catch to show "File watch lost sync; re-scanning."
-5. When `.repolog.json` changes on disk, the watcher emits a `config-changed` event and scan re-reads config via `validateAndFillConfig` before rebuilding `QuestState`.
-
-Fix anything that doesn't hold. Tests: `tests/watcher.test.ts` must cover create/modify/delete/unlink events, debounce collapse, and error emit.
-
----
-
-**GATE 6 — Version and release readiness**
-Audit `src/cli/index.ts`, `apps/desktop/main.cjs`, and `CHANGELOG.md`. Verify:
-1. `repolog --version` prints exactly `vX.Y.Z` (from `package.json`) and exits 0. No extra lines, no banner.
-2. `RepoLog.exe --repo-root <path>` reads `--repo-root` from `process.argv` before the window is created and passes it to `resolveDesktopRepoRoot`. Verify with a path that has no `.repolog.json`.
-3. `CHANGELOG.md` has a `## v0.4.0 — YYYY-MM-DD` section with Features, Fixes, and Breaking Changes subsections, ready to paste into a GitHub release.
-4. `npm run build && npm run lint && npm test` all pass with 59+ tests before you report Gate 6 closed.
-
-Fix anything that doesn't hold.
-
----
-
-### After all 6 gates pass
-
-1. Update `STATE.md` Resume Note with what was audited, what was fixed, and the final test count.
-2. Update `AGENTS.md` Current Task to "All 6 release verification gates closed. Ready for release."
-3. Update the `## CURRENT STATUS` block in `docs/Archived/IMPLEMENTATION_PLAN_v0.4.md` if that archived closeout tracker is being maintained.
-4. Do NOT commit. Stop and report to the human.
+### After verification
+1. Update `STATE.md` Resume Note with what changed and final verification count.
+2. Update `AGENTS.md` Current Task with the verified state.
+3. Do NOT commit. Stop and report to the human.
 
 ---
 

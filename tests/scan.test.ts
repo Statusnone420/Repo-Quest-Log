@@ -37,7 +37,7 @@ describe("scanRepo", () => {
 
   it("ignores archived markdown docs by default", async () => {
     const cwd = join(tmpdir(), `repo-quest-log-scan-${Date.now()}-archived`);
-    await mkdir(join(cwd, "docs", "Archived"), { recursive: true });
+    await mkdir(join(cwd, "docs", "Archived", "agent-docs"), { recursive: true });
 
     try {
       await writeRepoFile(cwd, "PLAN.md", "# Plan\n\n- [ ] First task\n");
@@ -45,11 +45,14 @@ describe("scanRepo", () => {
       await writeRepoFile(cwd, "README.md", "# Readme\n");
       await writeRepoFile(cwd, "AGENTS.md", "# Agents\n");
       await writeRepoFile(cwd, "docs/Archived/implementation_plan.md", "# Archived plan\n\n- [ ] stale\n");
+      await writeRepoFile(cwd, "docs/Archived/agent-docs/CLAUDE.md", "# Claude\n\nArchived instructions\n");
 
       const state = await scanRepo(cwd);
 
       expect(state.scannedFiles).not.toContain("docs/Archived/implementation_plan.md");
+      expect(state.scannedFiles).not.toContain("docs/Archived/agent-docs/CLAUDE.md");
       expect(state.recentChanges.some((change) => change.file.includes("Archived"))).toBe(false);
+      expect(state.agents.some((agent) => agent.file === "docs/Archived/agent-docs/CLAUDE.md")).toBe(false);
     } finally {
       await rm(cwd, { recursive: true, force: true });
     }
@@ -70,6 +73,50 @@ describe("scanRepo", () => {
       const state = await scanRepo(cwd);
 
       expect(state.scannedFiles).not.toContain("docs/Notes/todo_notes.md");
+    } finally {
+      await rm(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it("marks archived agent docs from frontmatter as reference docs", async () => {
+    const cwd = join(tmpdir(), `repo-quest-log-scan-${Date.now()}-archived-agent`);
+    await mkdir(cwd, { recursive: true });
+
+    try {
+      await writeRepoFile(cwd, "CLAUDE.md", "---\nowner: claude\nstatus: Archived \nrole: historical notes\narea: docs/**\n---\n\n# Claude\n");
+
+      const state = await scanRepo(cwd);
+
+      expect(state.agents[0]).toEqual(
+        expect.objectContaining({
+          id: "claude",
+          file: "CLAUDE.md",
+          status: "archived",
+        }),
+      );
+    } finally {
+      await rm(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it("normalizes reference-style agent status aliases", async () => {
+    const cwd = join(tmpdir(), `repo-quest-log-scan-${Date.now()}-reference-agent`);
+    await mkdir(cwd, { recursive: true });
+
+    try {
+      await writeRepoFile(cwd, "GEMINI.md", "---\nowner: gemini\nstatus:  Reference \nrole: historical notes\narea: architecture/**\n---\n\n# Gemini\n");
+      await writeRepoFile(cwd, "CLAUDE.md", "---\nowner: claude\nstatus: Paused\nrole: historical notes\narea: docs/**\n---\n\n# Claude\n");
+      await writeRepoFile(cwd, "AGENTS.md", "---\nowner: codex\nstatus: inactive\nrole: historical notes\narea: src/**\n---\n\n# Agents\n");
+
+      const state = await scanRepo(cwd);
+
+      expect(state.agents).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ id: "gemini", file: "GEMINI.md", status: "archived" }),
+          expect.objectContaining({ id: "claude", file: "CLAUDE.md", status: "archived" }),
+          expect.objectContaining({ id: "codex", file: "AGENTS.md", status: "archived" }),
+        ]),
+      );
     } finally {
       await rm(cwd, { recursive: true, force: true });
     }

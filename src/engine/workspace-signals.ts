@@ -61,13 +61,14 @@ export function deriveWorkspaceScope(
   nowTasks: readonly Task[],
   agents: readonly AgentProfile[],
 ): string[] {
-  const byId = new Map(agents.map((agent) => [agent.id.toLowerCase(), agent]));
+  const scopeAgents = agents.filter((agent) => agent.status !== "archived");
+  const byId = new Map(scopeAgents.map((agent) => [agent.id.toLowerCase(), agent]));
   const activeAgentIds = uniqueStrings(nowTasks
     .map((task) => task.agent?.trim().toLowerCase())
     .filter((agentId): agentId is string => !!agentId));
   const sourceAgents = activeAgentIds.length > 0
     ? activeAgentIds.map((agentId) => byId.get(agentId)).filter((agent): agent is AgentProfile => !!agent)
-    : agents;
+    : scopeAgents;
 
   return uniqueStrings(sourceAgents.flatMap((agent) => extractScopeTokens(agent.area)));
 }

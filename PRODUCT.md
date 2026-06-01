@@ -12,7 +12,7 @@ Primary users are technical, impatient, and already comfortable with markdown pl
 
 ## Product Purpose
 
-RepoLog is a local-first, markdown-first repo memory layer. It scans planning documents such as `PLAN.md`, `STATE.md`, `AGENTS.md`, `CLAUDE.md`, and `GEMINI.md`, then turns them into a calm HUD that answers: "I opened this repo, what was I doing?"
+RepoLog is a local-first, markdown-first repo memory layer. It scans planning documents such as `PLAN.md`, `STATE.md`, and active agent docs like `AGENTS.md`, `CLAUDE.md`, or `GEMINI.md` when present, then turns them into a calm HUD that answers: "I opened this repo, what was I doing?"
 
 The product succeeds when a user can open a real repo and understand the objective, current focus, why the task matters, what changed recently, what to paste into an agent, and whether the repo context is clean enough for agent work. RepoLog must remain useful without cloud sync, team backends, runtime code parsing, or paid AI features.
 

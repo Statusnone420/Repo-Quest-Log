@@ -8,8 +8,10 @@ import type { RecentActivityEvent, RecentActivityKind } from "./types.js";
 const BUILT_IN_IGNORES = [
   ".git",
   "node_modules",
+  "release",
   "dist",
   "build",
+  ".repolog",
   ".next",
   "coverage",
   ".cache",

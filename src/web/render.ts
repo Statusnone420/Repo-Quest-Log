@@ -1218,6 +1218,34 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       font-size: 12px;
       line-height: 1.45;
     }
+    .settings-write-note {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin: -4px 0 14px;
+    }
+    .settings-write-note span {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      padding: 8px 10px;
+      border: 1px solid var(--tile-border);
+      border-radius: 7px;
+      background: rgba(255,255,255,0.025);
+      color: var(--muted);
+      font-size: var(--small-size);
+      line-height: 1.35;
+    }
+    .settings-write-note strong {
+      color: var(--ink);
+      font-weight: 700;
+    }
+    .settings-write-note code,
+    .settings-card-detail code {
+      color: var(--accent);
+      font-family: var(--mono);
+      font-size: var(--tiny-size);
+    }
     .settings-config {
       width: 100%;
       grid-template-columns: minmax(0, 1fr) 280px;
@@ -2871,10 +2899,11 @@ function renderTaskTile(
 }
 
 function renderNoCurrentTaskWarning(): string {
-  const prompt = "RepoLog found no current task. Update PLAN.md or STATE.md with a short Now item, why it is current, and the agent or file area that owns it.";
+  const prompt = "RepoLog found no current task. Add a ## Now section to PLAN.md or STATE.md with one unchecked task, why it matters, and the file area or agent that owns it. Use this shape:\n\n## Now\n- [ ] Fix the thing you are doing next";
   return `<div class="now-empty">
     <div class="now-empty-title">No current task set</div>
-    <div class="now-empty-copy">RepoLog can show objective and history, but it cannot tell you what to do next until PLAN.md or STATE.md has a Now item.</div>
+    <div class="now-empty-copy">RepoLog can show objective and history, but it cannot tell you what to do next until the repo has one current task.</div>
+    <div class="now-empty-copy"><strong>Add a short ## Now section:</strong> <code>- [ ] Fix the thing you are doing next</code></div>
     <div class="now-empty-actions">
       <button type="button" data-copy-context="${escapeHtml(prompt)}">Copy repair prompt</button>
       <button type="button" data-open-doc="PLAN.md" data-line="1">Open PLAN.md</button>
@@ -3033,7 +3062,7 @@ function renderDigestTile(state: QuestState, hasKey: boolean): string {
       ` : `
         <div class="digest-panel inline">
           <p class="digest-summary">${escapeHtml(buildDigestFallback(state))}</p>
-          <p class="digest-detail">Scope drift: ${escapeHtml(state.workspaceSignals?.scopeActive ? String(state.workspaceSignals.scopeDriftCount) : "not declared")}</p>
+          <p class="digest-detail">Outside scope: ${escapeHtml(state.workspaceSignals?.scopeActive ? String(state.workspaceSignals.scopeDriftCount) : "not declared")}</p>
           <p class="digest-detail">Recent activity: ${state.recentActivity?.length ?? 0} watcher events</p>
           <span class="digest-model">Add OpenRouter key in Settings for AI digest</span>
         </div>
@@ -3200,12 +3229,13 @@ function renderSettingsPanel(state: QuestState, liveBridge?: SurfaceHtmlOptions[
               </div>
               <div class="settings-card settings-tuneup-results" data-tuneup-results>
                 <div class="settings-card-head compact"><h3 class="settings-card-title">Top fixes first</h3><span class="pill" data-tuneup-gap-count>0</span></div>
+                <p class="settings-card-detail"><strong>Optional repo guide:</strong> RepoLog can create <code>.repolog/CHARTER.md</code>, a plain markdown guide for agents. It is not needed for switching repos, scanning, or daily use.</p>
                 <div class="tuneup-gaps" data-tuneup-gaps aria-label="Top fixes"></div>
                 <label class="tuneup-prompt-label" for="rql-tuneup-prompt">Generated repair prompt</label>
                 <textarea id="rql-tuneup-prompt" class="tuneup-prompt-area" data-tuneup-prompt readonly aria-label="Generated repair prompt" spellcheck="false"></textarea>
                 <div class="tuneup-actions" data-tuneup-actions hidden>
                   <button type="button" data-tuneup-action="copy">Copy repair prompt</button>
-                  <button type="button" data-tuneup-action="write-charter">Write CHARTER.md</button>
+                  <button type="button" data-tuneup-action="write-charter" title="Writes .repolog/CHARTER.md in this repo">Create repo guide</button>
                   <button type="button" data-tuneup-action="preview-docs">Preview generated docs</button>
                   <button type="button" data-tuneup-action="apply-docs">Apply generated docs</button>
                   <button type="button" data-tuneup-action="preview-gaps">Hide fixes</button>
@@ -3234,9 +3264,13 @@ function renderSettingsPanel(state: QuestState, liveBridge?: SurfaceHtmlOptions[
               <section class="settings-card settings-config-card" data-settings-section="repo">
                 <div class="settings-card-head">
                   <h3 class="settings-card-title">Repo config <span class="pill">write-back ${wbStatus}</span></h3>
-                  ${renderInfoIcon("Save writes .repolog.json atomically, validates the config, and refreshes the HUD.")}
+                  ${renderInfoIcon("Save repo config writes .repolog.json in this repo. Appearance, window state, last-opened repo, digest cache, and OpenRouter key stay in app storage.")}
                 </div>
-                <p class="settings-card-detail">Edit .repolog.json without touching JSON by hand. Save writes the file atomically and refreshes the HUD.</p>
+                <p class="settings-card-detail">These settings are repo-local. Saving creates or updates <code>.repolog.json</code> so this repo can keep its excludes, watcher behavior, and write-back preference.</p>
+                <div class="settings-write-note" aria-label="Settings write locations">
+                  <span><strong>Writes .repolog.json in this repo.</strong><code>excludes, watcher, write-back</code></span>
+                  <span><strong>App-only settings stay outside the repo.</strong><code>theme, scale, startup root, API key</code></span>
+                </div>
                 <div class="settings-panel-report" data-config-error data-visible="false"></div>
                 <div class="settings-config" data-config-form>
                   <div class="field span-2">
@@ -3345,12 +3379,12 @@ function renderSettingsPanel(state: QuestState, liveBridge?: SurfaceHtmlOptions[
         </div>
       </div>
       <div class="settings-panel-footer">
-        <span class="sr-only">Ctrl+O Ctrl+K Ctrl+Shift+C Prompt dir Save settings Startup Theme</span>
-        <span class="keyboard-hint"><kbd>Ctrl+S</kbd> Save changes</span>
+        <span class="sr-only">Ctrl+O Ctrl+K Ctrl+Shift+C Prompt dir Save repo config Startup Theme</span>
+        <span class="keyboard-hint"><kbd>Ctrl+S</kbd> Save repo config</span>
         <span class="keyboard-hint"><kbd>Esc</kbd> Close</span>
         <span class="keyboard-hint"><kbd>Ctrl+R</kbd> Analyze repo</span>
         <span class="footer-spacer"></span>
-        <button type="button" class="settings-footer-save" data-ui-action="save-config">Save changes<span class="sr-only">Save settings</span></button>
+        <button type="button" class="settings-footer-save" data-ui-action="save-config">Save repo config<span class="sr-only">Writes .repolog.json in this repo</span></button>
       </div>
     </section>
   </div>`;
@@ -3388,12 +3422,12 @@ function renderWorkspaceSignalsStrip(signals: WorkspaceSignals | undefined): str
       <div class="signal-note">last 10m spread</div>
     </div>
     <div class="signal-cell">
-      <div class="signal-label">Scope drift</div>
+      <div class="signal-label">Outside scope</div>
       <div class="signal-value">${data.scopeActive ? data.scopeDriftCount : "off"}</div>
-      <div class="signal-note">${data.scopeActive ? "owned areas active" : "no owned areas"}</div>
+      <div class="signal-note">${data.scopeActive ? "declared areas active" : "no declared areas"}</div>
     </div>
     <div class="signal-cell">
-      <div class="signal-label">Thrash</div>
+      <div class="signal-label">Edit churn</div>
       <div class="signal-value">${escapeHtml(data.thrashLevel)}</div>
       <div class="signal-note">${escapeHtml(data.repeatedFiles[0] ?? "no repeated file")}</div>
     </div>
@@ -4776,20 +4810,20 @@ function renderTuneupScript(): string {
           return;
         }
 
-        if (action === "write-charter") {
-          if (window.repologDesktop && typeof window.repologDesktop.writeTuneupCharter === "function") {
-            Promise.resolve(window.repologDesktop.writeTuneupCharter(tuneupData.charter)).then(function (result) {
-              if (window.__rqlToast) window.__rqlToast(result && result.files ? "wrote " + result.files.join(", ") : "CHARTER.md written");
-            }).catch(function () {
-              if (window.__rqlToast) window.__rqlToast("failed to write CHARTER.md");
-            });
-          } else if (vscode) {
-            vscode.postMessage({ type: "writeTuneupCharter", charter: tuneupData.charter });
-          } else {
-            if (window.__rqlToast) window.__rqlToast("write CHARTER.md requires the desktop or VS Code shell");
-          }
-          return;
-        }
+         if (action === "write-charter") {
+           if (window.repologDesktop && typeof window.repologDesktop.writeTuneupCharter === "function") {
+             Promise.resolve(window.repologDesktop.writeTuneupCharter(tuneupData.charter)).then(function (result) {
+              if (window.__rqlToast) window.__rqlToast(result && result.files ? "created repo guide: " + result.files.join(", ") : "repo guide created");
+             }).catch(function () {
+              if (window.__rqlToast) window.__rqlToast("failed to create repo guide");
+             });
+           } else if (vscode) {
+             vscode.postMessage({ type: "writeTuneupCharter", charter: tuneupData.charter });
+           } else {
+            if (window.__rqlToast) window.__rqlToast("creating a repo guide requires the desktop or VS Code shell");
+           }
+           return;
+         }
 
         if (action === "preview-gaps") {
           if (!gapsEl) return;

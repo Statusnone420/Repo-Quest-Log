@@ -24,7 +24,10 @@ describe("renderDesktopHtml", () => {
     expect(html).toContain("Ctrl+O");
     expect(html).toContain("Ctrl+Shift+C");
     expect(html).toContain("Prompt dir");
-    expect(html).toContain("Save settings");
+    expect(html).toContain("Save repo config");
+    expect(html).toContain("Writes .repolog.json in this repo.");
+    expect(html).toContain("Create repo guide");
+    expect(html).not.toContain(">Write CHARTER.md<");
     expect(html).toContain('data-config-field="watchDebounce"');
     expect(html).toContain("data-config-error");
     expect(html).toContain("Watch debounce must be a number from 100 to 10000.");

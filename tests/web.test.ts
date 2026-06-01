@@ -18,7 +18,12 @@ describe("web renderers", () => {
     expect(html).toContain("Ctrl+O");
     expect(html).toContain("Ctrl+Shift+C");
     expect(html).toContain("Prompt dir");
-    expect(html).toContain("Save settings");
+    expect(html).toContain("Save repo config");
+    expect(html).toContain("Writes .repolog.json in this repo.");
+    expect(html).toContain("App-only settings stay outside the repo.");
+    expect(html).toContain("Optional repo guide");
+    expect(html).toContain("Create repo guide");
+    expect(html).not.toContain(">Write CHARTER.md<");
     expect(html).toContain('data-config-field="excludes"');
     expect(html).toContain("Startup");
     expect(html).toContain("data-writeback-toggle");
@@ -93,7 +98,7 @@ describe("web renderers", () => {
       const html = renderDesktopHtml(state, { liveBridge: "desktop" });
 
       expect(html).toContain("Settings");
-      expect(html).toContain("Save settings");
+      expect(html).toContain("Save repo config");
       expect(html).toContain('data-ui-action="save-config"');
       expect(html).not.toContain('<div class="settings-panel-card" data-setup-card>');
     } finally {
@@ -224,6 +229,8 @@ describe("web renderers", () => {
     const html = renderDesktopHtml({ ...sampleState(), now: [] }, { liveBridge: "desktop" });
 
     expect(html).toContain("No current task set");
+    expect(html).toContain("Add a short ## Now section");
+    expect(html).toContain("- [ ] Fix the thing you are doing next");
     expect(html).toContain("Copy repair prompt");
     expect(html).toContain("Open PLAN.md");
     expect(html).not.toContain("No items yet");

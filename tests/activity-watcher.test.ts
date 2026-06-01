@@ -53,6 +53,10 @@ describe("workspace activity watcher", () => {
     const root = join(tmpdir(), `repolog-activity-ignore-${Date.now()}`);
     roots.push(root);
     await mkdir(join(root, "node_modules", "pkg"), { recursive: true });
+    await mkdir(join(root, "release", "win-unpacked"), { recursive: true });
+    await mkdir(join(root, "dist"), { recursive: true });
+    await mkdir(join(root, "build"), { recursive: true });
+    await mkdir(join(root, ".repolog"), { recursive: true });
     const batches: RecentActivityEvent[][] = [];
     const handle = await startWorkspaceActivityWatcher({
       cwd: root,
@@ -64,6 +68,10 @@ describe("workspace activity watcher", () => {
 
     try {
       await writeFile(join(root, "node_modules", "pkg", "index.js"), "module.exports = 1", "utf8");
+      await writeFile(join(root, "release", "win-unpacked", "Repo Quest Log.exe"), "binary", "utf8");
+      await writeFile(join(root, "dist", "index.js"), "compiled", "utf8");
+      await writeFile(join(root, "build", "icon.png"), "asset", "utf8");
+      await writeFile(join(root, ".repolog", "CHARTER.md"), "guide", "utf8");
       await pause(650);
       await handle.flush();
     } finally {

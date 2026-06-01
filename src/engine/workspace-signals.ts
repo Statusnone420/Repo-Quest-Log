@@ -107,8 +107,9 @@ function classifyState(
   thrashLevel: WorkspaceSignals["thrashLevel"],
 ): WorkspaceSignals["state"] {
   if (eventCount === 0) return "Quiet";
-  if (thrashLevel === "High" || thrashLevel === "Medium") return "Thrashing";
-  if (scopeDriftCount > 0 || filesTouched >= 9) return "Drifting";
+  if (thrashLevel === "High") return "High churn";
+  if (scopeDriftCount >= 4 || filesTouched >= 9) return "Drifting";
+  if (scopeDriftCount > 0) return "Review scope";
   return "Focused";
 }
 

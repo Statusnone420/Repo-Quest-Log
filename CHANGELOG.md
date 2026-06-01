@@ -17,6 +17,9 @@
 - Generic-repo web coverage now asserts the standard board remains visible and setup help is inline.
 - Packaged desktop `--repo-root <path>` now works again instead of dropping the flag and falling back to the saved last-opened repo.
 - Desktop now has an explicit top-bar `Switch Repo` button, because the repo name was only text and was not a working affordance.
+- Settings now clearly separates repo-local config writes from app-only settings, and labels `.repolog/CHARTER.md` as an optional repo guide instead of raw jargon.
+- Workspace Signals now uses neutral labels (`Review scope`, `High churn`, `Outside scope`, `Edit churn`) and only escalates broader outside-scope activity or heavy repeated edits.
+- Desktop activity watching now ignores `release/` and `.repolog/` so packaging output and RepoLog support files do not flood the app with rebuild events.
 - Added `npm run test:release-smoke` for disposable temp-repo checks before release uploads.
 
 ### Breaking Changes

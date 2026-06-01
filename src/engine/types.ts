@@ -75,7 +75,7 @@ export interface RecentActivityEvent {
 }
 
 export interface WorkspaceSignals {
-  state: "Focused" | "Drifting" | "Thrashing" | "Quiet";
+  state: "Focused" | "Review scope" | "Drifting" | "High churn" | "Quiet";
   editRate: number;
   filesTouched: number;
   lastEditAge: string;

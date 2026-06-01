@@ -55,14 +55,14 @@ describe("workspace signals", () => {
     const signals = computeWorkspaceSignals(events, ["src/web"], now);
 
     expect(signals.scopeDriftCount).toBe(1);
-    expect(signals.state).toBe("Drifting");
+    expect(signals.state).toBe("Review scope");
 
     const settled = computeWorkspaceSignals(events, ["src/web"], now + 70_000);
     expect(settled.scopeDriftCount).toBe(0);
     expect(settled.state).toBe("Focused");
   });
 
-  it("classifies repeated same-file edits as thrash", () => {
+  it("classifies heavy repeated same-file edits as high churn", () => {
     const events: RecentActivityEvent[] = [
       event("src/web/render.ts", "change", 5),
       event("src/web/render.ts", "change", 12),
@@ -74,8 +74,35 @@ describe("workspace signals", () => {
     const signals = computeWorkspaceSignals(events, ["src/web"], now);
 
     expect(signals.thrashLevel).toBe("High");
-    expect(signals.state).toBe("Thrashing");
+    expect(signals.state).toBe("High churn");
     expect(signals.repeatedFiles).toEqual(["src/web/render.ts"]);
+  });
+
+  it("does not let medium edit churn override the whole workspace state", () => {
+    const events: RecentActivityEvent[] = [
+      event("src/web/render.ts", "change", 5),
+      event("src/web/render.ts", "change", 12),
+      event("src/web/render.ts", "change", 24),
+    ];
+
+    const signals = computeWorkspaceSignals(events, ["src/web"], now);
+
+    expect(signals.thrashLevel).toBe("Medium");
+    expect(signals.state).toBe("Focused");
+  });
+
+  it("reserves drifting for broader outside-scope work", () => {
+    const events: RecentActivityEvent[] = [
+      event("README.md", "change", 5),
+      event("PLAN.md", "change", 8),
+      event("tests/web.test.ts", "change", 12),
+      event("tests/desktop.test.ts", "change", 18),
+    ];
+
+    const signals = computeWorkspaceSignals(events, ["src/web"], now);
+
+    expect(signals.scopeDriftCount).toBe(4);
+    expect(signals.state).toBe("Drifting");
   });
 
   it("prefers the active Now task agent's owned area for scope", () => {

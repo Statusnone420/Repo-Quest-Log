@@ -15,6 +15,8 @@
 - Fallback copy now explains missing PLAN.md or STATE.md context inside the normal panels.
 - Source-only repos with no markdown docs now render the normal HUD instead of the first-run empty state.
 - Generic-repo web coverage now asserts the standard board remains visible and setup help is inline.
+- Packaged desktop `--repo-root <path>` now works again instead of dropping the flag and falling back to the saved last-opened repo.
+- Added `npm run test:release-smoke` for disposable temp-repo checks before release uploads.
 
 ### Breaking Changes
 - None.

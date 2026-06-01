@@ -41,7 +41,7 @@ Ship the v0.5 daily-use desktop rescue: same RepoLog shell for every repo, inlin
 
 ## Current Task
 
-v0.5 HUD consistency pass verified: desktop keeps the normal RepoLog shell for every non-empty repo, degrades sparse markdown state inline, shows detected repo context as useful fallback data, archives retired Claude/Gemini root docs under `docs/Archived/agent-docs/`, moves the desktop HUD closer to the accepted mockup structure, bumps release metadata to 0.5.0, and passes `npm run build`, `npm run lint`, and `npm test` (104 tests / 22 files). Browser/app visual QA was intentionally skipped per human direction.
+v0.5 release handoff verified: desktop keeps the normal RepoLog shell for every non-empty repo, degrades sparse markdown state inline, shows detected repo context as useful fallback data, archives retired Claude/Gemini root docs under `docs/Archived/agent-docs/`, moves the desktop HUD closer to the accepted mockup structure, restores packaged `--repo-root <path>` startup handling, adds disposable release-smoke tests, bumps release metadata to 0.5.0, and passes `npm run build`, `npm run lint`, `npm test` (109 tests / 23 files), and `npm run test:release-smoke` (20 tests / 3 files). Browser/app visual QA was intentionally skipped per human direction.
 
 ---
 

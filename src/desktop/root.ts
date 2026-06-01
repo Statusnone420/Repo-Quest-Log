@@ -10,6 +10,22 @@ export interface DesktopRootOptions {
   lastRoot?: string | null;
 }
 
+export function desktopUserArgv(argv: readonly string[]): string[] {
+  const args = [...argv];
+  let start = 0;
+
+  if (args[0] && looksLikeProcessExecutable(args[0])) {
+    start = 1;
+  }
+
+  const maybeScript = args[start];
+  if (maybeScript && looksLikeDesktopMainScript(maybeScript)) {
+    start += 1;
+  }
+
+  return args.slice(start);
+}
+
 export function resolveDesktopRepoRoot(options: DesktopRootOptions): string {
   const explicit = firstMeaningfulArg(options.argv);
   if (explicit) {
@@ -82,4 +98,18 @@ function findMarkedAncestor(startDir: string): string | undefined {
 
 function hasRepoMarkers(dir: string): boolean {
   return REPO_MARKERS.some((marker) => existsSync(resolve(dir, marker)));
+}
+
+function looksLikeProcessExecutable(value: string): boolean {
+  const name = pathName(value).toLowerCase();
+  return name === "electron" || name === "electron.exe" || name === "repo quest log" || name === "repo quest log.exe" || name.endsWith(".exe");
+}
+
+function looksLikeDesktopMainScript(value: string): boolean {
+  const normalized = value.replace(/\\/g, "/").toLowerCase();
+  return normalized.endsWith("/apps/desktop/main.cjs") || pathName(value).toLowerCase() === "main.cjs";
+}
+
+function pathName(value: string): string {
+  return value.split(/[\\/]/).pop() ?? value;
 }

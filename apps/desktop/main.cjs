@@ -6,7 +6,7 @@ const { createHash } = require("node:crypto");
 const { homedir } = require("node:os");
 
 const { app, BrowserWindow, Menu, dialog, ipcMain, shell, screen, clipboard } = require("electron");
-const { resolveDesktopRepoRoot } = require(path.join(__dirname, "..", "..", "dist", "desktop", "root.js"));
+const { desktopUserArgv, resolveDesktopRepoRoot } = require(path.join(__dirname, "..", "..", "dist", "desktop", "root.js"));
 
 const repoRoot = path.resolve(__dirname, "..", "..");
 const { version: appVersion } = require(path.join(__dirname, "package.json"));
@@ -130,7 +130,7 @@ function repoConfigFile() {
 }
 
 let targetRoot = resolveDesktopRepoRoot({
-  argv: process.argv.slice(2),
+  argv: desktopUserArgv(process.argv),
   cwd: process.cwd(),
   execPath: process.execPath,
   lastRoot: readLastRoot(),

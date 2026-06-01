@@ -12,6 +12,7 @@
     "dev": "tsc --watch",
     "start": "node dist/cli/index.js",
     "test": "vitest run",
+    "test:release-smoke": "vitest run tests/release-smoke.test.ts tests/read_only.test.ts tests/desktop.test.ts",
     "test:watch": "vitest",
     "lint": "tsc --noEmit",
     "desktop:preview": "node dist/cli/index.js desktop",

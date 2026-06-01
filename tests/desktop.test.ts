@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 
 import { renderDesktopHtml } from "../src/desktop/render.js";
-import { resolveDesktopRepoRoot } from "../src/desktop/root.js";
+import { desktopUserArgv, resolveDesktopRepoRoot } from "../src/desktop/root.js";
 import type { QuestState } from "../src/engine/types.js";
 
 describe("renderDesktopHtml", () => {
@@ -102,6 +102,27 @@ describe("desktop shell sizing", () => {
 });
 
 describe("resolveDesktopRepoRoot", () => {
+  it("keeps --repo-root arguments from a packaged desktop executable", () => {
+    const argv = [
+      "C:\\Program Files\\Repo Quest Log\\Repo Quest Log.exe",
+      "--repo-root",
+      "D:\\Repos\\Target App",
+    ];
+
+    expect(desktopUserArgv(argv)).toEqual(["--repo-root", "D:\\Repos\\Target App"]);
+  });
+
+  it("strips the Electron script path in development desktop runs", () => {
+    const argv = [
+      "D:\\Repo Quest Log\\node_modules\\electron\\dist\\electron.exe",
+      "D:\\Repo Quest Log\\apps\\desktop\\main.cjs",
+      "--repo-root",
+      "D:\\Repos\\Target App",
+    ];
+
+    expect(desktopUserArgv(argv)).toEqual(["--repo-root", "D:\\Repos\\Target App"]);
+  });
+
   it("walks up from the exe directory when no repo root argument is passed", async () => {
     const root = join(tmpdir(), `repo-quest-log-root-${Date.now()}`);
     const releaseDir = join(root, "release");

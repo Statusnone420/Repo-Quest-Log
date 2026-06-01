@@ -31,6 +31,24 @@ describe("prompt helpers", () => {
     expect(presets[0]?.source).toBe("builtin");
   });
 
+  it("does not paste Blocked: None as a real blocker", () => {
+    const state = sampleState();
+    state.blocked = [{
+      id: "blocked-none",
+      text: "None",
+      reason: "None",
+      since: "11d",
+      doc: "PLAN.md",
+      confidence: 1,
+    }];
+
+    const bodies = buildPromptPresets(state).map((preset) => preset.body).join("\n---\n");
+
+    expect(bodies).toContain("No active blockers.");
+    expect(bodies).toContain("Blocked:\n(none)");
+    expect(bodies).not.toContain("waiting on None");
+  });
+
   it("renders template variables against QuestState", () => {
     const state = sampleState();
     const body = renderTemplate(
@@ -40,6 +58,23 @@ describe("prompt helpers", () => {
     expect(body).toContain("Repo Repo Quest Log on main");
     expect(body).toContain("Objective: Ship v0.1 (1/7)");
     expect(body).toContain("1. Wire desktop shell (PLAN.md)");
+  });
+
+  it("does not render Blocked: None in custom prompt templates", () => {
+    const state = sampleState();
+    state.blocked = [{
+      id: "blocked-none",
+      text: "None",
+      reason: "None",
+      since: "11d",
+      doc: "PLAN.md",
+      confidence: 1,
+    }];
+
+    const body = renderTemplate("Blocked:\n{{blocked}}", state);
+
+    expect(body).toBe("Blocked:\n(none)");
+    expect(body).not.toContain("waiting on None");
   });
 
   it("loads user and repo prompt overrides and repo wins over user", async () => {

@@ -23,7 +23,8 @@ describe("web renderers", () => {
     expect(html).toContain("Startup");
     expect(html).toContain("data-writeback-toggle");
     expect(html).toContain("Theme");
-    expect(html).toContain("idle");
+    expect(html).toContain("Workspace Signals");
+    expect(html).toContain("Agent Docs");
     expect(html).toContain("run-digest");
     expect(html).toContain("source: STATE.md resume note");
     expect(html).toContain("source: PLAN.md");
@@ -31,12 +32,27 @@ describe("web renderers", () => {
     expect(html).toContain("data-copy-context=");
     expect(html).toContain('data-ui-action="refresh"');
     expect(html).toContain("--rql-density");
-    expect(html).toContain("@media (max-width: 1099px)");
-    expect(html).toContain("@media (max-height: 600px)");
+    expect(html).toContain("@media (max-width: 1180px)");
+    expect(html).toContain("@media (max-height: 640px)");
     expect(html).toContain("data-palette");
     expect(html).toContain("Objective");
     expect(html).toContain("Resume for Claude Code");
     expect(html).toContain("Standup");
+  });
+
+  it("renders settings as focused sections with analyze fixes before the prompt", () => {
+    const html = renderDesktopHtml(sampleState(), { liveBridge: "desktop" });
+
+    expect(html).toContain("Overview<small>Analyze</small>");
+    expect(html).toContain("Repo config<small>Watcher and write-back</small>");
+    expect(html).toContain("Prompts<small>Palette and standup</small>");
+    expect(html).toContain("Digest<small>OpenRouter</small>");
+    expect(html).toContain("Appearance<small>Theme, density, font</small>");
+    expect(html).toContain("No network call. This reads repo context locally and builds a repair prompt.");
+    expect(html).toContain("Digest summarizes the current repo state with your OpenRouter key.");
+    expect(html.indexOf("Top fixes first")).toBeLessThan(html.indexOf("Generated repair prompt"));
+    expect(html).toContain("split(/\\s+/)");
+    expect(html).not.toContain("split(/s+/)");
   });
 
   it("renders a VS Code panel document", () => {
@@ -129,6 +145,66 @@ describe("web renderers", () => {
     } finally {
       await rm(root, { recursive: true, force: true });
     }
+  });
+
+  it("renders the approved desktop signal surfaces without fake agent liveness", () => {
+    const state = sampleState();
+    state.workspaceSignals = {
+      state: "Focused",
+      editRate: 7,
+      filesTouched: 4,
+      lastEditAge: "12s ago",
+      scopeDriftCount: 1,
+      thrashLevel: "Medium",
+      repeatedFiles: ["src/web/render.ts"],
+      trend: Array.from({ length: 30 }, (_, index) => index % 5),
+      scopeActive: true,
+    };
+    state.recentActivity = [
+      { file: "src/web/render.ts", kind: "change", ts: Date.now() - 12000, outsideScope: false },
+      { file: "README.md", kind: "change", ts: Date.now() - 28000, outsideScope: true },
+    ];
+
+    const html = renderDesktopHtml(state, { liveBridge: "desktop" });
+
+    expect(html).toContain("Workspace Signals");
+    expect(html).toContain("Recent Activity");
+    expect(html).toContain("Agent Docs");
+    expect(html).toContain("Prompt Palette");
+    expect(html).toContain("Declared role");
+    expect(html).toContain("Last written task");
+    expect(html).not.toContain("agent-status");
+    expect(html).not.toContain(">working<");
+    expect(html).not.toContain(">idle<");
+  });
+
+  it("renders empty Now as an actionable current-task warning", () => {
+    const html = renderDesktopHtml({ ...sampleState(), now: [] }, { liveBridge: "desktop" });
+
+    expect(html).toContain("No current task set");
+    expect(html).toContain("Copy repair prompt");
+    expect(html).toContain("Open PLAN.md");
+    expect(html).not.toContain("No items yet");
+  });
+
+  it("does not treat Blocked: None as a blocker", () => {
+    const html = renderDesktopHtml({
+      ...sampleState(),
+      blocked: [
+        {
+          id: "blocked-none",
+          text: "None",
+          doc: "PLAN.md",
+          line: 62,
+          confidence: 1,
+          reason: "None",
+          since: "just now",
+        },
+      ],
+    }, { liveBridge: "desktop" });
+
+    expect(html).toContain("No blockers right now");
+    expect(html).not.toContain("PLAN.md:62");
   });
 
   it("emits desktop scripts that parse as valid JavaScript", () => {

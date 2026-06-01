@@ -1,8 +1,66 @@
-# Repo Quest Log
+# RepoLog
 
-A local-first CLI + TUI + desktop + VS Code shell that makes repo intent legible at a glance — and hands that intent to whichever coding agent you open next.
+You opened a repo. What were you doing?
 
-It reads your planning markdown (`PLAN.md`, `STATE.md`, `AGENTS.md`, etc.) and builds a live structured HUD of what's happening now, what's next, and what's blocked. No server or account required; the optional on-demand Digest uses a user-supplied OpenRouter key and is off by default.
+RepoLog is a local-first desktop HUD for AI-assisted coding work. It reads your planning markdown (`PLAN.md`, `STATE.md`, `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`) and answers the questions that decide whether you can resume in seconds:
+
+- What is the current objective?
+- What is the active task, and why was it current?
+- What changed recently?
+- What should I paste into Claude, Codex, or Gemini to restart cleanly?
+- Is the workspace focused, drifting, or churning?
+
+No account, backend, or repo mutation required for normal scanning. Optional Digest uses a user-supplied OpenRouter key and is off by default.
+
+![RepoLog desktop workspace signals HUD](docs/assets/desktop-workspace-signals.png)
+
+---
+
+## Product Proof
+
+RepoLog is designed around the daily "where was I?" moment, not around install docs.
+
+| Question | Where RepoLog answers it |
+|---|---|
+| What was I doing? | Current Focus and Now show the resume task, source doc, and why it matters. |
+| Why this task? | Objective, Resume Note, and task thoughts keep the reasoning next to the work. |
+| What changed? | Recent Activity shows live file events; Recent changes keeps planning-doc/git context. |
+| What do I paste into an agent? | Prompt Palette copies ready-to-paste resume, review, tuneup, and standup prompts. |
+| Is this repo ready? | Workspace Signals show edit rate, files touched, scope drift, thrash, and trend. |
+
+RepoLog does not claim "Codex is idle" or "Claude is working" unless that comes from the repo's own documents. The desktop app now treats agent files as **Agent Docs**: document, declared role, and last written task. Live status comes from observable workspace activity, not guesses.
+
+---
+
+## Product Tour
+
+### Desktop HUD
+
+The desktop app is the primary surface. It gives you a dense cockpit with Current Focus, Objective, Agent Docs, Workspace Signals, Now, Blocked, Recent Activity, Prompt Palette, and Digest.
+
+### Workspace Signals
+
+RepoLog watches lightweight file metadata in the opened repo:
+
+- `edits/min`: `change` events in the last 60 seconds
+- `files touched`: unique files touched in the last 10 minutes
+- `scope drift`: files outside declared agent-owned areas
+- `thrash`: repeated edits to the same file in the last minute
+- `trend`: activity buckets for the last 30 minutes
+
+The watcher ignores noisy directories such as `.git`, `node_modules`, `dist`, `build`, `.next`, `coverage`, caches, virtual envs, and configured excludes. It records path, event kind, timestamp, and scope flag only. It does not parse source files or read file contents.
+
+### Prompt Palette
+
+Press `Ctrl+K` to copy a clean resume prompt for Claude, Codex, Gemini, review, tuneup, or standup. The prompt is built from the same HUD state, so the clipboard matches what you are seeing.
+
+### Tuneup and Digest
+
+Tuneup scores whether the repo has enough markdown context for an agent to continue safely. Digest is an optional on-demand AI summary when you configure OpenRouter.
+
+### CLI, TUI, and VS Code
+
+The CLI, terminal HUD, and VS Code panel still use the same `QuestState` scan. They are secondary surfaces for scripting and editor-adjacent context; the desktop HUD is the product proof.
 
 ---
 

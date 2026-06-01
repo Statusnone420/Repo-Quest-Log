@@ -1,5 +1,5 @@
 import { buildContextPrompt, buildPromptPresets, type PromptPreset } from "../engine/prompts.js";
-import type { AgentProfile, BlockedTask, Decision, FileChange, QuestState, Task } from "../engine/types.js";
+import type { AgentProfile, BlockedTask, Decision, FileChange, QuestState, RecentActivityEvent, Task, WorkspaceSignals } from "../engine/types.js";
 
 export interface SurfaceHtmlOptions {
   liveBridge?: "desktop" | "vscode";
@@ -35,10 +35,10 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
        --chrome: #060b10;
        --bg-grid: rgba(120,140,180,0.02);
        --rql-density: 1.02;
-       --pad-x: calc(16px * var(--rql-density));
-       --pad-y: calc(10px * var(--rql-density));
-       --tile-pad: calc(13px * var(--rql-density));
-       --tile-gap: calc(10px * var(--rql-density));
+      --pad-x: calc(14px * var(--rql-density));
+      --pad-y: calc(8px * var(--rql-density));
+      --tile-pad: calc(11px * var(--rql-density));
+      --tile-gap: calc(8px * var(--rql-density));
        --row-gap: calc(4px * var(--rql-density));
        --body-size: calc(13px * var(--rql-density));
        --small-size: calc(11.5px * var(--rql-density));
@@ -60,7 +60,6 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
        --ok: #73df73;
        --danger: #ff5555;
        --bg-elevated: #141a1f;
-       --dot-idle: rgba(220,230,245,0.28);
        --mono: "JetBrains Mono", "SF Mono", ui-monospace, Menlo, Consolas, monospace;
        --sans: Inter, "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
        --rql-font: Inter, "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
@@ -101,7 +100,6 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
        --ok: #1a7f4b;
        --danger: #c0392b;
        --bg-elevated: #ffffff;
-       --dot-idle: rgba(0,0,0,0.22);
      }
 
     * { box-sizing: border-box; }
@@ -116,7 +114,7 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     .shell {
       width: 100vw; height: 100vh;
       display: grid;
-      grid-template-rows: auto auto auto auto minmax(0, 1fr);
+      grid-template-rows: auto auto auto auto auto auto minmax(0, 1fr);
       overflow: hidden;
       border: 1px solid rgba(88,166,255,0.18);
       background: var(--bg);
@@ -125,7 +123,7 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     /* ---- TOP BAR ---- */
     .topbar {
       display: flex; align-items: center; gap: 14px;
-      min-height: 62px;
+      min-height: 54px;
       padding: 0 var(--pad-x);
       border-bottom: 1px solid var(--tile-border);
       min-width: 0;
@@ -226,7 +224,7 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       display: grid;
       grid-template-columns: auto auto auto minmax(0, 1fr);
       gap: 8px;
-      padding: 10px var(--pad-x);
+      padding: 8px var(--pad-x);
       min-width: 0;
       border-bottom: 1px solid var(--tile-border);
       background: #0b1217;
@@ -808,9 +806,9 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       font-family: var(--mono);
       font-size: var(--tiny-size);
       color: var(--muted);
-      padding: 4px 0;
-      border-left: 2px solid var(--faint);
-      padding-left: 8px;
+      padding: 6px 8px;
+      border: 1px solid var(--faint);
+      border-radius: 6px;
     }
     .tuneup-gap-sev { font-weight: 600; }
     .tuneup-gap-sev.high { color: var(--danger); }
@@ -1020,16 +1018,16 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       display: grid;
     }
     .settings-tuneup-results .tuneup-prompt-area {
-      height: 168px;
-      min-height: 132px;
-      max-height: 240px;
+      height: 150px;
+      min-height: 118px;
+      max-height: 220px;
       margin: 0;
     }
     .settings-tuneup-results[data-visible="true"] .tuneup-prompt-area[data-visible="true"] {
       display: block;
     }
     .settings-tuneup-results .tuneup-gaps {
-      max-height: 150px;
+      max-height: 210px;
       overflow-y: auto;
       padding-right: 4px;
     }
@@ -1038,6 +1036,13 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     }
     .settings-tuneup-results .tuneup-actions {
       justify-content: flex-start;
+    }
+    .tuneup-prompt-label {
+      font-family: var(--mono);
+      font-size: var(--tiny-size);
+      color: var(--muted);
+      font-weight: 800;
+      letter-spacing: 0.3px;
     }
     .settings-hero-copy {
       min-width: 0;
@@ -1144,6 +1149,9 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       gap: 12px;
       margin-bottom: 14px;
     }
+    .settings-card-head.compact {
+      margin-bottom: 2px;
+    }
     .settings-card-title {
       display: flex;
       align-items: center;
@@ -1163,6 +1171,9 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       width: 100%;
       grid-template-columns: minmax(0, 1fr) 280px;
       gap: 10px 18px;
+    }
+    .settings-config.single-column {
+      grid-template-columns: minmax(0, 1fr);
     }
     .settings-config label,
     .settings-card label {
@@ -1360,11 +1371,11 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     }
     .strip-cell {
       position: relative;
-      padding: 15px 18px;
+      padding: 12px 16px;
       background: var(--tile-2);
       border: 1px solid var(--tile-border);
       border-radius: 7px;
-      min-height: 120px;
+      min-height: 98px;
       min-width: 0;
       display: flex; flex-direction: column; gap: 4px;
       overflow: hidden;
@@ -1460,7 +1471,7 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     }
     .icon-btn.warn:hover { color: #fff; border-color: rgba(88,166,255,0.9); }
 
-    .strip-cell.resume { min-height: 84px; }
+    .strip-cell.resume { min-height: 82px; }
     .strip-cell.resume.fresh {
       min-height: 74px;
       padding-top: calc(var(--tile-pad) * 0.6);
@@ -1503,7 +1514,7 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     .git-strip {
       display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
       margin: 0 var(--pad-x);
-      padding: 10px 14px;
+      padding: 8px 12px;
       font-family: var(--mono); font-size: var(--small-size);
       color: var(--muted);
       border: 1px solid var(--tile-border);
@@ -1586,7 +1597,7 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       grid-template-columns: minmax(0, 0.96fr) minmax(0, 1fr) minmax(0, 1fr);
       grid-template-rows: minmax(0, 1fr);
       gap: 10px;
-      padding: 10px var(--pad-x) var(--pad-x);
+      padding: 8px var(--pad-x) var(--pad-x);
       min-height: 0;
       overflow: hidden;
     }
@@ -1596,7 +1607,12 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     }
     /* Col 2: Next gets most space, changes + decisions share the rest */
     .col:nth-child(2) .tile[data-area="next"] {
-      flex: 1.5 1 0;
+      flex: 0.8 1 130px;
+      min-height: 118px;
+    }
+    .col:nth-child(2) .tile[data-area="activity"],
+    .col:nth-child(2) .tile[data-area="prompts"] {
+      flex: 0 0 auto;
     }
     .col:nth-child(2) .tile.tight[data-area="changes"] {
       flex: 0.55 1 0;
@@ -1625,8 +1641,8 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     .tile-header {
       display: flex; align-items: center; justify-content: space-between; gap: 10px;
       flex-shrink: 0;
-      min-height: 44px;
-      padding: 10px 14px;
+      min-height: 40px;
+      padding: 8px 12px;
       border-bottom: 1px solid var(--tile-border);
     }
     .tile-title {
@@ -1652,7 +1668,7 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       min-height: 0; min-width: 0;
       overflow-y: auto; overflow-x: hidden;
       scrollbar-gutter: stable;
-      padding: 10px 12px;
+      padding: 8px 10px;
     }
     .tile-body::-webkit-scrollbar { width: 6px; }
     .tile-body::-webkit-scrollbar-thumb { background: var(--faint); border-radius: 3px; }
@@ -1778,32 +1794,6 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       font-family: var(--sans); font-size: var(--small-size); color: var(--muted);
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
     }
-    .agent-status {
-      margin-left: 0; display: inline-flex; align-items: center; gap: 5px;
-      font-family: var(--sans); font-size: var(--small-size); letter-spacing: 0;
-    }
-    .agent-status { position: relative; }
-    .agent-status .dot {
-      transition: opacity 400ms ease, filter 400ms ease, background 400ms ease;
-    }
-    .agent-status.active { color: var(--ok); }
-    .agent-status.active .dot { background: var(--ok); }
-    .agent-status.working { color: var(--ok); }
-    .agent-status.working .dot { background: var(--ok); }
-    .agent-status.idle { color: var(--dim); }
-    .agent-status.idle .dot { background: var(--dim); filter: saturate(0.4); }
-    .agent-status.working[data-pulse="true"] .dot {
-      animation: rql-pulse 600ms ease-in-out 1;
-    }
-    @keyframes rql-pulse {
-      0% { opacity: 0.4; }
-      50% { opacity: 1; }
-      100% { opacity: 1; }
-    }
-    @media (prefers-reduced-motion: reduce) {
-      .agent-status .dot { transition: none; }
-      .agent-status[data-pulse="true"] .dot { animation: none; }
-    }
     .agent-objective {
       font-size: var(--small-size); line-height: 1.35; color: var(--muted); font-style: italic;
       overflow: hidden; text-overflow: ellipsis;
@@ -1825,6 +1815,30 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       background: rgba(255,255,255,0.04);
       border-color: var(--tile-border);
     }
+    .agent-doc-table {
+      display: grid;
+      gap: 8px;
+    }
+    .agent-doc-row {
+      display: grid;
+      grid-template-columns: minmax(82px, 0.7fr) minmax(0, 1fr) minmax(0, 1fr);
+      gap: 10px;
+      align-items: start;
+      padding: 9px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      font-size: var(--small-size);
+    }
+    .agent-doc-row.head {
+      padding-top: 0;
+      color: var(--dim);
+      font-family: var(--mono);
+      font-size: var(--tiny-size);
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    .agent-doc-row:last-child { border-bottom: 0; }
+    .agent-doc-file { font-family: var(--mono); color: var(--ink); overflow: hidden; text-overflow: ellipsis; }
+    .agent-doc-role, .agent-doc-task { color: var(--muted); line-height: 1.35; overflow-wrap: anywhere; }
     .digest-btn {
       background: rgba(255,255,255,0.04); border: 1px solid var(--tile-border); border-radius: 7px;
       color: var(--ink); font-size: var(--body-size); padding: 7px 12px;
@@ -1899,6 +1913,142 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     .spark-add { background: rgba(138,214,168,0.95); }
     .spark-del { background: rgba(248,132,113,0.92); }
     .change-age { color: var(--dim); font-family: var(--mono); font-size: var(--tiny-size); min-width: 34px; text-align: right; }
+    .signals-strip {
+      margin: 0 var(--pad-x);
+      display: grid;
+      grid-template-columns: 1.1fr repeat(4, minmax(0, 1fr)) 1.2fr;
+      gap: var(--tile-gap);
+      align-items: stretch;
+    }
+    .signal-cell {
+      min-width: 0;
+      padding: 10px 12px;
+      border: 1px solid var(--tile-border);
+      border-radius: 8px;
+      background: var(--tile);
+    }
+    .signal-label {
+      color: var(--dim);
+      font-family: var(--mono);
+      font-size: var(--tiny-size);
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      margin-bottom: 5px;
+    }
+    .signal-value {
+      color: var(--ink);
+      font-size: calc(18px * var(--rql-density));
+      line-height: 1.05;
+      font-weight: 750;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .signal-note {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: var(--tiny-size);
+      font-family: var(--mono);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .trend-bars {
+      height: 22px;
+      display: flex;
+      align-items: end;
+      gap: 2px;
+      margin-top: 2px;
+    }
+    .trend-bars span {
+      flex: 1;
+      min-width: 2px;
+      border-radius: 2px 2px 0 0;
+      background: rgba(138,180,255,0.28);
+    }
+    .trend-bars span.hot { background: rgba(138,214,168,0.72); }
+    .activity-row {
+      display: grid;
+      grid-template-columns: 58px minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: center;
+      padding: 4px 0;
+      font-size: var(--small-size);
+    }
+    .activity-kind {
+      color: var(--dim);
+      font-family: var(--mono);
+      font-size: var(--tiny-size);
+      text-transform: uppercase;
+    }
+    .activity-file {
+      min-width: 0;
+      font-family: var(--mono);
+      color: var(--ink);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .activity-file.outside { color: var(--warn); }
+    .activity-age { color: var(--dim); font-family: var(--mono); font-size: var(--tiny-size); }
+    .prompt-row {
+      display: grid;
+      grid-template-columns: 26px minmax(0, 1fr) auto;
+      gap: 9px;
+      align-items: center;
+      padding: 5px 0;
+      font-size: var(--small-size);
+    }
+    .prompt-glyph {
+      width: 22px;
+      height: 22px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--tile-border);
+      border-radius: 5px;
+      color: var(--accent);
+      font-family: var(--mono);
+      font-size: var(--tiny-size);
+      background: rgba(138,180,255,0.08);
+    }
+    .prompt-label { color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .prompt-sub { color: var(--dim); font-family: var(--mono); font-size: var(--tiny-size); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .prompt-copy {
+      appearance: none;
+      border: 1px solid var(--tile-border);
+      border-radius: 6px;
+      background: rgba(255,255,255,0.04);
+      color: var(--muted);
+      padding: 4px 7px;
+      font: inherit;
+      font-size: var(--tiny-size);
+      cursor: pointer;
+    }
+    .prompt-copy:hover { background: var(--accent-soft); color: var(--accent); }
+    .now-empty {
+      display: grid;
+      gap: 10px;
+      padding: 12px;
+      border: 1px solid rgba(230,191,69,0.22);
+      border-radius: 8px;
+      background: rgba(230,191,69,0.07);
+    }
+    .now-empty-title { color: var(--warn); font-weight: 750; }
+    .now-empty-copy { color: var(--muted); font-size: var(--small-size); line-height: 1.4; }
+    .now-empty-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+    .now-empty-actions button {
+      appearance: none;
+      border: 1px solid var(--tile-border);
+      border-radius: 6px;
+      background: rgba(255,255,255,0.04);
+      color: var(--ink);
+      padding: 6px 9px;
+      font: inherit;
+      font-size: var(--small-size);
+      cursor: pointer;
+    }
+    .now-empty-actions button:hover { background: var(--accent-soft); color: var(--accent); }
 
     /* ---- EMPTY STATE ---- */
     .empty-state {
@@ -2073,20 +2223,79 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     .toast[data-visible="true"] { opacity: 1; transform: translateX(-50%) translateY(-4px); }
 
     /* ---- RESPONSIVE: narrow screens collapse to stacked ---- */
-    @media (max-width: 1099px) {
-      .header-strip { grid-template-columns: 1fr; }
+    @media (max-width: 1180px) {
+      .shell {
+        --pad-x: 12px;
+        --pad-y: 7px;
+        --tile-pad: 10px;
+        --tile-gap: 7px;
+      }
+      .topbar { min-height: 50px; gap: 10px; }
+      .brand { font-size: 18px; }
+      .brand svg { width: 28px; height: 28px; padding: 6px; }
+      .app-version,
+      .watch-meta span:last-child { display: none; }
+      .settings-rack { padding: 7px var(--pad-x); }
+      .header-strip {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 8px;
+        padding: 8px var(--pad-x) 7px;
+      }
+      .strip-cell { min-height: 86px; padding: 10px 13px; }
+      .strip-cell.mission { display: none; }
+      .strip-cell.resume { min-height: 86px; }
+      .strip-headline { -webkit-line-clamp: 2; }
+      .strip-tags { margin-top: 5px; gap: 5px; }
+      .signals-strip {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 7px;
+      }
+      .signal-cell { padding: 8px 10px; }
+      .trend-bars { height: 18px; }
+    }
+    @media (max-width: 920px) {
       .board {
         grid-template-columns: minmax(0, 1fr);
-        grid-template-rows: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
+        grid-template-rows: minmax(0, 1fr);
       }
     }
     @media (max-width: 820px) {
       .topbar { flex-wrap: wrap; }
       .kbd-hint { margin-left: 0; }
+      .header-strip,
+      .signals-strip,
+      .col,
+      .col:nth-child(1) { grid-template-columns: minmax(0, 1fr); }
     }
-    @media (max-height: 600px) {
-      .cockpit { display: none; }
-      .header-strip { padding-top: calc(var(--pad-y) * 0.6); }
+    @media (max-height: 780px) {
+      .shell {
+        --pad-y: 6px;
+        --tile-gap: 7px;
+      }
+      .topbar { min-height: 48px; }
+      .settings-rack { padding-top: 5px; padding-bottom: 5px; }
+      .settings-actions button {
+        min-height: 34px;
+        padding-top: 7px;
+        padding-bottom: 7px;
+      }
+      .header-strip { padding-top: 7px; }
+      .header-strip { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+      .strip-cell { min-height: 86px; }
+      .strip-cell.mission { display: none; }
+      .strip-cell.mission .strip-why,
+      .strip-cell.objective .strip-why { display: none; }
+      .strip-tags { margin-top: 5px; }
+      .signal-cell { padding-top: 8px; padding-bottom: 8px; }
+      .tile-header { min-height: 38px; }
+      .tile-body { padding-top: 7px; padding-bottom: 7px; }
+      .tile[data-area="decisions"] { display: none; }
+      .prompt-sub { display: none; }
+    }
+    @media (max-height: 640px) {
+      .header-strip { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+      .strip-cell.mission { display: none; }
+      .signals-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     }
   </style>
 </head>
@@ -2150,7 +2359,7 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
             ⌘K
           </button>
         </div>
-          <div class="kicker">Current focus / Resume <span class="meta">· idle ${escapeHtml(state.resumeNote.since)} · source: STATE.md resume note</span></div>
+          <div class="kicker">Current focus / Resume <span class="meta">· last touch ${escapeHtml(state.resumeNote.since)} · source: STATE.md resume note</span></div>
           <div class="strip-headline">${escapeHtml(state.resumeNote.task)}</div>
           <div class="strip-subline">↳ ${escapeHtml(state.resumeNote.lastTouched)} · ${escapeHtml(state.resumeNote.doc)}</div>
           <div class="strip-why">Why this matters: ${escapeHtml(state.resumeNote.thought ?? getWhyNowLine(state))}</div>
@@ -2158,6 +2367,7 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     </section>
 
       ${renderGitStrip(state)}
+      ${renderWorkspaceSignalsStrip(state.workspaceSignals)}
 
       <section class="board">
       <div class="col">
@@ -2166,11 +2376,13 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       </div>
       <div class="col">
         ${renderTaskTile("next", "Next", state.next.length, state.next, false, !!state.config?.writeback, options.liveBridge)}
+        ${renderRecentActivityTile(state.recentActivity ?? [])}
+        ${renderPromptPaletteTile(presets)}
         ${renderChangesTile(state.recentChanges)}
         ${renderDecisionsTile(state.decisions)}
       </div>
       <div class="col">
-        ${renderAgentsTile(state, options.openrouterConfigured ?? false)}
+        ${renderAgentDocsTile(state, options.openrouterConfigured ?? false)}
       </div>
       </section>
     `}
@@ -2198,7 +2410,6 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
   ${renderPaletteScript()}
   ${renderTaskNavScript()}
   ${renderWritebackScript()}
-  ${renderAgentPulseScript()}
   ${renderDecisionToggleScript()}
   ${renderTuneupScript()}
 </body>
@@ -2355,8 +2566,8 @@ export function renderVSCodeHtml(state: QuestState, options: SurfaceHtmlOptions 
     <div class="scroll">
       ${renderVSCodeSection("Now", state.now.length, "#0e639c", state.now.map((task) => renderVSCodeTaskRow(task, "◆", "#4ec9b0")))}
       ${renderVSCodeSection("Next", state.next.length, undefined, state.next.map((task) => renderVSCodeTaskRow(task, "○")))}
-      ${renderVSCodeSection("Blocked", state.blocked.length, "#a1260d", state.blocked.map((task) => renderVSCodeBlockedRow(task)))}
-        ${renderVSCodeSection("Agents", state.agents.length, undefined, state.agents.map((agent) => renderVSCodeAgent(agent)))}${renderVSCodeActivitySection(state)}
+      ${renderVSCodeSection("Blocked", state.blocked.filter((task) => !isNoneBlocker(task)).length, "#a1260d", state.blocked.filter((task) => !isNoneBlocker(task)).map((task) => renderVSCodeBlockedRow(task)))}
+        ${renderVSCodeSection("Agent Docs", state.agents.length, undefined, state.agents.map((agent) => renderVSCodeAgent(agent)))}
         ${renderVSCodeSection("Recent changes", state.recentChanges.length, undefined, state.recentChanges.map((change) => renderVSCodeChangeRow(change)))}
     </div>
 
@@ -2388,10 +2599,24 @@ function renderTaskTile(
     </div>
     <div class="tile-body">
       ${tasks.length === 0
-        ? `<div class="item"><span class="bar"></span><span class="task-toggle disabled" aria-hidden="true">◌</span><span class="sigil"></span><span class="item-num">·</span><span class="item-text">No items yet</span><span class="item-aside"></span></div>`
+        ? area === "now"
+          ? renderNoCurrentTaskWarning()
+          : `<div class="item"><span class="bar"></span><span class="task-toggle disabled" aria-hidden="true">◌</span><span class="sigil"></span><span class="item-num">·</span><span class="item-text">No items yet</span><span class="item-aside"></span></div>`
         : tasks.map((task, index) => renderItemRow(task, index, priorityClass, area === "now", writebackEnabled, liveBridge)).join("")}
     </div>
   </section>`;
+}
+
+function renderNoCurrentTaskWarning(): string {
+  const prompt = "RepoLog found no current task. Update PLAN.md or STATE.md with a short Now item, why it is current, and the agent or file area that owns it.";
+  return `<div class="now-empty">
+    <div class="now-empty-title">No current task set</div>
+    <div class="now-empty-copy">RepoLog can show objective and history, but it cannot tell you what to do next until PLAN.md or STATE.md has a Now item.</div>
+    <div class="now-empty-actions">
+      <button type="button" data-copy-context="${escapeHtml(prompt)}">Copy repair prompt</button>
+      <button type="button" data-open-doc="PLAN.md" data-line="1">Open PLAN.md</button>
+    </div>
+  </div>`;
 }
 
 function renderConfidenceSigil(confidence: number | undefined): string {
@@ -2466,15 +2691,16 @@ function renderDocChip(doc: string | undefined, line?: number): string {
 }
 
 function renderBlockedTile(tasks: BlockedTask[], writebackEnabled: boolean, liveBridge?: SurfaceHtmlOptions["liveBridge"]): string {
+  const visibleTasks = tasks.filter((task) => !isNoneBlocker(task));
   return `<section class="tile tight" data-area="blocked">
     <div class="tile-header">
       <h3 class="tile-title blocked"><span class="accent-bar"></span>Blocked</h3>
-      <span class="tile-meta">${tasks.length}</span>
+      <span class="tile-meta">${visibleTasks.length}</span>
     </div>
     <div class="tile-body">
-        ${tasks.length === 0
+        ${visibleTasks.length === 0
           ? `<div class="item"><span class="bar"></span><span class="task-toggle disabled" aria-hidden="true">◌</span><span class="sigil"></span><span class="item-num">·</span><span class="item-text">No blockers right now</span><span class="item-aside"></span></div>`
-          : tasks.map((task, index) => `
+          : visibleTasks.map((task, index) => `
             <div class="item p-blocked clickable"${task.doc ? ` data-open-doc="${escapeHtml(task.doc)}" data-line="${task.line ?? 1}" role="button" tabindex="0"` : ""} title="${escapeHtml(task.text)}">
               <span class="bar"></span>
               ${renderTaskToggle(task, writebackEnabled, liveBridge)}
@@ -2490,35 +2716,37 @@ function renderBlockedTile(tasks: BlockedTask[], writebackEnabled: boolean, live
     </section>`;
   }
 
-function renderAgentsTile(state: QuestState, hasKey: boolean): string {
+function isNoneBlocker(task: BlockedTask): boolean {
+  const text = `${task.text} ${task.reason}`.replace(/\s+/g, " ").trim().toLowerCase();
+  return text === "none none" || text === "none" || text === "blocked: none none" || /^none\b/.test(text);
+}
+
+function renderAgentDocsTile(state: QuestState, hasKey: boolean): string {
   const agents = state.agents;
   const digestBtnDisabled = !hasKey ? ' title="Add OpenRouter key in Settings to enable"' : ' title="Run AI digest of current repo state"';
   return `<section class="tile" data-area="agents">
     <div class="tile-header">
-      <h3 class="tile-title agents"><span class="accent-bar"></span>Agents</h3>
+      <h3 class="tile-title agents"><span class="accent-bar"></span>Agent Docs</h3>
       <span class="tile-meta">${agents.length}</span>
       <button class="digest-btn" data-ui-action="run-digest"${digestBtnDisabled}${!hasKey ? ' disabled' : ''}>✦ Digest</button>
     </div>
   <div class="tile-body">
-    ${agents.length === 0 ? `<div class="agent-card"><div class="agent-objective">No agent profiles discovered.</div></div>` : agents.map((agent) => {
-      const blurb = agent.currentTask ?? agent.objective ?? "";
-      const trimmedBlurb = blurb.length > 120 ? blurb.substring(0, 120) + "…" : blurb;
-      const agentStatus = agent.status ?? "idle";
-      return `
-      <div class="agent-card">
-        ${renderAgentAvatar(agent)}
-        <div class="agent-main">
-          <div class="agent-head">
-            <span class="agent-name">${escapeHtml(agent.name)}</span>
-            <span class="agent-status ${escapeHtml(agentStatus)}" data-agent-id="${escapeHtml(agent.id)}"><span class="dot"></span>${escapeHtml(agentStatus)}</span>
-          </div>
-          <div class="agent-role">Role: ${escapeHtml(agent.role)}</div>
-          <div class="agent-objective">Focus: ${escapeHtml(trimmedBlurb)}</div>
-          <div class="agent-meta">${escapeHtml(resolveAgentTask(agent, state.agentActivity)) || "Last seen from agent doc"}</div>
+    ${agents.length === 0 ? `<div class="agent-doc-task">No agent docs discovered. Add AGENTS.md, CLAUDE.md, GEMINI.md, or CODEX.md when a repo needs explicit ownership.</div>` : `
+      <div class="agent-doc-table">
+        <div class="agent-doc-row head">
+          <span>Document</span>
+          <span>Declared role</span>
+          <span>Last written task</span>
         </div>
-        <div class="agent-docs">${renderAgentDocs(agent, state)}</div>
+        ${agents.map((agent) => `
+          <div class="agent-doc-row">
+            <span class="agent-doc-file">${escapeHtml(agent.file)}</span>
+            <span class="agent-doc-role">${escapeHtml(agent.role || agent.area || "Unspecified")}</span>
+            <span class="agent-doc-task">${escapeHtml(resolveAgentTask(agent, state.agentActivity) || agent.currentTask || agent.lastTask || agent.objective || "No task declared")}</span>
+          </div>
+        `).join("")}
       </div>
-    `;}).join("")}
+    `}
     ${state.lastDigest ? `
     <div class="digest-panel">
       <span class="digest-label">Last digest · ${digestAge(state.lastDigest.generatedAt)}</span>
@@ -2650,10 +2878,9 @@ function renderSettingsPanel(state: QuestState, liveBridge?: SurfaceHtmlOptions[
         <div class="settings-panel-shell">
           <aside class="settings-sidebar" aria-label="Settings sections">
             <nav class="settings-nav">
-              <button type="button" class="settings-nav-item active" data-settings-tab="overview" aria-pressed="true"><span class="settings-nav-icon">◇</span><span class="settings-nav-label">Overview<small>Repo health</small></span></button>
-              <button type="button" class="settings-nav-item" data-settings-tab="repo" aria-pressed="false"><span class="settings-nav-icon">▣</span><span class="settings-nav-label">Repo Setup<small>Files and watcher</small></span></button>
-              <button type="button" class="settings-nav-item" data-settings-tab="writeback" aria-pressed="false"><span class="settings-nav-icon">✓</span><span class="settings-nav-label">Write-back<small>${wbStatus}</small></span></button>
-              <button type="button" class="settings-nav-item" data-settings-tab="prompts" aria-pressed="false"><span class="settings-nav-icon">⌘</span><span class="settings-nav-label">Prompts<small>Palette source</small></span></button>
+              <button type="button" class="settings-nav-item active" data-settings-tab="overview" aria-pressed="true"><span class="settings-nav-icon">◇</span><span class="settings-nav-label">Overview<small>Analyze</small></span></button>
+              <button type="button" class="settings-nav-item" data-settings-tab="repo" aria-pressed="false"><span class="settings-nav-icon">▣</span><span class="settings-nav-label">Repo config<small>Watcher and write-back</small></span></button>
+              <button type="button" class="settings-nav-item" data-settings-tab="prompts" aria-pressed="false"><span class="settings-nav-icon">⌘</span><span class="settings-nav-label">Prompts<small>Palette and standup</small></span></button>
               <span class="settings-sidebar-divider"></span>
               <button type="button" class="settings-nav-item" data-settings-tab="appearance" aria-pressed="false"><span class="settings-nav-icon">◐</span><span class="settings-nav-label">Appearance<small>Theme, density, font</small></span></button>
               <button type="button" class="settings-nav-item" data-settings-tab="digest" aria-pressed="false"><span class="settings-nav-icon">✦</span><span class="settings-nav-label">Digest<small>OpenRouter</small></span></button>
@@ -2671,26 +2898,28 @@ function renderSettingsPanel(state: QuestState, liveBridge?: SurfaceHtmlOptions[
                 </div>
                 <div class="settings-hero-copy">
                   <span class="settings-kicker">Tune this repo</span>
-                  <h2 class="settings-hero-title">Make the current repo easier to resume.</h2>
-                  <p data-tuneup-placeholder>Click <strong>Analyze</strong> to score this repo's RepoLog legibility and generate a targeted fix prompt for Claude, Codex, or Gemini.</p>
+                  <h2 class="settings-hero-title">Analyze whether this repo is ready to resume.</h2>
+                  <p data-tuneup-placeholder>Run a local scan of the planning docs, then get the highest-impact fixes and a paste-ready repair prompt.</p>
                   <span class="settings-status-pill">Ready</span>
                   <div class="settings-hero-meta"><span>Last analyzed: just now</span><span>Source: PLAN.md, STATE.md</span></div>
                   <div class="tuneup-meter-wrap sr-only" data-tuneup-meter-wrap><div class="tuneup-meter"><div class="tuneup-meter-fill" data-tuneup-fill style="width:92%"></div></div></div>
                 </div>
                 <div class="settings-hero-actions">
-                  <button type="button" class="settings-primary-button" data-tuneup-action="generate">Analyze</button>
-                  <p class="settings-subtle-copy">Generate a targeted fix prompt for Claude, Codex, or Gemini.</p>
+                  <button type="button" class="settings-primary-button" data-tuneup-action="generate">Analyze repo</button>
+                  <p class="settings-subtle-copy">No network call. This reads repo context locally and builds a repair prompt.</p>
                 </div>
               </div>
               <div class="settings-card settings-tuneup-results" data-tuneup-results>
-                <textarea class="tuneup-prompt-area" data-tuneup-prompt readonly aria-label="Tuneup prompt" spellcheck="false"></textarea>
-                <div class="tuneup-gaps" data-tuneup-gaps aria-label="Gap list"></div>
+                <div class="settings-card-head compact"><h3 class="settings-card-title">Top fixes first</h3><span class="pill" data-tuneup-gap-count>0</span></div>
+                <div class="tuneup-gaps" data-tuneup-gaps aria-label="Top fixes"></div>
+                <label class="tuneup-prompt-label" for="rql-tuneup-prompt">Generated repair prompt</label>
+                <textarea id="rql-tuneup-prompt" class="tuneup-prompt-area" data-tuneup-prompt readonly aria-label="Generated repair prompt" spellcheck="false"></textarea>
                 <div class="tuneup-actions" data-tuneup-actions hidden>
-                  <button type="button" data-tuneup-action="copy">Copy prompt</button>
+                  <button type="button" data-tuneup-action="copy">Copy repair prompt</button>
                   <button type="button" data-tuneup-action="write-charter">Write CHARTER.md</button>
                   <button type="button" data-tuneup-action="preview-docs">Preview generated docs</button>
                   <button type="button" data-tuneup-action="apply-docs">Apply generated docs</button>
-                  <button type="button" data-tuneup-action="preview-gaps">Preview gaps</button>
+                  <button type="button" data-tuneup-action="preview-gaps">Hide fixes</button>
                   <span class="sep"></span>
                   <button type="button" data-tuneup-action="send-claude">→ Claude</button>
                   <button type="button" data-tuneup-action="send-codex">→ Codex</button>
@@ -2712,10 +2941,10 @@ function renderSettingsPanel(state: QuestState, liveBridge?: SurfaceHtmlOptions[
                 <button type="button" data-ui-action="dismiss-wizard">Skip for now</button>
               </div>
             </div>` : ""}
-            <div class="settings-core settings-section" data-settings-section="overview repo writeback prompts digest">
-              <section class="settings-card settings-config-card" data-settings-section="overview repo writeback prompts">
+            <div class="settings-core settings-section" data-settings-section="repo">
+              <section class="settings-card settings-config-card" data-settings-section="repo">
                 <div class="settings-card-head">
-                  <h3 class="settings-card-title">Repo config <span class="pill">${wbStatus}</span></h3>
+                  <h3 class="settings-card-title">Repo config <span class="pill">write-back ${wbStatus}</span></h3>
                   ${renderInfoIcon("Save writes .repolog.json atomically, validates the config, and refreshes the HUD.")}
                 </div>
                 <p class="settings-card-detail">Edit .repolog.json without touching JSON by hand. Save writes the file atomically and refreshes the HUD.</p>
@@ -2724,13 +2953,6 @@ function renderSettingsPanel(state: QuestState, liveBridge?: SurfaceHtmlOptions[
                   <div class="field span-2">
                     <label for="rql-config-excludes">Excludes</label>
                     <textarea id="rql-config-excludes" data-config-field="excludes" spellcheck="false">${escapeHtml((state.config?.excludes ?? []).join("\n"))}</textarea>
-                  </div>
-                  <div class="field span-2">
-                    <label for="rql-config-prompts">Prompts dir</label>
-                    <div class="input-with-action">
-                      <input id="rql-config-prompts" data-config-field="promptsDir" type="text" value="${escapeHtml(promptDir)}" />
-                      <button type="button" class="settings-icon-button" data-ui-action="open-repo" aria-label="Open repo">▭</button>
-                    </div>
                   </div>
                   <div class="field">
                     <label for="rql-config-debounce">Watch debounce</label>
@@ -2753,11 +2975,38 @@ function renderSettingsPanel(state: QuestState, liveBridge?: SurfaceHtmlOptions[
                   </div>
                 </div>
               </section>
-              <section class="settings-card settings-digest-card settings-section" data-settings-section="overview digest" data-card="openrouter">
+              <section class="settings-card settings-utility-card">
+                <div class="settings-card-head"><h3 class="settings-card-title">Startup and files</h3>${renderInfoIcon("Remember opens this repo automatically on next launch. Open config edits this repo's .repolog.json.")}</div>
+                <div class="settings-card-actions">
+                  <button type="button" data-ui-action="remember-startup-root">Remember startup root</button>
+                  <button type="button" data-ui-action="forget-startup-root">Forget startup root</button>
+                  ${configButton}${repoButton}
+                </div>
+              </section>
+            </div>
+            <section class="settings-card settings-config-card settings-section" data-settings-section="prompts">
+              <div class="settings-card-head">
+                <h3 class="settings-card-title">Prompt palette</h3>
+                ${renderInfoIcon("Prompt files in this folder appear in the Ctrl+K resume palette.")}
+              </div>
+              <p class="settings-card-detail">Keep reusable handoff prompts local. RepoLog still generates built-in Claude, Codex, Gemini, and standup prompts when this folder is empty.</p>
+              <div class="settings-config single-column" data-config-form>
+                <div class="field span-2">
+                  <label for="rql-config-prompts">Prompts dir</label>
+                  <div class="input-with-action">
+                    <input id="rql-config-prompts" data-config-field="promptsDir" type="text" value="${escapeHtml(promptDir)}" />
+                    <button type="button" class="settings-icon-button" data-ui-action="open-repo" aria-label="Open repo">▭</button>
+                  </div>
+                </div>
+              </div>
+              <div class="settings-card-actions"><button type="button" data-ui-action="standup-export">Copy standup <span class="kbd-inline"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>C</kbd></span></button></div>
+            </section>
+            <section class="settings-card settings-digest-card settings-section" data-settings-section="digest" data-card="openrouter">
                 <div class="settings-card-head">
-                  <h3 class="settings-card-title">OpenRouter Digest <span class="pill">optional</span></h3>
+                  <h3 class="settings-card-title">Digest <span class="pill">optional AI</span></h3>
                   ${renderInfoIcon("Powers the Digest button. Key is stored locally in the desktop shell, never in the repo.")}
                 </div>
+                <p class="settings-card-detail">Digest summarizes the current repo state with your OpenRouter key. It is optional: the HUD, signals, and prompt palette work without it.</p>
                 <div class="field">
                   <label>API Key</label>
                   <div class="settings-secret-row">
@@ -2777,26 +3026,13 @@ function renderSettingsPanel(state: QuestState, liveBridge?: SurfaceHtmlOptions[
                     <option value="qwen/qwen3-14b:free">Qwen3 14B (free)</option>
                     <option value="qwen/qwen3-235b-a22b:free">Qwen3 235B (free) - large</option>
                   </select>
-                  <p class="settings-subtle-copy">Free models have a small daily limit. Add credits at openrouter.ai for higher limits; free-model calls are not charged.</p>
+                  <p class="settings-subtle-copy">Free OpenRouter models usually have small daily limits. Add credits on OpenRouter for higher limits; RepoLog never stores the key in the repo.</p>
                 </div>
                 <div class="settings-card-actions">
                   <button type="button" data-ui-action="save-openrouter">Save</button>
                 </div>
               </section>
-            </div>
-            <div class="settings-utility-grid settings-section" data-settings-section="overview appearance">
-              <section class="settings-card settings-utility-card">
-                <div class="settings-card-head"><h3 class="settings-card-title">Standup</h3>${renderInfoIcon("Copies a markdown summary of today's done plus active tasks to your clipboard.")}</div>
-                <div class="settings-card-actions"><button type="button" data-ui-action="standup-export">Copy standup <span class="kbd-inline"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>C</kbd></span></button></div>
-              </section>
-              <section class="settings-card settings-utility-card">
-                <div class="settings-card-head"><h3 class="settings-card-title">Startup root</h3>${renderInfoIcon("Remember opens this repo automatically on next launch. Forget clears that memory.")}</div>
-                <div class="settings-card-actions"><button type="button" data-ui-action="remember-startup-root">Remember</button><button type="button" data-ui-action="forget-startup-root">Forget</button></div>
-              </section>
-              <section class="settings-card settings-utility-card">
-                <div class="settings-card-head"><h3 class="settings-card-title">Open config</h3>${renderInfoIcon("Open the repo config file in your editor.")}</div>
-                <div class="settings-card-actions">${configButton}${repoButton}</div>
-              </section>
+            <div class="settings-utility-grid settings-section" data-settings-section="appearance">
               <section class="settings-card settings-utility-card">
                 <div class="settings-card-head"><h3 class="settings-card-title">Appearance</h3></div>
                 <div class="settings-card-actions theme-picker">
@@ -2833,30 +3069,102 @@ function renderSettingsPanel(state: QuestState, liveBridge?: SurfaceHtmlOptions[
 
 }
 
-  function renderConfidenceLabel(confidence: number): string {
-    const c = Math.max(0, Math.min(1, confidence));
-    if (c >= 0.84) {
-      return "high confidence";
-    }
-    if (c >= 0.5) {
-      return "medium confidence";
-    }
-    return "low confidence";
-  }
+function renderWorkspaceSignalsStrip(signals: WorkspaceSignals | undefined): string {
+  const data = signals ?? {
+    state: "Quiet",
+    editRate: 0,
+    filesTouched: 0,
+    lastEditAge: "no activity",
+    scopeDriftCount: 0,
+    thrashLevel: "None",
+    repeatedFiles: [],
+    trend: Array.from({ length: 30 }, () => 0),
+    scopeActive: false,
+  } satisfies WorkspaceSignals;
 
-  function renderVSCodeActivitySection(state: QuestState): string {
-    const activity = (state.agentActivity ?? []).slice(0, 4);
-    if (activity.length === 0) {
-      return "";
-    }
+  return `<section class="signals-strip" aria-label="Workspace Signals">
+    <div class="signal-cell">
+      <div class="signal-label">Workspace Signals</div>
+      <div class="signal-value">${escapeHtml(data.state)}</div>
+      <div class="signal-note">last edit ${escapeHtml(data.lastEditAge)}</div>
+    </div>
+    <div class="signal-cell">
+      <div class="signal-label">Edits / min</div>
+      <div class="signal-value">${data.editRate}</div>
+      <div class="signal-note">change events only</div>
+    </div>
+    <div class="signal-cell">
+      <div class="signal-label">Files touched</div>
+      <div class="signal-value">${data.filesTouched}</div>
+      <div class="signal-note">last 10m spread</div>
+    </div>
+    <div class="signal-cell">
+      <div class="signal-label">Scope drift</div>
+      <div class="signal-value">${data.scopeActive ? data.scopeDriftCount : "off"}</div>
+      <div class="signal-note">${data.scopeActive ? "owned areas active" : "no owned areas"}</div>
+    </div>
+    <div class="signal-cell">
+      <div class="signal-label">Thrash</div>
+      <div class="signal-value">${escapeHtml(data.thrashLevel)}</div>
+      <div class="signal-note">${escapeHtml(data.repeatedFiles[0] ?? "no repeated file")}</div>
+    </div>
+    <div class="signal-cell">
+      <div class="signal-label">30m trend</div>
+      ${renderTrendBars(data.trend)}
+    </div>
+  </section>`;
+}
 
-    return renderVSCodeSection(
-      "Agent activity",
-      activity.length,
-      undefined,
-      activity.map((entry) => `<div class="row"><span class="row-icon">↳</span><span class="row-text">${escapeHtml(entry.agent)} ${escapeHtml(entry.file)}</span><span class="row-sub">${escapeHtml(entry.at)} · ${renderConfidenceLabel(entry.confidence)}</span></div>`),
-    );
-  }
+function renderTrendBars(trend: readonly number[]): string {
+  const max = Math.max(1, ...trend);
+  return `<div class="trend-bars">${trend.map((value) => {
+    const height = Math.max(3, Math.round((value / max) * 28));
+    return `<span class="${value >= max && value > 0 ? "hot" : ""}" style="height:${height}px"></span>`;
+  }).join("")}</div>`;
+}
+
+function renderRecentActivityTile(activity: readonly RecentActivityEvent[]): string {
+  const rows = activity.slice(0, 8);
+  return `<section class="tile tight" data-area="activity">
+    <div class="tile-header">
+      <h3 class="tile-title changes"><span class="accent-bar"></span>Recent Activity</h3>
+      <span class="tile-meta">${activity.length}</span>
+    </div>
+    <div class="tile-body">
+      ${rows.length === 0
+        ? `<div class="activity-row"><span class="activity-kind">none</span><span class="activity-file">No workspace activity yet</span><span class="activity-age"></span></div>`
+        : rows.map((event) => `
+          <div class="activity-row">
+            <span class="activity-kind">${escapeHtml(event.kind)}</span>
+            <span class="activity-file${event.outsideScope ? " outside" : ""}">${escapeHtml(event.file)}</span>
+            <span class="activity-age">${escapeHtml(formatActivityAge(event.ts))}</span>
+          </div>
+        `).join("")}
+    </div>
+  </section>`;
+}
+
+function renderPromptPaletteTile(presets: readonly PromptPreset[]): string {
+  const rows = presets.slice(0, 3);
+  return `<section class="tile tight" data-area="prompts">
+    <div class="tile-header">
+      <h3 class="tile-title changes"><span class="accent-bar"></span>Prompt Palette</h3>
+      <span class="tile-meta">${presets.length}</span>
+    </div>
+    <div class="tile-body">
+      ${rows.map((preset) => `
+        <div class="prompt-row">
+          <span class="prompt-glyph">${escapeHtml(preset.glyph)}</span>
+          <span>
+            <span class="prompt-label">${escapeHtml(preset.label)}</span>
+            <span class="prompt-sub">${escapeHtml(preset.sub)}</span>
+          </span>
+          <button type="button" class="prompt-copy" data-copy-context="${escapeHtml(preset.body)}">copy</button>
+        </div>
+      `).join("")}
+    </div>
+  </section>`;
+}
 
 function renderDecisionsTile(decisions: Decision[] | undefined): string {
   if (!decisions || decisions.length === 0) return "";
@@ -2936,14 +3244,12 @@ function renderVSCodeBlockedRow(task: BlockedTask): string {
 }
 
 function renderVSCodeAgent(agent: AgentProfile): string {
-  const statusColor = agent.status === "working" ? "#4ec9b0" : agent.status === "active" ? "#569cd6" : "#6a6a6a";
   return `<div class="agent">
     <div class="agent-head">
-      <span style="color:${statusColor}">●</span>
       <span class="agent-name">${escapeHtml(agent.name)}</span>
       <span class="agent-file">${escapeHtml(agent.file)}</span>
     </div>
-    <div class="agent-objective">${escapeHtml(agent.objective)}</div>
+    <div class="agent-objective">${escapeHtml(agent.role || agent.objective)}</div>
   </div>`;
 }
 
@@ -3164,9 +3470,9 @@ function renderSettingsScript(): string {
         var sections = document.querySelectorAll("[data-settings-section]");
         var first = null;
         for (var s = 0; s < sections.length; s++) {
-          var values = (sections[s].getAttribute("data-settings-section") || "").split(/\s+/);
-          var match = name === "overview" ? values.indexOf("overview") !== -1 : values.indexOf(name) !== -1;
-          sections[s].hidden = false;
+          var values = (sections[s].getAttribute("data-settings-section") || "").split(/\\s+/);
+          var match = values.indexOf(name) !== -1;
+          sections[s].hidden = !match;
           sections[s].setAttribute("data-section-focus", match && name !== "overview" ? "true" : "false");
           if (match && !first) first = sections[s];
         }
@@ -3753,29 +4059,6 @@ function renderDecisionToggleScript(): string {
   </script>`;
 }
 
-function renderAgentPulseScript(): string {
-  return `<script>
-    (function () {
-      var KEY = "repolog-agent-last-task";
-      var prev = {};
-      try { prev = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (_) { prev = {}; }
-      var nodes = document.querySelectorAll('.agent-status[data-agent-id]');
-      var next = {};
-      nodes.forEach(function (node) {
-        var id = node.getAttribute('data-agent-id');
-        var task = node.getAttribute('data-last-task') || "";
-        next[id] = task;
-        var wasTask = prev[id];
-        if (node.classList.contains('working') && wasTask !== undefined && wasTask !== task) {
-          node.setAttribute('data-pulse', 'true');
-          setTimeout(function () { node.removeAttribute('data-pulse'); }, 650);
-        }
-      });
-      try { localStorage.setItem(KEY, JSON.stringify(next)); } catch (_) {}
-    })();
-  </script>`;
-}
-
 function renderTaskNavScript(): string {
   return `<script>
     (function () {
@@ -4017,38 +4300,9 @@ function renderEmptyState(state: QuestState): string {
     return activity.find((entry) => entry.agent.toLowerCase() === agentId.toLowerCase());
   }
 
-  function isAgentActive(agentId: string, activity: readonly { agent: string; file: string; at: string; confidence: number }[]): boolean {
-    const entry = latestAgentActivity(agentId, activity);
-    return entry ? isResumeFresh(entry.at) : false;
-  }
-
-  function resolveAgentStatus(agent: AgentProfile, activity: readonly { agent: string; file: string; at: string; confidence: number }[]): string {
-    const entry = latestAgentActivity(agent.id, activity);
-    if (!entry) {
-      return "idle";
-    }
-
-    const age = relativeMinutes(entry.at);
-    if ((typeof age === "number" && age <= 8 && entry.confidence >= 0.84) || isResumeFresh(entry.at)) {
-      return "working";
-    }
-
-    if (typeof age === "number" && age <= 25 && entry.confidence >= 0.72) {
-      return "active";
-    }
-
-    return "idle";
-  }
-
   function resolveAgentTask(agent: AgentProfile, activity: readonly { agent: string; file: string; at: string; confidence: number }[]): string {
     const entry = latestAgentActivity(agent.id, activity);
     return entry ? `${entry.file} · ${entry.at}` : (agent.lastTask ?? "");
-  }
-
-  function renderAgentStatusLabel(status: string): string {
-    if (status === "working") return "likely working";
-    if (status === "active") return "likely active";
-    return "idle";
   }
 
   function digestAge(iso: string): string {
@@ -4061,6 +4315,19 @@ function renderEmptyState(state: QuestState): string {
       if (hrs < 24) return `${hrs}h ago`;
       return `${Math.floor(hrs / 24)}d ago`;
     } catch { return "unknown"; }
+  }
+
+  function formatActivityAge(timestamp: number): string {
+    if (!Number.isFinite(timestamp)) {
+      return "";
+    }
+    const seconds = Math.max(0, Math.floor((Date.now() - timestamp) / 1000));
+    if (seconds < 60) return `${seconds}s`;
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h`;
+    return `${Math.floor(hours / 24)}d`;
   }
 
   function isResumeFresh(since: string): boolean {
@@ -4120,6 +4387,7 @@ function renderTuneupScript(): string {
       var promptArea = card && card.querySelector("[data-tuneup-prompt]");
       var onboardingPrompt = document.querySelector("[data-onboarding-prompt]");
       var gapsEl = card && card.querySelector("[data-tuneup-gaps]");
+      var gapCountEl = card && card.querySelector("[data-tuneup-gap-count]");
       var actionsEl = card && card.querySelector("[data-tuneup-actions]");
       var resultsEl = card && card.querySelector("[data-tuneup-results]");
 
@@ -4145,7 +4413,7 @@ function renderTuneupScript(): string {
         return '<div class="tuneup-gap-row">'
           + '<span class="tuneup-gap-sev ' + sevClass + '">' + escHtml(severity) + '</span>'
           + '<span><span class="tuneup-gap-text">' + escHtml(label) + '</span>' + badge + ' '
-          + '<span class="tuneup-gap-file">(' + escHtml(file) + ')</span>' + (fix ? ' — ' + escHtml(fix) : '') + current + '</span>'
+          + '<span class="tuneup-gap-file">(' + escHtml(file) + ')</span>' + (fix ? ' - ' + escHtml(fix) : '') + current + '</span>'
           + '</div>';
       }
 
@@ -4178,11 +4446,13 @@ function renderTuneupScript(): string {
         }
         if (actionsEl) actionsEl.hidden = false;
         var allGaps = (data.gaps || []).concat(data.contentGaps || []);
+        if (gapCountEl) gapCountEl.textContent = String(allGaps.length);
         if (gapsEl && allGaps.length > 0) {
           gapsEl.innerHTML = allGaps.map(renderGap).join("");
           gapsEl.setAttribute("data-visible", "true");
         } else if (gapsEl) {
-          gapsEl.innerHTML = '<div class="tuneup-placeholder">No gaps — structural and content scores are both 100.</div>';
+          gapsEl.innerHTML = '<div class="tuneup-placeholder">No fixes needed. Structural and content scores are both 100.</div>';
+          gapsEl.setAttribute("data-visible", "true");
         }
       }
 
@@ -4204,20 +4474,20 @@ function renderTuneupScript(): string {
             Promise.resolve(window.repologDesktop.runTuneup()).then(function (data) {
               applyResult(data);
               btn.disabled = false;
-              btn.textContent = "Re-analyze";
+              btn.textContent = "Re-analyze repo";
             }).catch(function (err) {
               if (window.__rqlToast) window.__rqlToast("tuneup failed: " + String(err));
               btn.disabled = false;
-              btn.textContent = "Analyze";
+              btn.textContent = "Analyze repo";
             });
           } else if (vscode) {
             vscode.postMessage({ type: "runTuneup" });
             btn.disabled = false;
-            btn.textContent = "Re-analyze";
+            btn.textContent = "Re-analyze repo";
           } else {
             if (window.__rqlToast) window.__rqlToast("tuneup requires the desktop or VS Code shell");
             btn.disabled = false;
-            btn.textContent = "Analyze";
+            btn.textContent = "Analyze repo";
           }
           return;
         }
@@ -4256,7 +4526,7 @@ function renderTuneupScript(): string {
           if (!gapsEl) return;
           var visible = gapsEl.getAttribute("data-visible") === "true";
           gapsEl.setAttribute("data-visible", visible ? "false" : "true");
-          btn.textContent = visible ? "Preview gaps" : "Hide gaps";
+          btn.textContent = visible ? "Show fixes" : "Hide fixes";
           return;
         }
 

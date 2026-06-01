@@ -1,0 +1,112 @@
+import { afterEach, describe, expect, it } from "vitest";
+import { mkdir, rm, unlink, writeFile } from "node:fs/promises";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
+
+import { startWorkspaceActivityWatcher } from "../src/engine/activity-watcher.js";
+import type { RecentActivityEvent } from "../src/engine/types.js";
+
+const roots: string[] = [];
+
+afterEach(async () => {
+  await Promise.all(roots.map((root) => rm(root, { recursive: true, force: true })));
+  roots.length = 0;
+});
+
+describe("workspace activity watcher", () => {
+  it("records add, change, and unlink metadata without repo writes", async () => {
+    const root = join(tmpdir(), `repolog-activity-${Date.now()}`);
+    roots.push(root);
+    await mkdir(root, { recursive: true });
+    const batches: RecentActivityEvent[][] = [];
+    const handle = await startWorkspaceActivityWatcher({
+      cwd: root,
+      debounceMs: 500,
+      onActivity: (events) => {
+        batches.push([...events]);
+      },
+    });
+
+    try {
+      const file = join(root, "src", "web", "render.ts");
+      await mkdir(join(root, "src", "web"), { recursive: true });
+      await writeFile(file, "one", "utf8");
+      await pause(650);
+      await handle.flush();
+      await writeFile(file, "two", "utf8");
+      await pause(650);
+      await handle.flush();
+      await unlink(file);
+      await pause(650);
+      await handle.flush();
+    } finally {
+      await handle.close();
+    }
+
+    const events = batches.flat();
+    expect(events.map((event) => event.kind)).toEqual(expect.arrayContaining(["add", "change", "unlink"]));
+    expect(events.every((event) => event.file === "src/web/render.ts")).toBe(true);
+    expect(events.every((event) => typeof event.ts === "number" && event.ts > 0)).toBe(true);
+  });
+
+  it("ignores built-in noisy directories", async () => {
+    const root = join(tmpdir(), `repolog-activity-ignore-${Date.now()}`);
+    roots.push(root);
+    await mkdir(join(root, "node_modules", "pkg"), { recursive: true });
+    const batches: RecentActivityEvent[][] = [];
+    const handle = await startWorkspaceActivityWatcher({
+      cwd: root,
+      debounceMs: 500,
+      onActivity: (events) => {
+        batches.push([...events]);
+      },
+    });
+
+    try {
+      await writeFile(join(root, "node_modules", "pkg", "index.js"), "module.exports = 1", "utf8");
+      await pause(650);
+      await handle.flush();
+    } finally {
+      await handle.close();
+    }
+
+    expect(batches.flat()).toEqual([]);
+  });
+
+  it("reloads excludes when .repolog.json changes", async () => {
+    const root = join(tmpdir(), `repolog-activity-config-${Date.now()}`);
+    roots.push(root);
+    await mkdir(join(root, "src"), { recursive: true });
+    const batches: RecentActivityEvent[][] = [];
+    let resolveConfigReload: (() => void) | undefined;
+    const configReloaded = new Promise<void>((resolve) => {
+      resolveConfigReload = resolve;
+    });
+    const handle = await startWorkspaceActivityWatcher({
+      cwd: root,
+      debounceMs: 500,
+      onActivity: (events) => {
+        batches.push([...events]);
+      },
+      onConfigChanged: () => {
+        resolveConfigReload?.();
+      },
+    });
+
+    try {
+      await writeFile(join(root, ".repolog.json"), JSON.stringify({ excludes: ["src"] }), "utf8");
+      await configReloaded;
+      await writeFile(join(root, "src", "ignored.ts"), "ignored", "utf8");
+      await pause(650);
+      await handle.flush();
+    } finally {
+      await handle.close();
+    }
+
+    expect(batches.flat().some((event) => event.file === "src/ignored.ts")).toBe(false);
+  });
+});
+
+function pause(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}

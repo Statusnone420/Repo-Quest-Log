@@ -75,6 +75,8 @@ describe("desktop shell sizing", () => {
     expect(source).toContain("minHeight: 560");
     expect(source).toContain("icon: appIconPath()");
     expect(source).toContain("useContentSize: true");
+    expect(source).toContain("win.show()");
+    expect(source).toContain("require.main === module || process.versions.electron");
     expect(source).toContain("formatCodeOpenTarget");
     expect(source).toContain('spawn("code", ["-g"');
     expect(source).toContain("About Repo Quest Log");
@@ -87,6 +89,15 @@ describe("desktop shell sizing", () => {
     expect(source).toContain("repolog:toast");
     expect(packageJson.build?.win?.target).toEqual(["nsis", "portable"]);
     expect(packageJson.build?.extraResources).toEqual([{ from: "build/icon.png", to: "build/icon.png" }]);
+  });
+
+  it("feeds desktop workspace activity into scan state without repo-local runtime writes", async () => {
+    const source = await readFile(join(process.cwd(), "apps/desktop/main.cjs"), "utf8");
+
+    expect(source).toContain("startWorkspaceActivityWatcher");
+    expect(source).toContain("recentActivity = mergeRecentActivity(events, recentActivity)");
+    expect(source).toContain("recentActivity,");
+    expect(source).not.toContain('path.join(targetRoot, ".repolog", "activity');
   });
 });
 
@@ -253,6 +264,8 @@ describe("desktop digest hardening", () => {
     expect(source).toContain("assertRegularFilePath(targetRoot, filePath)");
     expect(source).toContain("skippedFiles");
     expect(source).toContain("planningLimit = 20000");
+    expect(source).toContain('reason === "missing" && options.optional');
+    expect(source).toContain('readPlanningFile(fileName, { optional: true })');
   });
 
   it("does not write live HTML or digest cache into the opened repo", async () => {

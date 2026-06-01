@@ -604,7 +604,7 @@ function renderTopStripStatic(state: QuestState, width: number): string {
   ]);
   const resume = plainPanel("RESUME", topStripWidth(width).third, [
     truncate(state.resumeNote.task, topStripWidth(width).third - 2),
-    truncate(`${state.resumeNote.lastTouched} · idle ${state.resumeNote.since}`, topStripWidth(width).third - 2),
+    truncate(`${state.resumeNote.lastTouched} · ${state.resumeNote.since}`, topStripWidth(width).third - 2),
   ]);
 
   if (width >= TOP_STRIP_BREAKPOINT) {
@@ -638,7 +638,7 @@ function renderTopStrip(state: QuestState, width: number) {
     width: dims.third,
     lines: [
       truncate(state.resumeNote.task, dims.third - 2),
-      truncate(`${state.resumeNote.lastTouched} · idle ${state.resumeNote.since}`, dims.third - 2),
+      truncate(`${state.resumeNote.lastTouched} · ${state.resumeNote.since}`, dims.third - 2),
     ],
   });
 

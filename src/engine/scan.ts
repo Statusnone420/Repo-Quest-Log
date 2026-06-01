@@ -11,10 +11,12 @@ import { parseRepo } from "./parse.js";
 import { assessRepoReadiness } from "./readiness.js";
 import { gatherRepoContext } from "./repo-context.js";
 import { relativeSince } from "./time.js";
-import type { FileChange, QuestState } from "./types.js";
+import { annotateRecentActivity, computeWorkspaceSignals, deriveWorkspaceScope } from "./workspace-signals.js";
+import type { FileChange, QuestState, RecentActivityEvent } from "./types.js";
 
 export interface ScanOptions {
   recentChanges?: readonly FileChange[];
+  recentActivity?: readonly RecentActivityEvent[];
   lastTouchedFile?: string;
   lastTouchedAt?: string;
 }
@@ -53,6 +55,10 @@ export async function scanRepo(rootDir: string, options: ScanOptions = {}): Prom
       hasFrontmatter,
     },
   });
+  const workspaceScope = deriveWorkspaceScope(state.now, state.agents);
+  const recentActivity = annotateRecentActivity(options.recentActivity ?? [], workspaceScope);
+  state.recentActivity = recentActivity.slice(0, 40);
+  state.workspaceSignals = computeWorkspaceSignals(recentActivity, workspaceScope);
   state.repoContext = repoContext;
   state.readiness = assessRepoReadiness(state, repoContext);
 

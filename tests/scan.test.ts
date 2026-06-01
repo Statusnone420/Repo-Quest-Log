@@ -75,6 +75,32 @@ describe("scanRepo", () => {
     }
   });
 
+  it("caps rendered recent activity without capping workspace signal calculations", async () => {
+    const cwd = join(tmpdir(), `repo-quest-log-scan-${Date.now()}-activity-cap`);
+    await mkdir(cwd, { recursive: true });
+
+    try {
+      await writeRepoFile(cwd, "PLAN.md", "# Plan\n\n## Now\n\n- [ ] First task\n");
+      await writeRepoFile(cwd, "STATE.md", "# State\n");
+      await writeRepoFile(cwd, "README.md", "# Readme\n");
+      await writeRepoFile(cwd, "AGENTS.md", "# Agents\n\n## Owned Areas\n\nsrc/**\n");
+      const now = Date.now();
+      const recentActivity = Array.from({ length: 45 }, (_, index) => ({
+        file: `src/file-${index}.ts`,
+        kind: "change" as const,
+        ts: now - (index * 1000),
+      }));
+
+      const state = await scanRepo(cwd, { recentActivity });
+
+      expect(state.recentActivity).toHaveLength(40);
+      expect(state.workspaceSignals?.editRate).toBe(45);
+      expect(state.workspaceSignals?.filesTouched).toBe(45);
+    } finally {
+      await rm(cwd, { recursive: true, force: true });
+    }
+  });
+
   it("keeps useful signals from a noisy fixture repo", async () => {
     const fixtureRoot = join(process.cwd(), "tests", "fixtures", "noisy");
     const cwd = join(tmpdir(), `repo-quest-log-scan-${Date.now()}-noisy`);

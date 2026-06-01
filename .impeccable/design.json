@@ -1,0 +1,165 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-06-01T14:00:52.2559572-04:00",
+  "title": "Design System: RepoLog",
+  "extensions": {
+    "colorMeta": {
+      "canvas-dark": {
+        "role": "neutral",
+        "displayName": "Dark Canvas",
+        "canonical": "#070d12",
+        "tonalRamp": ["#060b10", "#070d12", "#10181d"]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Panel Surface",
+        "canonical": "#10181d",
+        "tonalRamp": ["#0d141b", "#10181d", "#141b20"]
+      },
+      "primary": {
+        "role": "primary",
+        "displayName": "Signal Blue",
+        "canonical": "#58a6ff",
+        "tonalRamp": ["#0d5db3", "#2f7fdc", "#58a6ff", "#79c0ff"]
+      },
+      "success": {
+        "role": "semantic",
+        "displayName": "Ready Green",
+        "canonical": "#73df73",
+        "tonalRamp": ["#1a7f4b", "#73df73", "#9be6ad"]
+      },
+      "warning": {
+        "role": "semantic",
+        "displayName": "Repair Amber",
+        "canonical": "#e6bf45",
+        "tonalRamp": ["#b45309", "#e6bf45", "#e9b973"]
+      },
+      "danger": {
+        "role": "semantic",
+        "displayName": "Hard Red",
+        "canonical": "#ff5555",
+        "tonalRamp": ["#c0392b", "#ff5555", "#f48771"]
+      }
+    },
+    "typographyMeta": {
+      "headline": {
+        "displayName": "HUD Headline",
+        "purpose": "Compact product headings and current-focus text."
+      },
+      "body": {
+        "displayName": "Product Body",
+        "purpose": "Dense but readable task and settings copy."
+      },
+      "label": {
+        "displayName": "Workflow Metadata",
+        "purpose": "Files, shortcuts, event kinds, timestamps, model names, and scan metadata."
+      }
+    },
+    "shadows": [
+      {
+        "name": "settings-modal-lift",
+        "value": "0 34px 120px -24px rgba(0,0,0,0.92), 0 0 0 1px rgba(8,18,30,0.85) inset",
+        "purpose": "The settings dialog only."
+      },
+      {
+        "name": "palette-lift",
+        "value": "0 30px 80px -10px rgba(0,0,0,0.7)",
+        "purpose": "Command and prompt palette overlay."
+      },
+      {
+        "name": "toast-lift",
+        "value": "0 10px 30px -5px rgba(0,0,0,0.6)",
+        "purpose": "Temporary feedback messages."
+      }
+    ],
+    "motion": [
+      {
+        "name": "quick-feedback",
+        "value": "150-250ms ease-out",
+        "purpose": "Hover, focus, toast, and overlay feedback only."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "settings-stack",
+        "value": "980px"
+      },
+      {
+        "name": "hud-stack",
+        "value": "1099px"
+      },
+      {
+        "name": "toolbar-wrap",
+        "value": "820px"
+      },
+      {
+        "name": "short-height",
+        "value": "600px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Neutral Button",
+      "kind": "button",
+      "refersTo": "button-neutral",
+      "description": "Default HUD and settings action button.",
+      "html": "<button class=\"ds-button-neutral\">Open Settings</button>",
+      "css": ".ds-button-neutral { border: 1px solid rgba(120,135,150,0.18); background: rgba(255,255,255,0.055); color: #e8edf2; border-radius: 7px; padding: 10px 14px; font: 13px/1.35 Inter, Segoe UI, sans-serif; cursor: pointer; } .ds-button-neutral:hover { border-color: rgba(138,180,255,0.42); color: #58a6ff; }"
+    },
+    {
+      "name": "Primary Settings Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Filled button for Analyze and Save changes.",
+      "html": "<button class=\"ds-button-primary\">Analyze</button>",
+      "css": ".ds-button-primary { border: 1px solid rgba(88,166,255,0.62); background: linear-gradient(180deg, #2f7fdc, #1f63b7); color: #fff; border-radius: 7px; padding: 11px 16px; font: 800 13px/1.35 Inter, Segoe UI, sans-serif; cursor: pointer; box-shadow: 0 10px 24px -16px rgba(88,166,255,0.9); }"
+    },
+    {
+      "name": "Signal Cell",
+      "kind": "card",
+      "refersTo": "signal-cell",
+      "description": "One Workspace Signals metric: label, value, note.",
+      "html": "<section class=\"ds-signal\"><div class=\"ds-signal-label\">Edits / min</div><div class=\"ds-signal-value\">7</div><div class=\"ds-signal-note\">change events only</div></section>",
+      "css": ".ds-signal { background: #10181d; color: #e8edf2; border: 1px solid rgba(120,135,150,0.18); border-radius: 8px; padding: 12px 14px; font-family: Inter, Segoe UI, sans-serif; } .ds-signal-label { color: #78828d; font: 500 10px/1.35 JetBrains Mono, Consolas, monospace; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 5px; } .ds-signal-value { font-size: 20px; line-height: 1.05; font-weight: 750; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .ds-signal-note { margin-top: 5px; color: #aeb8c2; font: 10px/1.35 JetBrains Mono, Consolas, monospace; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Local Flight Deck",
+    "overview": "RepoLog is a calm, high-density instrument panel for returning to coding work. It should feel local, direct, and task-first: a place to inspect the repo's current truth, not a place to perform productivity.",
+    "keyCharacteristics": [
+      "Dense first viewport focused on Objective, Current Focus, Workspace Signals, Now, Next, Recent Activity, Agent Docs, and Prompt Palette.",
+      "Flat panels with borders instead of decorative shadows.",
+      "Blue accent used for selected state, primary action, focus, and links only.",
+      "Mono text for metadata, paths, shortcut hints, event kinds, and timestamps."
+    ],
+    "rules": [
+      {
+        "name": "The One Accent Rule",
+        "body": "Blue is the only general accent. Green, amber, and red are reserved for semantic state.",
+        "section": "colors"
+      },
+      {
+        "name": "The Flat HUD Rule",
+        "body": "Regular HUD panels do not use drop shadows. They use a 1px border, 7-8px radius, and tonal surface changes.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Metadata Mono Rule",
+        "body": "Mono type means machine or workflow context: file paths, docs, shortcuts, event kinds, model names, and timestamps.",
+        "section": "typography"
+      }
+    ],
+    "dos": [
+      "Do make the first viewport answer what the user was doing, why it matters, what changed, and what to do next.",
+      "Do use Signal Blue (#58a6ff) sparingly for active state, links, focus, and primary affordances.",
+      "Do test the HUD at common laptop and desktop resolutions before claiming it is polished."
+    ],
+    "donts": [
+      "Don't show fake agent liveness such as Codex idle unless a real integration supports that claim.",
+      "Don't add gamification: no XP, streaks, timers, pomodoros, mascots, creature moods, or motivational nudges.",
+      "Don't use panicking copy, LLM nudge bubbles, or emotional activity states.",
+      "Don't rely on horizontal scrolling for the main HUD."
+    ]
+  }
+}

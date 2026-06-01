@@ -65,6 +65,27 @@ export interface FileChange {
   diff?: string;
 }
 
+export type RecentActivityKind = "add" | "change" | "unlink";
+
+export interface RecentActivityEvent {
+  file: string;
+  kind: RecentActivityKind;
+  ts: number;
+  outsideScope?: boolean;
+}
+
+export interface WorkspaceSignals {
+  state: "Focused" | "Drifting" | "Thrashing" | "Quiet";
+  editRate: number;
+  filesTouched: number;
+  lastEditAge: string;
+  scopeDriftCount: number;
+  thrashLevel: "None" | "Low" | "Medium" | "High";
+  repeatedFiles: string[];
+  trend: number[];
+  scopeActive: boolean;
+}
+
 export interface Decision {
   at: string;
   text: string;
@@ -155,6 +176,8 @@ export interface QuestState {
   blocked: BlockedTask[];
   agents: AgentProfile[];
   recentChanges: FileChange[];
+  recentActivity?: RecentActivityEvent[];
+  workspaceSignals?: WorkspaceSignals;
   decisions: Decision[];
   gitContext?: GitContext;
   agentActivity: AgentActivity[];

@@ -21,21 +21,22 @@ export function buildContextPrompt(state: QuestState): string {
 Mission: ${state.mission}
 Objective: ${state.activeQuest.title} (${state.activeQuest.progress.done}/${state.activeQuest.progress.total} · ${state.activeQuest.doc}${state.activeQuest.line ? `:${state.activeQuest.line}` : ""})
 Current task: ${state.resumeNote.task}
-Last touched: ${state.resumeNote.lastTouched} · idle ${state.resumeNote.since}
+Last touched: ${state.resumeNote.lastTouched} · ${state.resumeNote.since}
 Please read ${state.resumeNote.lastTouched} and let's continue.`;
 }
 
 export function buildPromptPresets(state: QuestState): PromptPreset[] {
   const nowList = state.now.slice(0, 5).map((task, index) => `${index + 1}. ${task.text}${task.doc ? ` (${task.doc})` : ""}`).join("\n");
   const nextList = state.next.slice(0, 5).map((task, index) => `${index + 1}. ${task.text}`).join("\n");
-  const blockedList = state.blocked.map((task, index) => `${index + 1}. ${task.text} — waiting on ${task.reason} (${task.since})`).join("\n");
+  const activeBlocked = state.blocked.filter((task) => !isNoneBlocker(task.text, task.reason));
+  const blockedList = activeBlocked.map((task, index) => `${index + 1}. ${task.text} — waiting on ${task.reason} (${task.since})`).join("\n");
   const agentList = state.agents.map((agent) => `- ${agent.name} (${agent.role}): ${agent.objective}`).join("\n");
 
   const resumeCore = `Repo: ${state.name} (branch: ${state.branch})
 Mission: ${state.mission}
 Objective: ${state.activeQuest.title} (${state.activeQuest.progress.done}/${state.activeQuest.progress.total})
 Current task: ${state.resumeNote.task}
-Last touched: ${state.resumeNote.lastTouched} · idle ${state.resumeNote.since}`;
+Last touched: ${state.resumeNote.lastTouched} · ${state.resumeNote.since}`;
 
   return [
     {
@@ -135,6 +136,11 @@ Start by reading PRD.md, PLAN.md, STATE.md. Then ask me what the current priorit
   ].map((preset) => ({ ...preset, source: "builtin" as const }));
 }
 
+function isNoneBlocker(text: string, reason = ""): boolean {
+  const normalized = `${text} ${reason}`.replace(/\s+/g, " ").trim().toLowerCase();
+  return normalized === "none" || normalized === "none none" || /^none\b/.test(normalized);
+}
+
 export interface LoadPromptOptions {
   rootDir: string;
   userPromptDir?: string;
@@ -211,7 +217,8 @@ export function renderTemplate(template: string, state: QuestState): string {
     .slice(0, 5)
     .map((task, i) => `${i + 1}. ${task.text}`)
     .join("\n");
-  const blockedList = state.blocked
+  const activeBlocked = state.blocked.filter((task) => !isNoneBlocker(task.text, task.reason));
+  const blockedList = activeBlocked
     .map((task, i) => `${i + 1}. ${task.text} — waiting on ${task.reason} (${task.since})`)
     .join("\n");
   const agentList = state.agents

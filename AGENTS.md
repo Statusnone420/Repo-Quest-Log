@@ -37,11 +37,11 @@ Instructions for any coding agent working in this repo (Codex, generic agents, C
 
 ## Current Objective
 
-Ship v0.4: frontmatter-based Agents roster (status from .md content), on-demand LLM Digest via OpenRouter, Light/Dark theme, font picker, font size fix. See `docs/plans/plan_implementation.md` for execution spec.
+Ship the daily-use desktop rescue: markdown-first repo context, observable Workspace Signals, corrected Agent Docs, prompt resume flow, and README/product proof that makes the value obvious in 30 seconds.
 
 ## Current Task
 
-Major product correctness pass complete and verified: app open/scan/render/analyze are read-only for target repos, runtime and digest state moved to app-owned cache, generic repos render agent-readiness onboarding, and Tuneup generates a one-shot repair prompt with generated docs previews. `npm run build`, `npm run lint`, `npm test` (82 tests), and desktop smoke against a generic repo passed.
+Workspace Signals rescue implemented and verified: desktop now shows observable repo activity (`workspaceSignals`, `recentActivity`) instead of fake agent liveness, Agent Docs list document/role/last written task, empty Now is actionable, `Blocked: None` is filtered from HUD and prompts, Prompt Palette is visible, README is pain-first with a current rendered screenshot, Electron startup/window smoke passed with Computer, and `npm run build`, `npm run lint`, `npm test` pass (93 tests).
 
 ---
 

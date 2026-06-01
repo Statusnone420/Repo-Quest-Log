@@ -139,7 +139,9 @@ let targetRoot = resolveDesktopRepoRoot({
 let win = null;
 let initialLoadComplete = false;
 let watcherHandle = null;
+let activityWatcherHandle = null;
 let recentChanges = [];
+let recentActivity = [];
 let currentState = null;
 let modulesPromise = null;
 let revealTimer = null;
@@ -154,6 +156,7 @@ async function loadModules() {
       importModule("dist/engine/doctor.js"),
       importModule("dist/engine/scan.js"),
       importModule("dist/engine/watcher.js"),
+      importModule("dist/engine/activity-watcher.js"),
       importModule("dist/engine/writeback.js"),
       importModule("dist/engine/standup.js"),
       importModule("dist/web/render.js"),
@@ -161,7 +164,7 @@ async function loadModules() {
       importModule("dist/engine/safe-fs.js"),
       importModule("dist/engine/digest-cache.js"),
       importModule("dist/engine/digest.js"),
-    ]).then(([config, init, changes, editor, doctor, scan, watcher, writeback, standup, web, prompts, safeFs, digestCache, digest]) => ({
+    ]).then(([config, init, changes, editor, doctor, scan, watcher, activityWatcher, writeback, standup, web, prompts, safeFs, digestCache, digest]) => ({
       readRepoConfig: config.readRepoConfig,
       writeRepoConfig: config.writeRepoConfig,
       writeInitTemplates: init.writeInitTemplates,
@@ -171,6 +174,7 @@ async function loadModules() {
       runDoctor: doctor.runDoctor,
       scanRepo: scan.scanRepo,
       startWatcher: watcher.startWatcher,
+      startWorkspaceActivityWatcher: activityWatcher.startWorkspaceActivityWatcher,
       toggleChecklistItem: writeback.toggleChecklistItem,
       buildStandupMarkdown: standup.buildStandupMarkdown,
       renderDesktopHtml: web.renderDesktopHtml,
@@ -271,6 +275,7 @@ async function refresh(changes = []) {
   try {
     currentState = await scanRepo(targetRoot, {
       recentChanges,
+      recentActivity,
       lastTouchedFile: recentChanges[0] && recentChanges[0].file,
     });
     const lastDigest = await readLastDigest(appCacheRoot(), targetRoot);
@@ -329,10 +334,14 @@ function escapeHtml(value) {
 }
 
 async function startWatcherForTarget() {
-  const { startWatcher } = await loadModules();
+  const { startWatcher, startWorkspaceActivityWatcher } = await loadModules();
   if (watcherHandle) {
     await watcherHandle.close();
     watcherHandle = null;
+  }
+  if (activityWatcherHandle) {
+    await activityWatcherHandle.close();
+    activityWatcherHandle = null;
   }
   watcherHandle = await startWatcher({
     cwd: targetRoot,
@@ -352,6 +361,36 @@ async function startWatcherForTarget() {
       }
     },
   });
+  activityWatcherHandle = await startWorkspaceActivityWatcher({
+    cwd: targetRoot,
+    onActivity: (events) => {
+      recentActivity = mergeRecentActivity(events, recentActivity);
+      void refresh();
+    },
+    onError: (error) => {
+      process.stderr.write(`RepoLog activity watcher error: ${error instanceof Error ? error.message : String(error)}\n`);
+      if (win && !win.isDestroyed()) {
+        win.webContents.send("repolog:toast", { message: "Workspace activity watch lost sync; re-scanning." });
+      }
+      void refresh();
+    },
+  });
+}
+
+function mergeRecentActivity(next, previous) {
+  const merged = new Map();
+  for (const event of [...next, ...previous]) {
+    if (!event || typeof event.file !== "string" || typeof event.ts !== "number") {
+      continue;
+    }
+    const key = `${event.ts}:${event.kind}:${event.file}`;
+    if (!merged.has(key)) {
+      merged.set(key, event);
+    }
+  }
+  return [...merged.values()]
+    .sort((left, right) => right.ts - left.ts)
+    .slice(0, 500);
 }
 
 function readFirstRunForTarget() {
@@ -411,6 +450,7 @@ async function firstRunCheck() {
 async function switchRoot(newRoot) {
   targetRoot = path.resolve(newRoot);
   recentChanges = [];
+  recentActivity = [];
   writeLastRoot(targetRoot);
   if (win && !win.isDestroyed()) {
     win.setTitle(`Repo Quest Log — ${path.basename(targetRoot)}`);
@@ -673,7 +713,7 @@ ipcMain.handle("repolog:run-digest", async () => {
     return "unreadable";
   };
 
-  const readPlanningFile = async (fileName) => {
+  const readPlanningFile = async (fileName, options = {}) => {
     const filePath = path.join(targetRoot, fileName);
     try {
       await assertRegularFilePath(targetRoot, filePath);
@@ -685,6 +725,9 @@ ipcMain.handle("repolog:run-digest", async () => {
       return content;
     } catch (error) {
       const reason = sanitizeDigestSkipReason(error);
+      if (reason === "missing" && options.optional) {
+        return "(not included)";
+      }
       skippedFiles.push(`${fileName} (skipped: ${reason})`);
       return "(not included)";
     }
@@ -695,7 +738,7 @@ ipcMain.handle("repolog:run-digest", async () => {
 
   const agentFiles = [];
   for (const fileName of ["CLAUDE.md", "AGENTS.md", "GEMINI.md", "CODEX.md"]) {
-    const content = await readPlanningFile(fileName);
+    const content = await readPlanningFile(fileName, { optional: true });
     if (content !== "(not included)" && content !== "(skipped: file too large)") {
       agentFiles.push(`### ${fileName}\n${content}`);
     }
@@ -804,9 +847,12 @@ app.on("before-quit", async () => {
   if (watcherHandle) {
     await watcherHandle.close();
   }
+  if (activityWatcherHandle) {
+    await activityWatcherHandle.close();
+  }
 });
 
-if (require.main === module) {
+if (require.main === module || process.versions.electron) {
   if (process.argv.includes("--version") || process.argv.includes("-v")) {
     process.stdout.write(`v${appVersion}\n`);
     app.exit(0);

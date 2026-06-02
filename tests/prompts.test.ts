@@ -46,6 +46,36 @@ describe("prompt helpers", () => {
     expect(serialized).not.toContain("Gemini reviewer");
   });
 
+  it("builds useful handoff prompts with concrete first actions", () => {
+    const state = sampleState();
+    state.now = [];
+    state.recentActivity = [];
+
+    const presets = buildPromptPresets(state);
+    const resume = presets.find((preset) => preset.id === "resume-current-work");
+    const review = presets.find((preset) => preset.id === "review-changes");
+    const explain = presets.find((preset) => preset.id === "explain-recent-activity");
+    const repair = presets.find((preset) => preset.id === "repair-repo-docs");
+    const brief = presets.find((preset) => preset.id === "brief-fresh-session");
+    const standup = presets.find((preset) => preset.id === "standup");
+
+    for (const preset of presets) {
+      expect(preset.body, preset.id).toContain("Repo Quest Log");
+      expect(preset.body, preset.id).not.toContain("Continue from \"");
+      expect(preset.body, preset.id).not.toContain("what likely happened");
+    }
+    expect(resume?.body).toContain("First action");
+    expect(resume?.body).toContain("Open the source docs listed below");
+    expect(resume?.body).toContain("No current task is set");
+    expect(review?.body).toContain("Review contract");
+    expect(review?.body).toContain("Findings first");
+    expect(explain?.body).toContain("If there is no recent activity");
+    expect(repair?.body).toContain("Propose exact markdown edits");
+    expect(brief?.body).toContain("next concrete action");
+    expect(standup?.body).toContain("Standup contract");
+    expect(standup?.body).toContain("Risks or asks");
+  });
+
   it("can include app-level Personal Agent Guide text without repo writes", () => {
     const presets = buildPromptPresets(sampleState(), {
       personalAgentGuide: "Think before coding. Keep changes surgical.",

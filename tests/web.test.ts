@@ -299,7 +299,7 @@ describe("web renderers", () => {
     expect(html).not.toContain("Agent work is changing");
   });
 
-  it("infers researching from planning context when there are no edits or diffs", () => {
+  it("stays idle from planning context alone when there are no edits or diffs", () => {
     const state = sampleState();
     state.workspaceSignals = {
       state: "Quiet",
@@ -318,8 +318,8 @@ describe("web renderers", () => {
 
     const html = renderDesktopHtml(state, { liveBridge: "desktop" });
 
-    expect(html).toContain("<div class=\"signal-value\">Researching</div>");
-    expect(html).toContain("Researching context around PLAN.md");
+    expect(html).toContain("<div class=\"signal-value warn\">Idle</div>");
+    expect(html).toContain("No active agent work yet.");
     expect(html).not.toContain("data-workspace-mode");
   });
 

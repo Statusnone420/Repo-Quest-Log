@@ -3988,21 +3988,12 @@ function resolveWorkspaceMode(signals: WorkspaceSignals, state: QuestState): Wor
     return "Reviewing";
   }
 
-  if (state.now.length > 0 || hasMeaningfulPlanningContext(state)) {
-    return "Researching";
-  }
-
   return "Idle";
 }
 
 function hasRecentWorkspaceActivity(state: QuestState): boolean {
   const cutoff = Date.now() - 90_000;
   return (state.recentActivity ?? []).some((event) => Number.isFinite(event.ts) && event.ts >= cutoff);
-}
-
-function hasMeaningfulPlanningContext(state: QuestState): boolean {
-  const objective = state.activeQuest?.title || state.objective?.title;
-  return Boolean(objective && objective.trim() && objective.trim().toLowerCase() !== "no objective set yet");
 }
 
 function workspaceModeEvidence(mode: WorkspaceMode, signals: WorkspaceSignals, state: QuestState): string {

@@ -43,6 +43,10 @@ Objective: ${state.activeQuest.title} (${state.activeQuest.progress.done}/${stat
 Current task: ${state.resumeNote.task}
 Last touched: ${state.resumeNote.lastTouched} · ${state.resumeNote.since}`;
   const sourceBlock = renderInstructionSources(state, handoffSettings);
+  const currentFocus = state.now.length > 0
+    ? nowList
+    : `No current task is set. Treat "${state.resumeNote.task}" as stale context until you verify it in the repo docs.`;
+  const sourceDocs = sourceDocList(state);
 
   return [
     {
@@ -52,14 +56,26 @@ Last touched: ${state.resumeNote.lastTouched} · ${state.resumeNote.since}`;
       sub: "Continue from the current repo state",
       keywords: "resume continue current work handoff",
       intentId: "resume-current-work",
-      body: `Resume current work.
+      body: `You are taking over an in-progress local repo session.
+
 ${resumeCore}
 ${sourceBlock}
 
-Now:
-${nowList || "(none)"}
+Current focus:
+${currentFocus}
 
-Continue from "${state.resumeNote.task}". State assumptions before making changes, and ask if the next action is ambiguous.`,
+First action:
+1. Open the source docs listed below and confirm the actual current task.
+2. Run a lightweight status check before editing.
+3. If the next action is ambiguous, stop and ask instead of guessing.
+
+Source docs to inspect:
+${sourceDocs}
+
+Working rules:
+- Keep changes surgical.
+- Do not rewrite repo docs unless asked.
+- Report assumptions, files touched, and verification before handing back.`,
     },
     {
       id: "review-changes",
@@ -68,17 +84,24 @@ Continue from "${state.resumeNote.task}". State assumptions before making change
       sub: "Check recent diffs and risks",
       keywords: "review changes diff risk",
       intentId: "review-changes",
-      body: `Review the current repo changes.
+      body: `Review contract: inspect the current repo changes and report risk.
+
 ${resumeCore}
 ${sourceBlock}
 
-Now:
-${nowList || "(none)"}
+Current focus:
+${currentFocus}
 
 Recent activity:
 ${activityList || "(none)"}
 
-Focus on bugs, regressions, scope drift, and missing verification. Do not rewrite unrelated code.`,
+Findings first:
+- Bugs or regressions.
+- Scope drift from the stated task.
+- Missing tests or verification.
+- Files that look unrelated.
+
+Do not rewrite code during the review. If there are no meaningful changes, say that clearly and name the next useful check.`,
     },
     {
       id: "explain-recent-activity",
@@ -87,14 +110,21 @@ Focus on bugs, regressions, scope drift, and missing verification. Do not rewrit
       sub: "Summarize what changed and why",
       keywords: "explain recent activity summary",
       intentId: "explain-recent-activity",
-      body: `Explain recent activity for ${state.name}.
+      body: `Explain what has happened in this repo recently.
+
 ${resumeCore}
 ${sourceBlock}
 
 Recent activity:
 ${activityList || "(none)"}
 
-Summarize what likely happened, what is still unknown, and the safest next check.`,
+If there is no recent activity, say so and use the objective, current focus, and source docs as context instead.
+
+Output:
+1. What changed.
+2. Why it probably changed.
+3. What is still uncertain.
+4. The safest next check.`,
     },
     {
       id: "repair-repo-docs",
@@ -103,17 +133,23 @@ Summarize what likely happened, what is still unknown, and the safest next check
       sub: "Make planning docs useful again",
       keywords: "repair docs planning state agents",
       intentId: "repair-repo-docs",
-      body: `Repair RepoLog planning docs for ${state.name}.
+      body: `Make the repo memory docs useful again without expanding scope.
+
 ${resumeCore}
 ${sourceBlock}
 
-Now:
-${nowList || "(none)"}
+Current focus:
+${currentFocus}
 
 Blocked:
 ${blockedList || "No active blockers."}
 
-Suggest the smallest doc changes that make current focus, next action, and blockers clear. Do not create provider-specific docs unless explicitly asked.`,
+First action:
+1. Identify the smallest doc gap blocking a useful next handoff.
+2. Propose exact markdown edits.
+3. Do not write files unless explicitly asked.
+
+Keep AGENTS.md generic unless the repo already has active provider-specific docs.`,
     },
     {
       id: "brief-fresh-session",
@@ -122,15 +158,15 @@ Suggest the smallest doc changes that make current focus, next action, and block
       sub: "Onboard a fresh agent session",
       keywords: "briefing intent onboard fresh",
       intentId: "brief-fresh-session",
-      body: `Briefing: ${state.name}
+      body: `Fresh-session brief for ${state.name}.
 
 Mission: ${state.mission}
 Current objective: ${state.activeQuest.title}
 Branch: ${state.branch}
 ${sourceBlock}
 
-Now (${state.now.length}):
-${nowList || "(none)"}
+Current focus:
+${currentFocus}
 
 Next (${state.next.length}):
 ${nextList || "(none)"}
@@ -138,7 +174,7 @@ ${nextList || "(none)"}
 Agent docs:
 ${agentList || "(none configured)"}
 
-Start by restating the current objective and the next concrete action before writing code.`,
+Start by restating the objective, the next concrete action, and any assumption you need confirmed before writing code.`,
     },
     {
       id: "standup",
@@ -147,20 +183,40 @@ Start by restating the current objective and the next concrete action before wri
       sub: "What's in flight + what's next",
       keywords: "standup daily update",
       intentId: "daily-standup",
-      body: `Standup - ${state.name} (${state.branch})
+      body: `Standup contract for ${state.name} (${state.branch}).
 
 Objective: ${state.activeQuest.title} (${state.activeQuest.progress.done}/${state.activeQuest.progress.total})
 
-In flight:
-${nowList || "(none)"}
+Current focus:
+${currentFocus}
 
-Up next:
+Next:
 ${nextList || "(none)"}
 
 Blocked:
-${blockedList || "(none)"}`,
+${blockedList || "(none)"}
+
+Recent activity:
+${activityList || "(none)"}
+
+Output:
+1. What is in flight.
+2. What changed since the last handoff.
+3. Risks or asks.
+4. The next concrete action.`,
     },
   ].map((preset) => ({ ...preset, source: "builtin" as const }));
+}
+
+function sourceDocList(state: QuestState): string {
+  const docs = new Set<string>();
+  for (const doc of [state.activeQuest.doc, state.resumeNote.lastTouched]) {
+    if (doc && !doc.includes(" ")) docs.add(doc);
+  }
+  for (const agent of state.agents) {
+    if (agent.status !== "archived" && agent.file) docs.add(agent.file);
+  }
+  return docs.size ? [...docs].map((doc) => `- ${doc}`).join("\n") : "- PLAN.md\n- STATE.md\n- AGENTS.md";
 }
 
 function isNoneBlocker(text: string, reason = ""): boolean {

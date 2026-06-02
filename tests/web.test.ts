@@ -204,25 +204,24 @@ describe("web renderers", () => {
     const html = renderDesktopHtml(state, { liveBridge: "desktop" });
 
     expect(html).toContain("Workspace Signals");
-    expect(html).toContain("Automatic agent work mode");
-    expect(html).toContain("Writing code");
-    expect(html).toContain("Checking diffs");
-    expect(html).toContain("Collecting context");
-    expect(html).toContain("No active agent work");
+    expect(html).toContain("Repo active");
+    expect(html).toContain("<div class=\"signal-value\">Building</div>");
+    expect(html).toContain("Signal trend (30m)");
     expect(html).toContain("Recent Activity");
+    expect(html).toContain("data-activity-ledger");
+    expect(html).toContain("event-badge");
+    expect(html).toContain("modify");
+    expect(html).toContain("Outside scope");
     expect(html).toContain("Agent Docs");
     expect(html).toContain("Prompt Palette");
-    expect(html).toContain("Activity timeline");
-    expect(html).toContain("data-timeline-window=\"5\"");
-    expect(html).toContain("data-timeline-window=\"15\"");
-    expect(html).toContain("data-timeline-window=\"30\"");
-    expect(html).toContain("Scope map");
     expect(html).toContain("data-ui-action=\"open-diff\"");
     expect(html).toContain("Declared role");
     expect(html).toContain("Last written task");
     expect(html).toContain("agent-health-rail");
-    expect(html.indexOf("Automatic agent work mode")).toBeGreaterThan(html.indexOf("Workspace Signals"));
-    expect(html).toContain("aria-current=\"true\"");
+    expect(html).not.toContain("Automatic agent work mode");
+    expect(html).not.toContain("mode-card");
+    expect(html).not.toContain("Scope map");
+    expect(html).not.toContain("data-timeline-window=\"5\"");
     expect(html).not.toContain("data-workspace-mode");
     expect(html).not.toContain("agent-status");
     expect(html).not.toContain(">working<");
@@ -247,10 +246,11 @@ describe("web renderers", () => {
 
     const html = renderDesktopHtml(state, { liveBridge: "desktop" });
 
-    expect(html).toContain("Automatic agent work mode");
+    expect(html).toContain("Repo active");
+    expect(html).toContain("<div class=\"signal-value\">Reviewing</div>");
     expect(html).toContain("Reviewing 17 changed files");
-    expect(html).toContain("17 dirty files ready for diff review");
-    expect(html).toContain("<div class=\"mode-card\" aria-current=\"true\" title=\"Reviewing is inferred");
+    expect(html).toContain("Scope drift");
+    expect(html).not.toContain("mode-card");
     expect(html).not.toContain("workspace mode:");
     expect(html).not.toContain("data-workspace-mode");
     expect(html).not.toContain("browser history");
@@ -275,6 +275,7 @@ describe("web renderers", () => {
     const html = renderDesktopHtml(state, { liveBridge: "desktop" });
 
     expect(html).toContain("Reviewing 4 changed files");
+    expect(html).toContain("<div class=\"signal-value\">Reviewing</div>");
     expect(html).not.toContain("Agent work is changing");
   });
 
@@ -298,7 +299,7 @@ describe("web renderers", () => {
     const html = renderDesktopHtml(state, { liveBridge: "desktop" });
 
     expect(html).toContain("<div class=\"signal-value\">Researching</div>");
-    expect(html).toContain("Researching is inferred when planning context exists");
+    expect(html).toContain("Researching context around PLAN.md");
     expect(html).not.toContain("data-workspace-mode");
   });
 

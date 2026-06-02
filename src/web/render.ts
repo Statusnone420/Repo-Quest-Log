@@ -1702,7 +1702,7 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     /* ---- BOARD (3 cols, single row, fits viewport) ---- */
     .board {
       display: grid;
-      grid-template-columns: minmax(320px, 0.92fr) minmax(420px, 1.2fr) minmax(360px, 1.05fr);
+      grid-template-columns: minmax(320px, 0.86fr) minmax(470px, 1.08fr) minmax(360px, 0.96fr);
       grid-template-rows: minmax(0, 1fr);
       gap: 12px;
       padding: 12px var(--pad-x) 14px;
@@ -1720,25 +1720,16 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     .col:nth-child(1) .tile[data-area="blocked"] {
       flex: 1 1 190px;
     }
-    .col:nth-child(2) .tile[data-area="activity"] {
-      flex: 1 1 0;
-    }
-    .col:nth-child(2) .tile.tight[data-area="changes"] {
-      flex: 0 0 112px;
-      min-height: 96px;
-    }
+    .col:nth-child(2) .tile[data-area="activity"] { flex: 1 1 0; }
     .col:nth-child(3) .tile[data-area="prompts"] {
       flex: 0 0 auto;
       min-height: 210px;
     }
     .col:nth-child(3) .tile[data-area="digest"] {
-      flex: 0 0 auto;
-      min-height: 150px;
-    }
-    .col:nth-child(3) .tile[data-area="repo-context"] {
       flex: 1 1 0;
-      min-height: 160px;
+      min-height: 170px;
     }
+    .support-data { display: none; }
 
     .tile {
       background: var(--tile);
@@ -2065,28 +2056,78 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     .signals-strip {
       margin: 0 var(--pad-x);
       display: grid;
-      grid-template-columns: minmax(260px, 0.86fr) minmax(460px, 1.36fr) minmax(360px, 1.12fr);
-      gap: 0;
-      align-items: stretch;
+      grid-template-rows: auto minmax(82px, auto);
       border: 1px solid var(--tile-border);
       border-radius: 7px;
-      background: var(--tile);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.018), rgba(255,255,255,0)),
+        var(--tile);
       overflow: hidden;
+    }
+    .signals-head {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      min-height: 42px;
+      padding: 0 20px;
+      border-bottom: 1px solid var(--tile-border);
+    }
+    .signals-title {
+      color: var(--ink);
+      font-size: calc(17px * var(--rql-density));
+      font-weight: 750;
+    }
+    .signals-help {
+      appearance: none;
+      border: 0;
+      background: transparent;
+      color: var(--accent);
+      padding: 0;
+      font: inherit;
+      font-size: var(--small-size);
+      cursor: pointer;
+    }
+    .signals-grid {
+      display: grid;
+      grid-template-columns:
+        minmax(180px, 0.9fr)
+        minmax(210px, 1fr)
+        minmax(140px, 0.68fr)
+        minmax(150px, 0.72fr)
+        minmax(150px, 0.72fr)
+        minmax(150px, 0.72fr)
+        minmax(230px, 1.12fr);
+      align-items: stretch;
+      min-width: 0;
     }
     .signal-cell {
       min-width: 0;
-      padding: 14px 18px;
-      border: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 4px;
+      padding: 14px 22px;
       border-left: 1px solid var(--tile-border);
-      border-radius: 0;
-      background: transparent;
     }
     .signal-cell:first-child { border-left: 0; }
     .signal-overview {
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
+      display: grid;
+      grid-template-columns: 46px minmax(0, 1fr);
       gap: 12px;
+      align-items: center;
+    }
+    .signal-wave {
+      width: 38px;
+      height: 38px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--ok);
+    }
+    .signal-wave svg {
+      width: 34px;
+      height: 34px;
+      filter: drop-shadow(0 0 10px rgba(138,214,168,0.22));
     }
     .signal-label {
       color: var(--muted);
@@ -2094,27 +2135,21 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       font-size: var(--small-size);
       text-transform: none;
       letter-spacing: 0;
-      margin-bottom: 6px;
-    }
-    .signal-label.inline {
-      margin: 0;
-      color: var(--dim);
-      font-family: var(--mono);
-      font-size: var(--tiny-size);
-      letter-spacing: 0.8px;
-      text-transform: uppercase;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .signal-value {
       color: var(--ok);
-      font-size: calc(21px * var(--rql-density));
+      font-size: calc(19px * var(--rql-density));
       line-height: 1.05;
-      font-weight: 750;
+      font-weight: 800;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
+    .signal-value.warn { color: var(--warn); }
     .signal-note {
-      margin-top: 5px;
       color: var(--muted);
       font-size: var(--tiny-size);
       font-family: var(--sans);
@@ -2122,164 +2157,59 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       text-overflow: ellipsis;
       white-space: nowrap;
     }
-    .signal-current-note {
-      color: var(--ink);
-      font-size: var(--small-size);
-      line-height: 1.35;
-    }
-    .signal-trust-note {
-      color: var(--dim);
-      font-size: var(--tiny-size);
-      line-height: 1.35;
-    }
-    .workspace-mode {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 8px;
-    }
-    .mode-card {
-      display: grid;
-      grid-template-rows: auto auto minmax(0, 1fr);
-      gap: 4px;
-      min-width: 0;
-      min-height: 92px;
-      padding: 10px 11px;
-      border: 1px solid var(--tile-border);
-      border-radius: 7px;
-      background:
-        linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.012));
-      color: var(--muted);
-      text-align: left;
-    }
-    .mode-card[aria-current="true"] {
-      color: var(--ink);
-      border-color: rgba(138,180,255,0.68);
-      background:
-        linear-gradient(180deg, rgba(88,166,255,0.20), rgba(88,166,255,0.055));
-      box-shadow: inset 0 2px 0 rgba(138,214,168,0.78);
-    }
-    .mode-card-title {
-      color: var(--ink);
-      font-size: var(--small-size);
-      font-weight: 750;
-      line-height: 1.1;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .mode-card-action {
-      color: var(--accent);
-      font-size: var(--tiny-size);
-      font-family: var(--mono);
-      line-height: 1.2;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .mode-card-detail {
+    .signal-unit {
+      margin-left: 6px;
       color: var(--muted);
       font-size: var(--tiny-size);
-      line-height: 1.35;
-      overflow: hidden;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
+      font-family: var(--sans);
+      font-weight: 500;
     }
-    .signal-evidence-panel {
-      display: grid;
-      grid-template-rows: auto auto 1fr;
-      gap: 8px;
-    }
-    .signal-metrics-grid {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 7px;
-    }
-    .signal-metric {
-      min-width: 0;
-      padding: 8px 9px;
-      border: 1px solid rgba(138,180,255,0.14);
-      border-radius: 6px;
-      background: rgba(255,255,255,0.018);
-    }
-    .signal-metric strong {
-      display: block;
+    .signal-number {
       color: var(--ok);
-      font-size: calc(17px * var(--rql-density));
-      line-height: 1.05;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      font-size: calc(22px * var(--rql-density));
+      line-height: 1.02;
+      font-weight: 800;
+      font-family: var(--sans);
       white-space: nowrap;
     }
-    .signal-metric span {
-      display: block;
-      margin-bottom: 4px;
-      color: var(--dim);
-      font-family: var(--mono);
-      font-size: var(--tiny-size);
-      text-transform: uppercase;
-      letter-spacing: 0.6px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+    .signal-number.warn { color: var(--warn); }
+    .signal-spark {
+      display: inline-flex;
+      align-items: end;
+      gap: 3px;
+      height: 18px;
+      min-width: 98px;
+      margin-left: 10px;
+      vertical-align: middle;
     }
-    .signal-metric em {
-      display: block;
-      margin-top: 4px;
-      color: var(--muted);
-      font-style: normal;
-      font-size: var(--tiny-size);
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+    .signal-spark span,
+    .signal-trend span {
+      display: inline-block;
+      width: 4px;
+      border-radius: 3px 3px 0 0;
+      background: rgba(138,214,168,0.84);
     }
-    .timeline-panel {
+    .signal-trend-wrap {
       display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 7px 10px;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
       align-items: center;
     }
-    .timeline-tabs {
+    .signal-trend {
       display: inline-flex;
-      gap: 4px;
-      justify-content: end;
-    }
-    .timeline-window {
-      grid-column: 1 / -1;
-      display: none;
-    }
-    .timeline-window[data-visible="true"] { display: block; }
-    .timeline-bars {
-      height: 24px;
-      display: flex;
       align-items: end;
-      gap: 2px;
-    }
-    .timeline-bucket {
-      flex: 1;
-      min-width: 2px;
-      border-radius: 3px 3px 0 0;
-      background: rgba(138,180,255,0.18);
-      transform-origin: bottom;
-    }
-    .timeline-bucket.active { background: rgba(138,180,255,0.42); }
-    .timeline-bucket.hot { background: rgba(138,214,168,0.72); }
-    .timeline-bucket.latest { box-shadow: 0 0 0 1px rgba(138,214,168,0.24); }
-    .timeline-bucket.pulse { animation: rqlPulse 900ms ease-out 1; }
-    .timeline-empty {
-      color: var(--dim);
-      font-size: var(--tiny-size);
-      font-family: var(--sans);
-      padding-top: 5px;
-    }
-    .timeline-summary {
-      grid-column: 1 / -1;
-      color: var(--muted);
-      font-size: var(--tiny-size);
-      font-family: var(--sans);
+      gap: 3px;
+      height: 28px;
+      min-width: 0;
       overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+    }
+    .signal-trend span.quiet { background: rgba(138,180,255,0.24); }
+    .signal-trend span.warn { background: rgba(233,185,115,0.86); }
+    .signal-trend span.hot { background: rgba(248,132,113,0.86); }
+    .signal-chevron {
+      color: var(--dim);
+      font-size: 26px;
+      line-height: 1;
     }
     @keyframes rqlPulse {
       0% { transform: scaleY(1); filter: brightness(1); }
@@ -2289,16 +2219,69 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     @media (prefers-reduced-motion: reduce) {
       .timeline-bucket.pulse { animation: none; }
     }
+    .activity-toolbar {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .activity-live {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--ok);
+      font-size: var(--small-size);
+    }
+    .activity-control {
+      appearance: none;
+      border: 1px solid var(--tile-border);
+      border-radius: 5px;
+      background: rgba(255,255,255,0.025);
+      color: var(--ink);
+      padding: 5px 10px;
+      font: inherit;
+      font-size: var(--small-size);
+    }
+    .activity-ledger {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      gap: 0;
+      min-height: 0;
+      padding: 0;
+    }
+    .activity-head,
     .activity-row {
       display: grid;
-      grid-template-columns: 58px minmax(0, 1fr) auto auto;
-      gap: 8px;
+      grid-template-columns: minmax(0, 1.45fr) 84px 72px minmax(96px, 0.56fr) 54px;
+      gap: 10px;
       align-items: center;
-      padding: 4px 0;
+    }
+    .activity-head {
+      padding: 8px 18px;
+      color: var(--muted);
+      font-size: var(--small-size);
+      border-bottom: 1px solid var(--tile-border);
+    }
+    .activity-rows {
+      min-height: 0;
+      overflow: auto;
+    }
+    .activity-row {
+      min-height: 38px;
+      padding: 0 18px;
+      border-bottom: 1px solid var(--faint);
       font-size: var(--small-size);
     }
     .activity-kind {
-      color: var(--dim);
+      justify-self: start;
+      min-width: 24px;
+      height: 22px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(138,214,168,0.36);
+      border-radius: 5px;
+      color: var(--ok);
+      background: rgba(138,214,168,0.08);
       font-family: var(--mono);
       font-size: var(--tiny-size);
       text-transform: uppercase;
@@ -2311,8 +2294,25 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       text-overflow: ellipsis;
       white-space: nowrap;
     }
-    .activity-file.outside { color: var(--warn); }
-    .activity-age { color: var(--dim); font-family: var(--mono); font-size: var(--tiny-size); }
+    .activity-file.outside { color: var(--ink); }
+    .activity-age { color: var(--muted); font-size: var(--small-size); }
+    .activity-scope {
+      color: transparent;
+      font-size: var(--small-size);
+      white-space: nowrap;
+    }
+    .activity-scope.outside { color: var(--warn); }
+    .activity-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 38px;
+      padding: 0 18px;
+      color: var(--muted);
+      font-size: var(--small-size);
+      border-top: 1px solid var(--tile-border);
+    }
     .scope-map {
       display: grid;
       gap: 8px;
@@ -2444,36 +2444,62 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     }
     .prompt-row {
       display: grid;
-      grid-template-columns: 26px minmax(0, 1fr) auto;
-      gap: 9px;
+      grid-template-columns: 48px minmax(0, 1fr) 30px;
+      gap: 12px;
       align-items: center;
-      padding: 5px 0;
+      min-height: 58px;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--faint);
       font-size: var(--small-size);
     }
+    .prompt-row:last-child { border-bottom: 0; }
     .prompt-glyph {
-      width: 22px;
-      height: 22px;
+      width: 42px;
+      height: 42px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       border: 1px solid var(--tile-border);
       border-radius: 5px;
       color: var(--accent);
-      font-family: var(--mono);
-      font-size: var(--tiny-size);
       background: rgba(138,180,255,0.08);
+    }
+    .prompt-glyph svg { width: 30px; height: 30px; }
+    .prompt-glyph.claude {
+      color: #d7b98f;
+      border-color: rgba(215,185,143,0.28);
+      background: rgba(215,185,143,0.08);
+    }
+    .prompt-glyph.anthropic {
+      color: #d7b98f;
+      border-color: rgba(215,185,143,0.28);
+      background: rgba(215,185,143,0.08);
+    }
+    .prompt-glyph.openai {
+      color: #86e0bb;
+      border-color: rgba(134,224,187,0.28);
+      background: rgba(134,224,187,0.08);
+    }
+    .prompt-glyph.gemini {
+      color: #a78bfa;
+      border-color: rgba(167,139,250,0.3);
+      background: rgba(167,139,250,0.1);
     }
     .prompt-label { color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .prompt-sub { color: var(--dim); font-family: var(--mono); font-size: var(--tiny-size); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .prompt-copy {
       appearance: none;
       border: 1px solid var(--tile-border);
-      border-radius: 6px;
-      background: rgba(255,255,255,0.04);
+      border-radius: 5px;
+      width: 28px;
+      height: 28px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
       color: var(--muted);
-      padding: 4px 7px;
+      padding: 0;
       font: inherit;
-      font-size: var(--tiny-size);
       cursor: pointer;
     }
     .prompt-copy:hover { background: var(--accent-soft); color: var(--accent); }
@@ -2702,7 +2728,7 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     .palette-input::placeholder { color: var(--dim); }
     .palette-list { overflow-y: auto; padding: 6px; }
     .palette-item {
-      display: grid; grid-template-columns: 24px 1fr auto;
+      display: grid; grid-template-columns: 46px 1fr auto;
       gap: 12px; align-items: center;
       padding: 10px 12px; border-radius: 6px;
       cursor: pointer; user-select: none;
@@ -2713,6 +2739,16 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       font-family: var(--mono); font-size: 14px; color: var(--accent);
       text-align: center;
     }
+    .palette-item .prompt-glyph {
+      font-family: inherit;
+      font-size: inherit;
+      color: var(--accent);
+    }
+    .palette-item .prompt-glyph {
+      width: 38px;
+      height: 38px;
+    }
+    .palette-item .prompt-glyph svg { width: 28px; height: 28px; }
     .palette-item .label { font-size: 13px; color: var(--ink); line-height: 1.3; }
     .palette-item .sub { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-top: 2px; }
     .palette-item .hint {
@@ -2767,20 +2803,17 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       .strip-headline { -webkit-line-clamp: 2; }
       .strip-tags { margin-top: 5px; gap: 5px; }
       .signals-strip {
-        grid-template-columns: minmax(0, 1fr);
-        gap: 0;
+        grid-template-rows: auto auto;
+      }
+      .signals-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
       }
       .board {
         grid-template-columns: minmax(0, 0.9fr) minmax(0, 1fr) minmax(360px, 1.05fr);
       }
       .signal-cell {
         padding: 10px 12px;
-        border-left: 0;
-        border-top: 1px solid var(--tile-border);
       }
-      .signal-cell:first-child { border-top: 0; }
-      .workspace-mode { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .timeline-bars { height: 18px; }
     }
     @media (min-width: 1560px) {
       .board {
@@ -2804,10 +2837,15 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       .kbd-hint { margin-left: 0; }
       .header-strip,
       .signals-strip,
+      .signals-grid,
       .col,
       .col:nth-child(1) { grid-template-columns: minmax(0, 1fr); }
-      .workspace-mode,
-      .signal-metrics-grid { grid-template-columns: minmax(0, 1fr); }
+      .signals-grid { display: grid; }
+      .signal-cell {
+        border-left: 0;
+        border-top: 1px solid var(--tile-border);
+      }
+      .signal-cell:first-child { border-top: 0; }
     }
     @media (max-height: 780px) {
       .shell {
@@ -2832,7 +2870,6 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       .strip-cell.focus .strip-why { -webkit-line-clamp: 1; }
       .strip-tags { margin-top: 5px; }
       .signal-cell { padding-top: 8px; padding-bottom: 8px; }
-      .mode-card { min-height: 78px; }
       .tile-header { min-height: 38px; }
       .tile-body { padding-top: 7px; padding-bottom: 7px; }
       .prompt-sub { display: none; }
@@ -2872,7 +2909,6 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
         <button type="button" data-ui-action="smaller" aria-label="Smaller">A-</button>
         <span data-ui-scale-label>100%</span>
         <button type="button" data-ui-action="larger" aria-label="Larger">A+</button>
-        <button type="button" data-ui-action="refresh" aria-label="Refresh" title="Refresh (Ctrl+R)">↻</button>
       </div>
     </header>
     ${renderSettingsRack(state, options.liveBridge)}
@@ -2921,13 +2957,14 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       </div>
       <div class="col">
         ${renderRecentActivityTile(state.recentActivity ?? [])}
-        ${renderScopeMapTile(state.recentActivity ?? [])}
-        ${renderChangesTile(state.recentChanges)}
       </div>
       <div class="col">
         ${renderPromptPaletteTile(presets)}
         ${renderDigestTile(state, options.openrouterConfigured ?? false)}
+      </div>
+      <div class="support-data" aria-hidden="true">
         ${renderRepoContextTile(state)}
+        ${renderChangesTile(state.recentChanges)}
       </div>
       </section>
       ${renderDesktopFooter(state, options.appVersion)}
@@ -3743,37 +3780,56 @@ function renderWorkspaceSignalsStrip(state: QuestState): string {
   const resolvedMode = resolveWorkspaceMode(data, state);
   const activeLine = workspaceModeEvidence(resolvedMode, data, state);
   const latestFile = state.recentActivity?.[0]?.file ?? state.recentChanges[0]?.file ?? "none";
+  const trend = data.trend.length ? data.trend : timelineFromTrend(data.trend).find((window) => window.minutes === 30)?.buckets ?? [];
+  const scopeValue = data.scopeActive ? String(data.scopeDriftCount) : "off";
+  const scopeNote = data.scopeActive ? "outside declared scope" : "no declared areas";
+  const churnNote = data.repeatedFiles[0] ?? latestFile;
+  const editSpark = data.trend.slice(-12);
 
   return `<section class="signals-strip" aria-label="Workspace Signals">
-    <div class="signal-cell signal-overview">
-      <div>
-      <div class="signal-label">Workspace Signals</div>
-        <div class="signal-value">${escapeHtml(resolvedMode)}</div>
-        <div class="signal-current-note">${escapeHtml(activeLine)}</div>
-      </div>
-      <div>
-        <div class="signal-label inline">Signal state</div>
-        <div class="signal-note">${escapeHtml(data.state)} · last edit ${escapeHtml(data.lastEditAge)}</div>
-        <div class="signal-trust-note">Automatic, read-only signal from watcher and Git facts. Viewing and switching repos do not write repo files.</div>
-        <span class="sr-only">${escapeHtml(`${resolvedMode} inferred automatically`)}</span>
-      </div>
+    <div class="signals-head">
+      <div class="signals-title">Workspace Signals</div>
+      <button type="button" class="signals-help" data-palette-open>What's this?</button>
     </div>
-    <div class="signal-cell">
-      <div class="signal-label">Automatic agent work mode</div>
-      ${renderWorkspaceModeCards(resolvedMode, data, state)}
-    </div>
-    <div class="signal-cell signal-evidence-panel">
-      <div>
-        <div class="signal-label">Live evidence</div>
-        <div class="signal-metrics-grid">
-          <div class="signal-metric"><span>Edits/min</span><strong>${data.editRate}</strong><em>change events</em></div>
-          <div class="signal-metric"><span>Files</span><strong>${data.filesTouched}</strong><em>last 10m spread</em></div>
-          <div class="signal-metric"><span>Outside</span><strong>${data.scopeActive ? data.scopeDriftCount : "off"}</strong><em>${data.scopeActive ? "declared scope" : "no declared areas"}</em></div>
-          <div class="signal-metric"><span>Churn</span><strong>${escapeHtml(data.thrashLevel)}</strong><em>${escapeHtml(data.repeatedFiles[0] ?? latestFile)}</em></div>
+    <div class="signals-grid">
+      <div class="signal-cell signal-overview">
+        <span class="signal-wave" aria-hidden="true">${renderSignalWave()}</span>
+        <div>
+          <div class="signal-label">Repo active</div>
+          <div class="signal-value${resolvedMode === "Idle" ? " warn" : ""}">${escapeHtml(resolvedMode)}</div>
+          <div class="signal-note">${escapeHtml(data.state)} · ${escapeHtml(activeLine)}</div>
+          <span class="sr-only">${escapeHtml(`${resolvedMode} inferred from watcher and Git evidence`)}</span>
         </div>
       </div>
-      <div class="signal-label">Activity timeline</div>
-      ${renderTimeline(data.timelineWindows ?? timelineFromTrend(data.trend))}
+      <div class="signal-cell">
+        <div class="signal-label">Edits/min</div>
+        <div><span class="signal-number">${data.editRate}</span>${renderSignalSpark(editSpark)}<span class="signal-unit">(5m avg)</span></div>
+      </div>
+      <div class="signal-cell">
+        <div class="signal-label">Files touched</div>
+        <div><span class="signal-number">${data.filesTouched}</span><span class="signal-unit">(last 10m)</span></div>
+      </div>
+      <div class="signal-cell">
+        <div class="signal-label">Last edit</div>
+        <div class="signal-value">${escapeHtml(data.lastEditAge)}</div>
+      </div>
+      <div class="signal-cell">
+        <div class="signal-label">Scope drift</div>
+        <div class="signal-number${data.scopeActive && data.scopeDriftCount > 0 ? " warn" : ""}">${escapeHtml(scopeValue)}</div>
+        <div class="signal-note">${escapeHtml(scopeNote)}</div>
+      </div>
+      <div class="signal-cell">
+        <div class="signal-label">Thrash</div>
+        <div class="signal-value${data.thrashLevel !== "None" ? " warn" : ""}">${escapeHtml(data.thrashLevel)}</div>
+        <div class="signal-note">${escapeHtml(churnNote)}</div>
+      </div>
+      <div class="signal-cell">
+        <div class="signal-label">Signal trend (30m)</div>
+        <div class="signal-trend-wrap">
+          ${renderSignalTrend(trend)}
+          <span class="signal-chevron" aria-hidden="true">›</span>
+        </div>
+      </div>
     </div>
   </section>`;
 }
@@ -3794,24 +3850,6 @@ function resolveWorkspaceMode(signals: WorkspaceSignals, state: QuestState): Wor
   return "Idle";
 }
 
-function renderWorkspaceModeCards(
-  resolvedMode: WorkspaceMode,
-  signals: WorkspaceSignals,
-  state: QuestState,
-): string {
-  const modes: WorkspaceMode[] = ["Building", "Reviewing", "Researching", "Idle"];
-  return `<div class="workspace-mode" aria-label="Workspace mode">
-    ${modes.map((candidate) => {
-      const copy = workspaceModeCopy(candidate, signals, state);
-      return `<div class="mode-card" aria-current="${candidate === resolvedMode ? "true" : "false"}" title="${escapeHtml(copy.title)}">
-        <span class="mode-card-title">${candidate}</span>
-        <span class="mode-card-action">${escapeHtml(copy.action)}</span>
-        <span class="mode-card-detail">${escapeHtml(copy.detail)}</span>
-      </div>`;
-    }).join("")}
-  </div>`;
-}
-
 function hasRecentWorkspaceActivity(state: QuestState): boolean {
   const cutoff = Date.now() - 90_000;
   return (state.recentActivity ?? []).some((event) => Number.isFinite(event.ts) && event.ts >= cutoff);
@@ -3820,45 +3858,6 @@ function hasRecentWorkspaceActivity(state: QuestState): boolean {
 function hasMeaningfulPlanningContext(state: QuestState): boolean {
   const objective = state.activeQuest?.title || state.objective?.title;
   return Boolean(objective && objective.trim() && objective.trim().toLowerCase() !== "no objective set yet");
-}
-
-function workspaceModeCopy(
-  mode: WorkspaceMode,
-  signals: WorkspaceSignals,
-  state: QuestState,
-): { action: string; detail: string; title: string } {
-  const dirtyFiles = state.gitContext?.dirtyFiles ?? state.recentChanges.length;
-  const latestFile = state.recentActivity?.[0]?.file ?? state.recentChanges[0]?.file;
-  if (mode === "Building") {
-    return {
-      action: "Writing code",
-      detail: signals.filesTouched > 0
-        ? `${signals.editRate} edits/min across ${signals.filesTouched} file${signals.filesTouched === 1 ? "" : "s"}`
-        : "Inferred when file edits start",
-      title: "Building is inferred from recent watcher activity",
-    };
-  }
-  if (mode === "Reviewing") {
-    return {
-      action: "Checking diffs",
-      detail: dirtyFiles > 0
-        ? `${dirtyFiles} dirty file${dirtyFiles === 1 ? "" : "s"} ready for diff review`
-        : "Inferred when changed files are waiting",
-      title: "Reviewing is inferred from dirty files or recent changes without active edits",
-    };
-  }
-  if (mode === "Researching") {
-    return {
-      action: "Collecting context",
-      detail: latestFile ? `Reading around ${latestFile}` : "Inferred from active task context before edits",
-      title: "Researching is inferred when planning context exists without edits or dirty files",
-    };
-  }
-  return {
-    action: "No active agent work",
-    detail: signals.lastEditAge === "no activity" ? "No active agent work yet" : `Last edit ${signals.lastEditAge}`,
-    title: "Idle is inferred when no active edits, diffs, or task context are present",
-  };
 }
 
 function workspaceModeEvidence(mode: WorkspaceMode, signals: WorkspaceSignals, state: QuestState): string {
@@ -3882,6 +3881,32 @@ function workspaceModeEvidence(mode: WorkspaceMode, signals: WorkspaceSignals, s
   return signals.lastEditAge === "no activity"
     ? "No active agent work yet."
     : `Idle now; last file activity was ${signals.lastEditAge}.`;
+}
+
+function renderSignalWave(): string {
+  return `<svg viewBox="0 0 44 44" fill="none" aria-hidden="true">
+    <path d="M3 24h5l3-9 5 22 6-30 5 17h4l3-8 4 8h3" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></path>
+  </svg>`;
+}
+
+function renderSignalSpark(values: readonly number[]): string {
+  const buckets = values.length ? values : Array.from({ length: 12 }, () => 0);
+  const max = Math.max(1, ...buckets);
+  return `<span class="signal-spark" aria-hidden="true">${buckets.map((value) => {
+    const height = value > 0 ? Math.max(5, Math.round((value / max) * 17)) : 4;
+    return `<span style="height:${height}px"></span>`;
+  }).join("")}</span>`;
+}
+
+function renderSignalTrend(values: readonly number[]): string {
+  const buckets = values.length ? values.slice(-30) : Array.from({ length: 30 }, () => 0);
+  const max = Math.max(1, ...buckets);
+  return `<div class="signal-trend" aria-hidden="true">${buckets.map((value, index) => {
+    const height = value > 0 ? Math.max(6, Math.round((value / max) * 28)) : 7;
+    const hotIndex = index >= buckets.length - 6;
+    const classes = value === 0 ? "quiet" : hotIndex && value >= max ? "hot" : hotIndex ? "warn" : "";
+    return `<span class="${classes}" style="height:${height}px"></span>`;
+  }).join("")}</div>`;
 }
 
 function renderTimeline(windows: readonly WorkspaceTimelineWindow[]): string {
@@ -3951,21 +3976,43 @@ function renderRecentActivityTile(activity: readonly RecentActivityEvent[]): str
   return `<section class="tile tight" data-area="activity">
     <div class="tile-header">
       <h3 class="tile-title changes"><span class="accent-bar"></span>Recent Activity</h3>
-      <span class="tile-meta">${activity.length}</span>
+      <div class="activity-toolbar">
+        <span class="activity-live"><span class="dot"></span>Live</span>
+        <button type="button" class="activity-control" disabled>Pause</button>
+        <button type="button" class="activity-control" disabled>Filters⌄</button>
+      </div>
     </div>
-    <div class="tile-body">
+    <div class="tile-body activity-ledger" data-activity-ledger>
+      <div class="activity-head" aria-hidden="true">
+        <span>File</span>
+        <span>Event</span>
+        <span>Age</span>
+        <span></span>
+        <span></span>
+      </div>
       ${rows.length === 0
-        ? `<div class="activity-row"><span class="activity-kind">none</span><span class="activity-file">No workspace activity yet</span><span class="activity-age"></span><span></span></div>`
-        : rows.map((event) => `
+        ? `<div class="activity-rows"><div class="activity-row"><span class="activity-file">No workspace activity yet</span><span class="activity-kind">none</span><span class="activity-age"></span><span class="activity-scope"></span><span></span></div></div>`
+        : `<div class="activity-rows">${rows.map((event) => `
           <div class="activity-row">
-            <span class="activity-kind">${escapeHtml(event.kind)}</span>
             <span class="activity-file${event.outsideScope ? " outside" : ""}">${escapeHtml(event.file)}</span>
+            <span class="activity-kind event-badge">${escapeHtml(activityEventLabel(event.kind))}</span>
             <span class="activity-age">${escapeHtml(formatActivityAge(event.ts))}</span>
+            <span class="activity-scope${event.outsideScope ? " outside" : ""}">${event.outsideScope ? "Outside scope" : ""}</span>
             <button type="button" class="diff-action" data-ui-action="open-diff" data-diff-file="${escapeHtml(event.file)}">Diff</button>
           </div>
-        `).join("")}
+        `).join("")}</div>`}
+      <div class="activity-footer">
+        <span>Watching local workspace</span>
+        <span>${activity.length} event${activity.length === 1 ? "" : "s"} shown</span>
+      </div>
     </div>
   </section>`;
+}
+
+function activityEventLabel(kind: RecentActivityEvent["kind"]): string {
+  if (kind === "add") return "add";
+  if (kind === "unlink") return "unlink";
+  return "modify";
 }
 
 function renderScopeMapTile(activity: readonly RecentActivityEvent[]): string {
@@ -4017,21 +4064,63 @@ function renderPromptPaletteTile(presets: readonly PromptPreset[]): string {
   return `<section class="tile tight" data-area="prompts">
     <div class="tile-header">
       <h3 class="tile-title changes"><span class="accent-bar"></span>Prompt Palette</h3>
-      <span class="tile-meta">${presets.length}</span>
+      <button type="button" class="strip-link" data-palette-open>See all</button>
     </div>
     <div class="tile-body">
       ${rows.map((preset) => `
         <div class="prompt-row">
-          <span class="prompt-glyph">${escapeHtml(preset.glyph)}</span>
+          ${renderPromptIcon(preset)}
           <span>
             <span class="prompt-label">${escapeHtml(preset.label)}</span>
             <span class="prompt-sub">${escapeHtml(preset.sub)}</span>
           </span>
-          <button type="button" class="prompt-copy" data-copy-context="${escapeHtml(preset.body)}">copy</button>
+          <button type="button" class="prompt-copy" data-copy-context="${escapeHtml(preset.body)}" aria-label="Copy ${escapeHtml(preset.label)} prompt">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+          </button>
         </div>
       `).join("")}
     </div>
   </section>`;
+}
+
+type PromptProvider = "claude" | "anthropic" | "openai" | "gemini" | "custom";
+
+function renderPromptIcon(preset: PromptPreset): string {
+  const provider = promptProvider(preset);
+  return `<span class="prompt-glyph ${provider}" aria-hidden="true">${promptProviderSvg(provider, preset.glyph)}</span>`;
+}
+
+function promptProvider(preset: PromptPreset): PromptProvider {
+  const text = `${preset.id} ${preset.label} ${preset.sub} ${preset.keywords}`.toLowerCase();
+  if (text.includes("claude")) return "claude";
+  if (text.includes("anthropic")) return "anthropic";
+  if (text.includes("codex") || text.includes("openai")) return "openai";
+  if (text.includes("gemini") || text.includes("google")) return "gemini";
+  return "custom";
+}
+
+function promptProviderSvg(provider: PromptProvider, fallbackGlyph: string): string {
+  if (provider === "claude") {
+    return `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="m4.7144 15.9555 4.7174-2.6471.079-.2307-.079-.1275h-.2307l-.7893-.0486-2.6956-.0729-2.3375-.0971-2.2646-.1214-.5707-.1215-.5343-.7042.0546-.3522.4797-.3218.686.0608 1.5179.1032 2.2767.1578 1.6514.0972 2.4468.255h.3886l.0546-.1579-.1336-.0971-.1032-.0972L6.973 9.8356l-2.55-1.6879-1.3356-.9714-.7225-.4918-.3643-.4614-.1578-1.0078.6557-.7225.8803.0607.2246.0607.8925.686 1.9064 1.4754 2.4893 1.8336.3643.3035.1457-.1032.0182-.0728-.164-.2733-1.3539-2.4467-1.445-2.4893-.6435-1.032-.17-.6194c-.0607-.255-.1032-.4674-.1032-.7285L6.287.1335 6.6997 0l.9957.1336.419.3642.6192 1.4147 1.0018 2.2282 1.5543 3.0296.4553.8985.2429.8318.091.255h.1579v-.1457l.1275-1.706.2368-2.0947.2307-2.6957.0789-.7589.3764-.9107.7468-.4918.5828.2793.4797.686-.0668.4433-.2853 1.8517-.5586 2.9021-.3643 1.9429h.2125l.2429-.2429.9835-1.3053 1.6514-2.0643.7286-.8196.85-.9046.5464-.4311h1.0321l.759 1.1293-.34 1.1657-1.0625 1.3478-.8804 1.1414-1.2628 1.7-.7893 1.36.0729.1093.1882-.0183 2.8535-.607 1.5421-.2794 1.8396-.3157.8318.3886.091.3946-.3278.8075-1.967.4857-2.3072.4614-3.4364.8136-.0425.0304.0486.0607 1.5482.1457.6618.0364h1.621l3.0175.2247.7892.522.4736.6376-.079.4857-1.2142.6193-1.6393-.3886-3.825-.9107-1.3113-.3279h-.1822v.1093l1.0929 1.0686 2.0035 1.8092 2.5075 2.3314.1275.5768-.3218.4554-.34-.0486-2.2039-1.6575-.85-.7468-1.9246-1.621h-.1275v.17l.4432.6496 2.3436 3.5214.1214 1.0807-.17.3521-.6071.2125-.6679-.1214-1.3721-1.9246L14.38 17.959l-1.1414-1.9428-.1397.079-.674 7.2552-.3156.3703-.7286.2793-.6071-.4614-.3218-.7468.3218-1.4753.3886-1.9246.3157-1.53.2853-1.9004.17-.6314-.0121-.0425-.1397.0182-1.4328 1.9672-2.1796 2.9446-1.7243 1.8456-.4128.164-.7164-.3704.0667-.6618.4008-.5889 2.386-3.0357 1.4389-1.882.929-1.0868-.0062-.1579h-.0546l-6.3385 4.1164-1.1293.1457-.4857-.4554.0608-.7467.2307-.2429 1.9064-1.3114Z"></path>
+    </svg>`;
+  }
+  if (provider === "anthropic") {
+    return `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M17.3041 3.541h-3.6718l6.696 16.918H24Zm-10.6082 0L0 20.459h3.7442l1.3693-3.5527h7.0052l1.3693 3.5528h3.7442L10.5363 3.5409Zm-.3712 10.2232 2.2914-5.9456 2.2914 5.9456Z"></path>
+    </svg>`;
+  }
+  if (provider === "openai") {
+    return `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M22.2819 9.8211a5.9847 5.9847 0 0 0-.5157-4.9108 6.0462 6.0462 0 0 0-6.5098-2.9A6.0651 6.0651 0 0 0 4.9807 4.1818a5.9847 5.9847 0 0 0-3.9977 2.9 6.0462 6.0462 0 0 0 .7427 7.0966 5.98 5.98 0 0 0 .511 4.9107 6.051 6.051 0 0 0 6.5146 2.9001A5.9847 5.9847 0 0 0 13.2599 24a6.0557 6.0557 0 0 0 5.7718-4.2058 5.9894 5.9894 0 0 0 3.9977-2.9001 6.0557 6.0557 0 0 0-.7475-7.0729zm-9.022 12.6081a4.4755 4.4755 0 0 1-2.8764-1.0408l.1419-.0804 4.7783-2.7582a.7948.7948 0 0 0 .3927-.6813v-6.7369l2.02 1.1686a.071.071 0 0 1 .038.052v5.5826a4.504 4.504 0 0 1-4.4945 4.4944zm-9.6607-4.1254a4.4708 4.4708 0 0 1-.5346-3.0137l.142.0852 4.783 2.7582a.7712.7712 0 0 0 .7806 0l5.8428-3.3685v2.3324a.0804.0804 0 0 1-.0332.0615L9.74 19.9502a4.4992 4.4992 0 0 1-6.1408-1.6464zM2.3408 7.8956a4.485 4.485 0 0 1 2.3655-1.9728V11.6a.7664.7664 0 0 0 .3879.6765l5.8144 3.3543-2.0201 1.1685a.0757.0757 0 0 1-.071 0l-4.8303-2.7865A4.504 4.504 0 0 1 2.3408 7.872zm16.5963 3.8558L13.1038 8.364 15.1192 7.2a.0757.0757 0 0 1 .071 0l4.8303 2.7913a4.4944 4.4944 0 0 1-.6765 8.1042v-5.6772a.79.79 0 0 0-.407-.667zm2.0107-3.0231-.142-.0852-4.7735-2.7818a.7759.7759 0 0 0-.7854 0L9.409 9.2297V6.8974a.0662.0662 0 0 1 .0284-.0615l4.8303-2.7866a4.4992 4.4992 0 0 1 6.6802 4.66zM8.3065 12.863l-2.02-1.1638a.0804.0804 0 0 1-.038-.0567V6.0742a4.4992 4.4992 0 0 1 7.3757-3.4537l-.142.0805L8.704 5.459a.7948.7948 0 0 0-.3927.6813zm1.0976-2.3654 2.602-1.4998 2.6069 1.4998v2.9994l-2.5974 1.4997-2.6067-1.4997Z"></path>
+    </svg>`;
+  }
+  if (provider === "gemini") {
+    return `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M11.04 19.32Q12 21.51 12 24q0-2.49.93-4.68.96-2.19 2.58-3.81t3.81-2.55Q21.51 12 24 12q-2.49 0-4.68-.93a12.3 12.3 0 0 1-3.81-2.58 12.3 12.3 0 0 1-2.58-3.81Q12 2.49 12 0q0 2.49-.96 4.68-.93 2.19-2.55 3.81a12.3 12.3 0 0 1-3.81 2.58Q2.49 12 0 12q2.49 0 4.68.96 2.19.93 3.81 2.55t2.55 3.81"></path>
+    </svg>`;
+  }
+  return escapeHtml(fallbackGlyph || "*");
 }
 
 function renderRepoContextTile(state: QuestState): string {
@@ -4953,12 +5042,36 @@ function renderPaletteScript(): string {
       function renderList() {
         var html = filtered.map(function (p, i) {
           return '<div class="palette-item" role="option" data-index="' + i + '" aria-selected="' + (i === selectedIndex ? "true" : "false") + '">' +
-            '<span class="glyph">' + escapeHtml(p.glyph || "→") + '</span>' +
+            promptIconHtml(p) +
             '<div><div class="label">' + escapeHtml(p.label) + '</div><div class="sub">' + escapeHtml(p.sub || "") + '</div></div>' +
             '<span class="hint">↵</span>' +
           '</div>';
         }).join("");
         list.innerHTML = html || '<div class="palette-item"><span class="glyph">·</span><div class="label">No matches</div><span class="hint"></span></div>';
+      }
+      function promptProvider(p) {
+        var text = String((p.id || "") + " " + (p.label || "") + " " + (p.sub || "") + " " + (p.keywords || "")).toLowerCase();
+        if (text.indexOf("claude") !== -1) return "claude";
+        if (text.indexOf("anthropic") !== -1) return "anthropic";
+        if (text.indexOf("codex") !== -1 || text.indexOf("openai") !== -1) return "openai";
+        if (text.indexOf("gemini") !== -1 || text.indexOf("google") !== -1) return "gemini";
+        return "custom";
+      }
+      function promptIconHtml(p) {
+        var provider = promptProvider(p);
+        var svg = "";
+        if (provider === "claude") {
+          svg = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m4.7144 15.9555 4.7174-2.6471.079-.2307-.079-.1275h-.2307l-.7893-.0486-2.6956-.0729-2.3375-.0971-2.2646-.1214-.5707-.1215-.5343-.7042.0546-.3522.4797-.3218.686.0608 1.5179.1032 2.2767.1578 1.6514.0972 2.4468.255h.3886l.0546-.1579-.1336-.0971-.1032-.0972L6.973 9.8356l-2.55-1.6879-1.3356-.9714-.7225-.4918-.3643-.4614-.1578-1.0078.6557-.7225.8803.0607.2246.0607.8925.686 1.9064 1.4754 2.4893 1.8336.3643.3035.1457-.1032.0182-.0728-.164-.2733-1.3539-2.4467-1.445-2.4893-.6435-1.032-.17-.6194c-.0607-.255-.1032-.4674-.1032-.7285L6.287.1335 6.6997 0l.9957.1336.419.3642.6192 1.4147 1.0018 2.2282 1.5543 3.0296.4553.8985.2429.8318.091.255h.1579v-.1457l.1275-1.706.2368-2.0947.2307-2.6957.0789-.7589.3764-.9107.7468-.4918.5828.2793.4797.686-.0668.4433-.2853 1.8517-.5586 2.9021-.3643 1.9429h.2125l.2429-.2429.9835-1.3053 1.6514-2.0643.7286-.8196.85-.9046.5464-.4311h1.0321l.759 1.1293-.34 1.1657-1.0625 1.3478-.8804 1.1414-1.2628 1.7-.7893 1.36.0729.1093.1882-.0183 2.8535-.607 1.5421-.2794 1.8396-.3157.8318.3886.091.3946-.3278.8075-1.967.4857-2.3072.4614-3.4364.8136-.0425.0304.0486.0607 1.5482.1457.6618.0364h1.621l3.0175.2247.7892.522.4736.6376-.079.4857-1.2142.6193-1.6393-.3886-3.825-.9107-1.3113-.3279h-.1822v.1093l1.0929 1.0686 2.0035 1.8092 2.5075 2.3314.1275.5768-.3218.4554-.34-.0486-2.2039-1.6575-.85-.7468-1.9246-1.621h-.1275v.17l.4432.6496 2.3436 3.5214.1214 1.0807-.17.3521-.6071.2125-.6679-.1214-1.3721-1.9246L14.38 17.959l-1.1414-1.9428-.1397.079-.674 7.2552-.3156.3703-.7286.2793-.6071-.4614-.3218-.7468.3218-1.4753.3886-1.9246.3157-1.53.2853-1.9004.17-.6314-.0121-.0425-.1397.0182-1.4328 1.9672-2.1796 2.9446-1.7243 1.8456-.4128.164-.7164-.3704.0667-.6618.4008-.5889 2.386-3.0357 1.4389-1.882.929-1.0868-.0062-.1579h-.0546l-6.3385 4.1164-1.1293.1457-.4857-.4554.0608-.7467.2307-.2429 1.9064-1.3114Z"></path></svg>';
+        } else if (provider === "anthropic") {
+          svg = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.3041 3.541h-3.6718l6.696 16.918H24Zm-10.6082 0L0 20.459h3.7442l1.3693-3.5527h7.0052l1.3693 3.5528h3.7442L10.5363 3.5409Zm-.3712 10.2232 2.2914-5.9456 2.2914 5.9456Z"></path></svg>';
+        } else if (provider === "openai") {
+          svg = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M22.2819 9.8211a5.9847 5.9847 0 0 0-.5157-4.9108 6.0462 6.0462 0 0 0-6.5098-2.9A6.0651 6.0651 0 0 0 4.9807 4.1818a5.9847 5.9847 0 0 0-3.9977 2.9 6.0462 6.0462 0 0 0 .7427 7.0966 5.98 5.98 0 0 0 .511 4.9107 6.051 6.051 0 0 0 6.5146 2.9001A5.9847 5.9847 0 0 0 13.2599 24a6.0557 6.0557 0 0 0 5.7718-4.2058 5.9894 5.9894 0 0 0 3.9977-2.9001 6.0557 6.0557 0 0 0-.7475-7.0729zm-9.022 12.6081a4.4755 4.4755 0 0 1-2.8764-1.0408l.1419-.0804 4.7783-2.7582a.7948.7948 0 0 0 .3927-.6813v-6.7369l2.02 1.1686a.071.071 0 0 1 .038.052v5.5826a4.504 4.504 0 0 1-4.4945 4.4944zm-9.6607-4.1254a4.4708 4.4708 0 0 1-.5346-3.0137l.142.0852 4.783 2.7582a.7712.7712 0 0 0 .7806 0l5.8428-3.3685v2.3324a.0804.0804 0 0 1-.0332.0615L9.74 19.9502a4.4992 4.4992 0 0 1-6.1408-1.6464zM2.3408 7.8956a4.485 4.485 0 0 1 2.3655-1.9728V11.6a.7664.7664 0 0 0 .3879.6765l5.8144 3.3543-2.0201 1.1685a.0757.0757 0 0 1-.071 0l-4.8303-2.7865A4.504 4.504 0 0 1 2.3408 7.872zm16.5963 3.8558L13.1038 8.364 15.1192 7.2a.0757.0757 0 0 1 .071 0l4.8303 2.7913a4.4944 4.4944 0 0 1-.6765 8.1042v-5.6772a.79.79 0 0 0-.407-.667zm2.0107-3.0231-.142-.0852-4.7735-2.7818a.7759.7759 0 0 0-.7854 0L9.409 9.2297V6.8974a.0662.0662 0 0 1 .0284-.0615l4.8303-2.7866a4.4992 4.4992 0 0 1 6.6802 4.66zM8.3065 12.863l-2.02-1.1638a.0804.0804 0 0 1-.038-.0567V6.0742a4.4992 4.4992 0 0 1 7.3757-3.4537l-.142.0805L8.704 5.459a.7948.7948 0 0 0-.3927.6813zm1.0976-2.3654 2.602-1.4998 2.6069 1.4998v2.9994l-2.5974 1.4997-2.6067-1.4997Z"></path></svg>';
+        } else if (provider === "gemini") {
+          svg = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M11.04 19.32Q12 21.51 12 24q0-2.49.93-4.68.96-2.19 2.58-3.81t3.81-2.55Q21.51 12 24 12q-2.49 0-4.68-.93a12.3 12.3 0 0 1-3.81-2.58 12.3 12.3 0 0 1-2.58-3.81Q12 2.49 12 0q0 2.49-.96 4.68-.93 2.19-2.55 3.81a12.3 12.3 0 0 1-3.81 2.58Q2.49 12 0 12q2.49 0 4.68.96 2.19.93 3.81 2.55t2.55 3.81"></path></svg>';
+        } else {
+          svg = escapeHtml(p.glyph || "*");
+        }
+        return '<span class="glyph prompt-glyph ' + provider + '" aria-hidden="true">' + svg + '</span>';
       }
       function filter(q) {
         var needle = q.toLowerCase().trim();

@@ -729,6 +729,11 @@ ipcMain.handle("repolog:copy-standup", async () => {
   }
 });
 
+ipcMain.handle("repolog:copy-text", async (_event, text) => {
+  clipboard.writeText(typeof text === "string" ? text : String(text ?? ""));
+  return { ok: true };
+});
+
 ipcMain.handle("repolog:run-tuneup", async () => {
   const { runDoctor, buildTuneup, scanRepo } = await loadModules();
   const state = currentState ?? await scanRepo(targetRoot);

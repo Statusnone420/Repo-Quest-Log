@@ -35,6 +35,8 @@ describe("web renderers", () => {
     expect(html).toContain("source: PLAN.md");
     expect(html).toContain("window.repologDesktop");
     expect(html).toContain("data-copy-context=");
+    expect(html).toContain("copyContextText(text, label)");
+    expect(html).toContain("window.repologDesktop.copyText(text)");
     expect(html).toContain('data-ui-action="refresh"');
     expect(html).toContain("--rql-density");
     expect(html).toContain("@media (max-width: 1180px)");

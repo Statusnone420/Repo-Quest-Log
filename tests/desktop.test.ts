@@ -123,6 +123,16 @@ describe("desktop shell sizing", () => {
     expect(preloadSource).toContain("htmlCallback = callback");
     expect(preloadSource).toContain("toastCallback = callback");
   });
+
+  it("exposes a desktop clipboard fallback for copy prompt buttons", async () => {
+    const preloadSource = await readFile(join(process.cwd(), "apps", "desktop", "preload.cjs"), "utf8");
+    const mainSource = await readFile(join(process.cwd(), "apps", "desktop", "main.cjs"), "utf8");
+
+    expect(preloadSource).toContain("copyText(text)");
+    expect(preloadSource).toContain('ipcRenderer.invoke("repolog:copy-text", text)');
+    expect(mainSource).toContain('ipcMain.handle("repolog:copy-text"');
+    expect(mainSource).toContain("clipboard.writeText");
+  });
 });
 
 describe("resolveDesktopRepoRoot", () => {

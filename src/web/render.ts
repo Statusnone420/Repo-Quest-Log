@@ -4891,6 +4891,32 @@ function renderSettingsScript(): string {
           return Promise.resolve();
         }
       }
+      function copyContextText(text, label) {
+        var copied = false;
+        function done() {
+          if (window.__rqlToast) window.__rqlToast((label || "prompt") + " copied");
+        }
+        function failed(error) {
+          if (window.__rqlToast) window.__rqlToast("copy failed" + (error ? ": " + humanError(error) : ""));
+        }
+        if (text && navigator.clipboard && navigator.clipboard.writeText) {
+          copied = true;
+          return navigator.clipboard.writeText(text).then(done).catch(function () {
+            if (window.repologDesktop && typeof window.repologDesktop.copyText === "function") {
+              return window.repologDesktop.copyText(text).then(done).catch(failed);
+            }
+            failed();
+            return null;
+          });
+        }
+        if (text && window.repologDesktop && typeof window.repologDesktop.copyText === "function") {
+          copied = true;
+          return window.repologDesktop.copyText(text).then(done).catch(failed);
+        }
+        if (!copied) failed();
+        return Promise.resolve();
+      }
+      window.__rqlCopyText = copyContextText;
       document.addEventListener("click", function (event) {
         try {
           var target = event.target;
@@ -4898,11 +4924,8 @@ function renderSettingsScript(): string {
           var copyBtn = target.closest("[data-copy-context]");
           if (copyBtn) {
             var text = copyBtn.getAttribute("data-copy-context");
-            if (text && navigator.clipboard && navigator.clipboard.writeText) {
-              navigator.clipboard.writeText(text).then(function () {
-                if (window.__rqlToast) window.__rqlToast("resume context copied");
-              }).catch(function () {});
-            }
+            copyContextText(text, copyBtn.getAttribute("aria-label") || "prompt");
+            return;
           }
           var desktopButton = target.closest("[data-window-action]");
           if (desktopButton && window.repologDesktop && typeof window.repologDesktop.windowAction === "function") {
@@ -5342,7 +5365,9 @@ function renderPaletteScript(): string {
         var p = filtered[selectedIndex];
         if (!p) return;
         var text = p.body || "";
-        if (navigator.clipboard && navigator.clipboard.writeText) {
+        if (window.__rqlCopyText) {
+          window.__rqlCopyText(text, p.label + " prompt");
+        } else if (navigator.clipboard && navigator.clipboard.writeText) {
           navigator.clipboard.writeText(text).then(function () {
             showToast(p.label + " prompt copied");
           }).catch(function () { showToast("copy failed"); });

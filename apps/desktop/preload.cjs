@@ -87,6 +87,9 @@ contextBridge.exposeInMainWorld("repologDesktop", {
   copyStandup() {
     return ipcRenderer.invoke("repolog:copy-standup");
   },
+  copyText(text) {
+    return ipcRenderer.invoke("repolog:copy-text", text);
+  },
   windowAction(action) {
     ipcRenderer.send("repolog:window-action", action);
   },

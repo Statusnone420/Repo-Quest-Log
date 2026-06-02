@@ -4,7 +4,7 @@ import { join, resolve } from "node:path";
 
 import matter from "gray-matter";
 
-import type { QuestState } from "./types.js";
+import type { HandoffSettings, QuestState } from "./types.js";
 
 export interface PromptPreset {
   id: string;
@@ -13,6 +13,7 @@ export interface PromptPreset {
   sub: string;
   keywords: string;
   body: string;
+  intentId?: string;
   source?: "builtin" | "user" | "repo";
 }
 
@@ -25,59 +26,119 @@ Last touched: ${state.resumeNote.lastTouched} · ${state.resumeNote.since}
 Please read ${state.resumeNote.lastTouched} and let's continue.`;
 }
 
-export function buildPromptPresets(state: QuestState): PromptPreset[] {
+export function buildPromptPresets(state: QuestState, handoffSettings: HandoffSettings = {}): PromptPreset[] {
   const nowList = state.now.slice(0, 5).map((task, index) => `${index + 1}. ${task.text}${task.doc ? ` (${task.doc})` : ""}`).join("\n");
   const nextList = state.next.slice(0, 5).map((task, index) => `${index + 1}. ${task.text}`).join("\n");
   const activeBlocked = state.blocked.filter((task) => !isNoneBlocker(task.text, task.reason));
   const blockedList = activeBlocked.map((task, index) => `${index + 1}. ${task.text} — waiting on ${task.reason} (${task.since})`).join("\n");
   const agentList = state.agents.map((agent) => `- ${agent.name} (${agent.role}): ${agent.objective}`).join("\n");
+  const activityList = (state.recentActivity ?? [])
+    .slice(0, 5)
+    .map((event) => `- ${event.kind.toUpperCase()} ${event.file}${event.outsideScope ? " (outside declared scope)" : ""}`)
+    .join("\n");
 
   const resumeCore = `Repo: ${state.name} (branch: ${state.branch})
 Mission: ${state.mission}
 Objective: ${state.activeQuest.title} (${state.activeQuest.progress.done}/${state.activeQuest.progress.total})
 Current task: ${state.resumeNote.task}
 Last touched: ${state.resumeNote.lastTouched} · ${state.resumeNote.since}`;
+  const sourceBlock = renderInstructionSources(state, handoffSettings);
 
   return [
     {
-      id: "resume-claude",
-      glyph: "C",
-      label: "Resume for Claude Code",
-      sub: "Paste into Claude with full context",
-      keywords: "claude resume planner",
-      body: `I'm resuming our Claude Code session.
+      id: "resume-current-work",
+      glyph: "R",
+      label: "Resume current work",
+      sub: "Continue from the current repo state",
+      keywords: "resume continue current work handoff",
+      intentId: "resume-current-work",
+      body: `Resume current work.
 ${resumeCore}
+${sourceBlock}
 
 Now:
 ${nowList || "(none)"}
 
-Please read PLAN.md and STATE.md, then continue from "${state.resumeNote.task}".`,
+Continue from "${state.resumeNote.task}". State assumptions before making changes, and ask if the next action is ambiguous.`,
     },
     {
-      id: "resume-codex",
-      glyph: "X",
-      label: "Resume for Codex",
-      sub: "Paste into Codex - implementer mode",
-      keywords: "codex resume implementer",
-      body: `Resuming Codex implementer session.
+      id: "review-changes",
+      glyph: "V",
+      label: "Review changes",
+      sub: "Check recent diffs and risks",
+      keywords: "review changes diff risk",
+      intentId: "review-changes",
+      body: `Review the current repo changes.
 ${resumeCore}
+${sourceBlock}
 
-Read AGENTS.md for your instructions, then pick up the Now task:
+Now:
 ${nowList || "(none)"}
 
-Run npm run lint && npm test before committing.`,
+Recent activity:
+${activityList || "(none)"}
+
+Focus on bugs, regressions, scope drift, and missing verification. Do not rewrite unrelated code.`,
     },
     {
-      id: "resume-gemini",
-      glyph: "G",
-      label: "Resume for Gemini",
-      sub: "Paste into Gemini - reviewer mode",
-      keywords: "gemini resume reviewer",
-      body: `Resuming Gemini reviewer session.
+      id: "explain-recent-activity",
+      glyph: "?",
+      label: "Explain recent activity",
+      sub: "Summarize what changed and why",
+      keywords: "explain recent activity summary",
+      intentId: "explain-recent-activity",
+      body: `Explain recent activity for ${state.name}.
 ${resumeCore}
+${sourceBlock}
 
-Read GEMINI.md for your scope. Recent work touches: ${state.resumeNote.lastTouched}.
-Please review the latest diff against AGENTS.md constraints.`,
+Recent activity:
+${activityList || "(none)"}
+
+Summarize what likely happened, what is still unknown, and the safest next check.`,
+    },
+    {
+      id: "repair-repo-docs",
+      glyph: "!",
+      label: "Repair repo docs",
+      sub: "Make planning docs useful again",
+      keywords: "repair docs planning state agents",
+      intentId: "repair-repo-docs",
+      body: `Repair RepoLog planning docs for ${state.name}.
+${resumeCore}
+${sourceBlock}
+
+Now:
+${nowList || "(none)"}
+
+Blocked:
+${blockedList || "No active blockers."}
+
+Suggest the smallest doc changes that make current focus, next action, and blockers clear. Do not create provider-specific docs unless explicitly asked.`,
+    },
+    {
+      id: "brief-fresh-session",
+      glyph: "B",
+      label: "Brief fresh session",
+      sub: "Onboard a fresh agent session",
+      keywords: "briefing intent onboard fresh",
+      intentId: "brief-fresh-session",
+      body: `Briefing: ${state.name}
+
+Mission: ${state.mission}
+Current objective: ${state.activeQuest.title}
+Branch: ${state.branch}
+${sourceBlock}
+
+Now (${state.now.length}):
+${nowList || "(none)"}
+
+Next (${state.next.length}):
+${nextList || "(none)"}
+
+Agent docs:
+${agentList || "(none configured)"}
+
+Start by restating the current objective and the next concrete action before writing code.`,
     },
     {
       id: "standup",
@@ -85,6 +146,7 @@ Please review the latest diff against AGENTS.md constraints.`,
       label: "Daily standup",
       sub: "What's in flight + what's next",
       keywords: "standup daily update",
+      intentId: "daily-standup",
       body: `Standup - ${state.name} (${state.branch})
 
 Objective: ${state.activeQuest.title} (${state.activeQuest.progress.done}/${state.activeQuest.progress.total})
@@ -98,41 +160,6 @@ ${nextList || "(none)"}
 Blocked:
 ${blockedList || "(none)"}`,
     },
-    {
-      id: "blocker-summary",
-      glyph: "!",
-      label: "Blocker summary",
-      sub: "For a human or agent to unblock",
-      keywords: "blocker blocked waiting",
-      body: `Blocker summary - ${state.name}
-
-${blockedList || "No active blockers."}
-
-Context: objective is "${state.activeQuest.title}". Resolving these unblocks: ${state.resumeNote.task}.`,
-    },
-    {
-      id: "briefing",
-      glyph: "B",
-      label: "Repo intent briefing",
-      sub: "Onboard a fresh agent session",
-      keywords: "briefing intent onboard fresh",
-      body: `Briefing: ${state.name}
-
-Mission: ${state.mission}
-Current objective: ${state.activeQuest.title}
-Branch: ${state.branch}
-
-Now (${state.now.length}):
-${nowList || "(none)"}
-
-Next (${state.next.length}):
-${nextList || "(none)"}
-
-Agents in this repo:
-${agentList || "(none configured)"}
-
-Start by reading PRD.md, PLAN.md, STATE.md. Then ask me what the current priority is before writing code.`,
-    },
   ].map((preset) => ({ ...preset, source: "builtin" as const }));
 }
 
@@ -145,13 +172,14 @@ export interface LoadPromptOptions {
   rootDir: string;
   userPromptDir?: string;
   repoPromptDir?: string;
+  handoffSettings?: HandoffSettings;
 }
 
 export async function loadPromptPresets(
   state: QuestState,
   options: LoadPromptOptions,
 ): Promise<PromptPreset[]> {
-  const builtins = buildPromptPresets(state);
+  const builtins = buildPromptPresets(state, options.handoffSettings);
   const userDir = options.userPromptDir ?? defaultUserPromptDir();
   const repoDir = options.repoPromptDir ?? join(options.rootDir, ".repolog", "prompts");
 
@@ -164,6 +192,29 @@ export async function loadPromptPresets(
   for (const preset of repoOverrides) byId.set(preset.id, preset);
 
   return [...byId.values()];
+}
+
+function renderInstructionSources(state: QuestState, settings: HandoffSettings): string {
+  const lines: string[] = [];
+  if (settings.includePersonalGuideDefault && settings.personalAgentGuide?.trim()) {
+    lines.push(`Personal Agent Guide:\n${settings.personalAgentGuide.trim()}`);
+  }
+
+  const includeDocs = settings.includeRepoAgentDocsDefault !== false;
+  if (includeDocs) {
+    const docs = [...new Set(state.agents.map((agent) => agent.file).filter(Boolean))];
+    lines.push(`Instruction sources:\n${docs.length ? docs.map((doc) => `- ${doc}`).join("\n") : "- (none discovered)"}`);
+  }
+
+  if (settings.includeRecentActivityDefault) {
+    const activity = (state.recentActivity ?? [])
+      .slice(0, 5)
+      .map((event) => `- ${event.kind.toUpperCase()} ${event.file}${event.outsideScope ? " (outside declared scope)" : ""}`)
+      .join("\n");
+    lines.push(`Recent activity:\n${activity || "(none)"}`);
+  }
+
+  return lines.length ? `\n${lines.join("\n\n")}\n` : "";
 }
 
 export function defaultUserPromptDir(): string {

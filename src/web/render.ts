@@ -1,15 +1,17 @@
 import { buildContextPrompt, buildPromptPresets, type PromptPreset } from "../engine/prompts.js";
-import type { AgentProfile, BlockedTask, Decision, FileChange, QuestState, RecentActivityEvent, Task, WorkspaceMode, WorkspaceSignals, WorkspaceTimelineWindow } from "../engine/types.js";
+import type { AgentProfile, BlockedTask, Decision, FileChange, HandoffProviderProfile, HandoffSettings, QuestState, RecentActivityEvent, Task, WorkspaceMode, WorkspaceSignals, WorkspaceTimelineWindow } from "../engine/types.js";
 
 export interface SurfaceHtmlOptions {
   liveBridge?: "desktop" | "vscode";
   presets?: PromptPreset[];
   appVersion?: string;
   openrouterConfigured?: boolean;
+  handoffSettings?: HandoffSettings;
 }
 
 export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions = {}): string {
-  const presets = options.presets ?? buildPromptPresets(state);
+  const handoffSettings = normalizeHandoffSettings(options.handoffSettings);
+  const presets = options.presets ?? buildPromptPresets(state, handoffSettings);
   const stateJson = JSON.stringify({
     name: state.name,
     branch: state.branch,
@@ -865,6 +867,28 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       display: none;
     }
     .tuneup-prompt-area[data-visible="true"] { display: block; }
+    .handoff-guide-area {
+      display: block;
+      font-family: var(--mono);
+      font-size: var(--tiny-size);
+      line-height: 1.5;
+      color: var(--ink);
+      background: rgba(0,0,0,0.28);
+      border: 1px solid var(--tile-border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      min-height: 150px;
+      max-height: 280px;
+      overflow-y: auto;
+      resize: vertical;
+      width: 100%;
+    }
+    .handoff-setting-note {
+      margin: 4px 0 0;
+      color: var(--dim);
+      font-size: var(--tiny-size);
+      font-family: var(--mono);
+    }
     .tuneup-gaps {
       display: none;
       flex-direction: column;
@@ -2503,6 +2527,78 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       cursor: pointer;
     }
     .prompt-copy:hover { background: var(--accent-soft); color: var(--accent); }
+    .handoff-controls {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap: 8px;
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--faint);
+    }
+    .handoff-provider-row,
+    .handoff-source-row {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      min-width: 0;
+      flex-wrap: wrap;
+    }
+    .handoff-provider {
+      appearance: none;
+      border: 1px solid var(--tile-border);
+      border-radius: 6px;
+      background: rgba(255,255,255,0.025);
+      color: var(--muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      min-height: 36px;
+      padding: 4px 8px 4px 4px;
+      cursor: pointer;
+      font: inherit;
+      font-size: var(--tiny-size);
+    }
+    .handoff-provider[aria-pressed="true"] {
+      color: var(--ink);
+      border-color: var(--tile-border-hot);
+      background: var(--accent-soft);
+    }
+    .handoff-provider .prompt-glyph {
+      width: 30px;
+      height: 30px;
+    }
+    .handoff-provider .prompt-glyph svg {
+      width: 23px;
+      height: 23px;
+    }
+    .handoff-source {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: var(--tiny-size);
+    }
+    .handoff-source input { accent-color: var(--accent); }
+    .handoff-guide-link {
+      margin-left: auto;
+      appearance: none;
+      border: 0;
+      background: transparent;
+      color: var(--accent);
+      cursor: pointer;
+      font: inherit;
+      font-size: var(--tiny-size);
+      padding: 2px 0;
+    }
+    .handoff-intent-row .prompt-label {
+      font-weight: 650;
+    }
+    .handoff-intent-row {
+      grid-template-columns: minmax(0, 1fr) 30px;
+      min-height: 46px;
+      padding-top: 7px;
+      padding-bottom: 7px;
+    }
     .now-empty {
       display: grid;
       gap: 10px;
@@ -2912,7 +3008,7 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       </div>
     </header>
     ${renderSettingsRack(state, options.liveBridge)}
-    ${renderSettingsPanel(state, options.liveBridge)}
+    ${renderSettingsPanel(state, options.liveBridge, handoffSettings)}
     ${isEmptyRepo(state) ? renderEmptyState(state) : `
     <section class="header-strip">
         <div class="strip-cell focus${isResumeFresh(state.resumeNote.since) ? " fresh" : ""}">
@@ -2959,7 +3055,7 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
         ${renderRecentActivityTile(state.recentActivity ?? [])}
       </div>
       <div class="col">
-        ${renderPromptPaletteTile(presets)}
+        ${renderAgentHandoffTile(presets, handoffSettings)}
         ${renderDigestTile(state, options.openrouterConfigured ?? false)}
       </div>
       <div class="support-data" aria-hidden="true">
@@ -2971,9 +3067,9 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     `}
   </div>
 
-  <div class="palette-overlay" data-palette data-open="false" role="dialog" aria-label="Resume-prompt palette">
+  <div class="palette-overlay" data-palette data-open="false" role="dialog" aria-label="Agent handoff palette">
     <div class="palette">
-      <input class="palette-input" type="text" placeholder="Type to filter prompts — press Enter to copy one" data-palette-input />
+      <input class="palette-input" type="text" placeholder="Type to filter handoffs — press Enter to copy one" data-palette-input />
       <div class="palette-list" data-palette-list></div>
       <div class="palette-footer">
         <span><kbd>↑↓</kbd>navigate</span>
@@ -3003,7 +3099,43 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
   ${renderDecisionToggleScript()}
   ${renderTuneupScript()}
 </body>
-</html>`;
+  </html>`;
+}
+
+function defaultHandoffProviders(): HandoffProviderProfile[] {
+  return [
+    { id: "openai-codex", label: "OpenAI / Codex", icon: "openai", enabled: true },
+    { id: "anthropic-claude", label: "Anthropic / Claude", icon: "anthropic", enabled: true },
+    { id: "google-gemini", label: "Gemini", icon: "gemini", enabled: true },
+    { id: "custom", label: "Custom provider", icon: "custom", enabled: true },
+  ];
+}
+
+function normalizeHandoffSettings(settings: HandoffSettings | undefined): Required<HandoffSettings> {
+  const defaults: Required<HandoffSettings> = {
+    personalAgentGuide: "",
+    providers: defaultHandoffProviders(),
+    lastProviderId: "openai-codex",
+    lastIntentId: "resume-current-work",
+    instructionSourceSelection: ["repo-agent-docs", "recent-activity"],
+    includePersonalGuideDefault: false,
+    includeRepoAgentDocsDefault: true,
+    includeRecentActivityDefault: true,
+  };
+  if (!settings) {
+    return defaults;
+  }
+
+  return {
+    personalAgentGuide: settings.personalAgentGuide ?? defaults.personalAgentGuide,
+    providers: settings.providers?.length ? settings.providers : defaults.providers,
+    lastProviderId: settings.lastProviderId ?? defaults.lastProviderId,
+    lastIntentId: settings.lastIntentId ?? defaults.lastIntentId,
+    instructionSourceSelection: settings.instructionSourceSelection ?? defaults.instructionSourceSelection,
+    includePersonalGuideDefault: settings.includePersonalGuideDefault ?? defaults.includePersonalGuideDefault,
+    includeRepoAgentDocsDefault: settings.includeRepoAgentDocsDefault ?? defaults.includeRepoAgentDocsDefault,
+    includeRecentActivityDefault: settings.includeRecentActivityDefault ?? defaults.includeRecentActivityDefault,
+  };
 }
 
 export function renderVSCodeHtml(state: QuestState, options: SurfaceHtmlOptions = {}): string {
@@ -3545,7 +3677,7 @@ function renderInfoIcon(text: string): string {
   return `<span class="card-info"><svg class="card-info-icon" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/><path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/></svg><span class="card-info-tip">${escapeHtml(text)}</span></span>`;
 }
 
-function renderSettingsPanel(state: QuestState, liveBridge?: SurfaceHtmlOptions["liveBridge"]): string {
+function renderSettingsPanel(state: QuestState, liveBridge: SurfaceHtmlOptions["liveBridge"] | undefined, handoffSettings: Required<HandoffSettings>): string {
   const wbStatus = state.config?.writeback ? "on" : "off";
   const promptDir = state.config?.prompts?.dir?.trim() || "~/.repolog/prompts";
   const hasPlan = state.scannedFiles.some((file) => /PLAN\.md$/i.test(file));
@@ -3570,7 +3702,7 @@ function renderSettingsPanel(state: QuestState, liveBridge?: SurfaceHtmlOptions[
             <nav class="settings-nav">
               <button type="button" class="settings-nav-item active" data-settings-tab="overview" aria-pressed="true"><span class="settings-nav-icon">◇</span><span class="settings-nav-label">Overview<small>Analyze</small></span></button>
               <button type="button" class="settings-nav-item" data-settings-tab="repo" aria-pressed="false"><span class="settings-nav-icon">▣</span><span class="settings-nav-label">Repo config<small>Watcher and write-back</small></span></button>
-              <button type="button" class="settings-nav-item" data-settings-tab="prompts" aria-pressed="false"><span class="settings-nav-icon">⌘</span><span class="settings-nav-label">Prompts<small>Palette and standup</small></span></button>
+              <button type="button" class="settings-nav-item" data-settings-tab="prompts" aria-pressed="false"><span class="settings-nav-icon">⌘</span><span class="settings-nav-label">Handoff<small>Agent copy</small></span></button>
               <span class="settings-sidebar-divider"></span>
               <button type="button" class="settings-nav-item" data-settings-tab="appearance" aria-pressed="false"><span class="settings-nav-icon">◐</span><span class="settings-nav-label">Appearance<small>Theme, density, font</small></span></button>
               <button type="button" class="settings-nav-item" data-settings-tab="digest" aria-pressed="false"><span class="settings-nav-icon">✦</span><span class="settings-nav-label">Digest<small>OpenRouter</small></span></button>
@@ -3681,10 +3813,20 @@ function renderSettingsPanel(state: QuestState, liveBridge?: SurfaceHtmlOptions[
             </div>
             <section class="settings-card settings-config-card settings-section" data-settings-section="prompts">
               <div class="settings-card-head">
-                <h3 class="settings-card-title">Prompt palette</h3>
-                ${renderInfoIcon("Prompt files in this folder appear in the Ctrl+K resume palette.")}
+                <h3 class="settings-card-title">Agent Handoff</h3>
+                ${renderInfoIcon("App-level handoff settings stay outside the repo. Prompt files in this folder still appear in the Ctrl+K handoff palette.")}
               </div>
-              <p class="settings-card-detail">Keep reusable handoff prompts local. RepoLog still generates built-in Claude, Codex, Gemini, and standup prompts when this folder is empty.</p>
+              <p class="settings-card-detail">Configure what RepoLog includes when you copy an agent handoff. This stays in app storage, not in this repo.</p>
+              <div class="field span-2">
+                <label for="rql-handoff-guide">Personal Agent Guide</label>
+                <textarea id="rql-handoff-guide" class="handoff-guide-area" data-handoff-field="personalAgentGuide" placeholder="Paste your reusable agent instructions here. Example: think before coding, keep changes surgical, state assumptions, verify before handoff." spellcheck="false">${escapeHtml(handoffSettings.personalAgentGuide)}</textarea>
+                <p class="handoff-setting-note">Included only when the Personal Agent Guide checkbox is enabled.</p>
+              </div>
+              <div class="settings-card-actions theme-picker">
+                <label class="handoff-source"><input type="checkbox" data-handoff-field="includePersonalGuideDefault"${handoffSettings.includePersonalGuideDefault ? " checked" : ""} />Include Personal Agent Guide</label>
+                <label class="handoff-source"><input type="checkbox" data-handoff-field="includeRepoAgentDocsDefault"${handoffSettings.includeRepoAgentDocsDefault ? " checked" : ""} />Include repo agent docs</label>
+                <label class="handoff-source"><input type="checkbox" data-handoff-field="includeRecentActivityDefault"${handoffSettings.includeRecentActivityDefault ? " checked" : ""} />Include recent activity</label>
+              </div>
               <div class="settings-config single-column" data-config-form>
                 <div class="field span-2">
                   <label for="rql-config-prompts">Prompts dir</label>
@@ -3694,14 +3836,17 @@ function renderSettingsPanel(state: QuestState, liveBridge?: SurfaceHtmlOptions[
                   </div>
                 </div>
               </div>
-              <div class="settings-card-actions"><button type="button" data-ui-action="standup-export">Copy standup <span class="kbd-inline"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>C</kbd></span></button></div>
+              <div class="settings-card-actions">
+                <button type="button" data-ui-action="save-handoff-settings">Save Agent Handoff</button>
+                <button type="button" data-ui-action="standup-export">Copy standup <span class="kbd-inline"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>C</kbd></span></button>
+              </div>
             </section>
             <section class="settings-card settings-digest-card settings-section" data-settings-section="digest" data-card="openrouter">
                 <div class="settings-card-head">
                   <h3 class="settings-card-title">Digest <span class="pill">optional AI</span></h3>
                   ${renderInfoIcon("Powers the Digest button. Key is stored locally in the desktop shell, never in the repo.")}
                 </div>
-                <p class="settings-card-detail">Digest summarizes the current repo state with your OpenRouter key. It is optional: the HUD, signals, and prompt palette work without it.</p>
+              <p class="settings-card-detail">Digest summarizes the current repo state with your OpenRouter key. It is optional: the HUD, signals, and Agent Handoff work without it.</p>
                 <div class="field">
                   <label>API Key</label>
                   <div class="settings-secret-row">
@@ -4059,17 +4204,33 @@ function scopeLaneLabel(file: string): string {
   return normalized.split("/")[0] || "root";
 }
 
-function renderPromptPaletteTile(presets: readonly PromptPreset[]): string {
-  const rows = presets.slice(0, 3);
+function renderAgentHandoffTile(presets: readonly PromptPreset[], settings: Required<HandoffSettings>): string {
+  const rows = presets.filter((preset) => preset.id !== "standup").slice(0, 3);
+  const providers = settings.providers.filter((provider) => provider.enabled !== false).slice(0, 4);
   return `<section class="tile tight" data-area="prompts">
     <div class="tile-header">
-      <h3 class="tile-title changes"><span class="accent-bar"></span>Prompt Palette</h3>
+      <h3 class="tile-title changes"><span class="accent-bar"></span>Agent Handoff</h3>
       <button type="button" class="strip-link" data-palette-open>See all</button>
     </div>
     <div class="tile-body">
+      <div class="handoff-controls">
+        <div class="handoff-provider-row" aria-label="Provider copy targets">
+          ${providers.map((provider) => `
+            <button type="button" class="handoff-provider" data-handoff-provider="${escapeHtml(provider.id)}" aria-pressed="${provider.id === settings.lastProviderId ? "true" : "false"}">
+              ${renderProviderIcon(provider)}
+              <span>${escapeHtml(provider.label)}</span>
+            </button>
+          `).join("")}
+        </div>
+        <div class="handoff-source-row" aria-label="Instruction sources">
+          ${renderHandoffSource("personal-guide", "Personal Agent Guide", settings.includePersonalGuideDefault)}
+          ${renderHandoffSource("repo-agent-docs", "Repo agent docs", settings.includeRepoAgentDocsDefault)}
+          ${renderHandoffSource("recent-activity", "Recent activity", settings.includeRecentActivityDefault)}
+          <button type="button" class="handoff-guide-link" data-ui-action="open-handoff-settings">Settings</button>
+        </div>
+      </div>
       ${rows.map((preset) => `
-        <div class="prompt-row">
-          ${renderPromptIcon(preset)}
+        <div class="prompt-row handoff-intent-row" data-handoff-intent="${escapeHtml(preset.intentId ?? preset.id)}">
           <span>
             <span class="prompt-label">${escapeHtml(preset.label)}</span>
             <span class="prompt-sub">${escapeHtml(preset.sub)}</span>
@@ -4081,6 +4242,15 @@ function renderPromptPaletteTile(presets: readonly PromptPreset[]): string {
       `).join("")}
     </div>
   </section>`;
+}
+
+function renderHandoffSource(id: string, label: string, checked: boolean): string {
+  return `<label class="handoff-source"><input type="checkbox" data-handoff-source="${escapeHtml(id)}"${checked ? " checked" : ""} />${escapeHtml(label)}</label>`;
+}
+
+function renderProviderIcon(provider: HandoffProviderProfile): string {
+  const icon = provider.icon === "anthropic" ? "anthropic" : provider.icon === "openai" ? "openai" : provider.icon === "gemini" ? "gemini" : "custom";
+  return `<span class="prompt-glyph ${icon}" aria-hidden="true">${promptProviderSvg(icon, "")}</span>`;
 }
 
 type PromptProvider = "claude" | "anthropic" | "openai" | "gemini" | "custom";
@@ -4118,6 +4288,13 @@ function promptProviderSvg(provider: PromptProvider, fallbackGlyph: string): str
   if (provider === "gemini") {
     return `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
       <path d="M11.04 19.32Q12 21.51 12 24q0-2.49.93-4.68.96-2.19 2.58-3.81t3.81-2.55Q21.51 12 24 12q-2.49 0-4.68-.93a12.3 12.3 0 0 1-3.81-2.58 12.3 12.3 0 0 1-2.58-3.81Q12 2.49 12 0q0 2.49-.96 4.68-.93 2.19-2.55 3.81a12.3 12.3 0 0 1-3.81 2.58Q2.49 12 0 12q2.49 0 4.68.96 2.19.93 3.81 2.55t2.55 3.81"></path>
+    </svg>`;
+  }
+  if (provider === "custom") {
+    return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M9 7H7a5 5 0 0 0 0 10h2"></path>
+      <path d="M15 7h2a5 5 0 0 1 0 10h-2"></path>
+      <path d="M8 12h8"></path>
     </svg>`;
   }
   return escapeHtml(fallbackGlyph || "*");
@@ -4484,6 +4661,65 @@ function renderSettingsScript(): string {
             if (orStatus) orStatus.style.color = cfg.configured ? "var(--ok)" : "var(--dim)";
           }).catch(function() {});
         }
+        loadHandoffSettings();
+      }
+      function applyHandoffSettingsToForm(settings) {
+        if (!settings || typeof settings !== "object") return;
+        var guide = document.querySelector("[data-handoff-field='personalAgentGuide']");
+        if (guide && typeof settings.personalAgentGuide === "string") {
+          guide.value = settings.personalAgentGuide;
+        }
+        setChecked("includePersonalGuideDefault", settings.includePersonalGuideDefault === true);
+        setChecked("includeRepoAgentDocsDefault", settings.includeRepoAgentDocsDefault !== false);
+        setChecked("includeRecentActivityDefault", settings.includeRecentActivityDefault !== false);
+      }
+      function setChecked(field, checked) {
+        var node = document.querySelector("[data-handoff-field='" + field + "']");
+        if (node) node.checked = !!checked;
+      }
+      function loadHandoffSettings() {
+        if (window.repologDesktop && typeof window.repologDesktop.getHandoffSettings === "function") {
+          window.repologDesktop.getHandoffSettings().then(applyHandoffSettingsToForm).catch(function () {});
+        }
+      }
+      function collectHandoffSettings() {
+        var guide = document.querySelector("[data-handoff-field='personalAgentGuide']");
+        var personal = document.querySelector("[data-handoff-field='includePersonalGuideDefault']");
+        var docs = document.querySelector("[data-handoff-field='includeRepoAgentDocsDefault']");
+        var activity = document.querySelector("[data-handoff-field='includeRecentActivityDefault']");
+        var selectedProvider = document.querySelector("[data-handoff-provider][aria-pressed='true']");
+        var selectedIntent = document.querySelector("[data-handoff-intent]");
+        return {
+          personalAgentGuide: guide && typeof guide.value === "string" ? guide.value : "",
+          lastProviderId: selectedProvider ? selectedProvider.getAttribute("data-handoff-provider") : "openai-codex",
+          lastIntentId: selectedIntent ? selectedIntent.getAttribute("data-handoff-intent") : "resume-current-work",
+          instructionSourceSelection: selectedSources(),
+          includePersonalGuideDefault: !!(personal && personal.checked),
+          includeRepoAgentDocsDefault: !docs || docs.checked,
+          includeRecentActivityDefault: !activity || activity.checked,
+        };
+      }
+      function selectedSources() {
+        var nodes = document.querySelectorAll("[data-handoff-source]");
+        var out = [];
+        for (var i = 0; i < nodes.length; i += 1) {
+          if (nodes[i].checked) out.push(nodes[i].getAttribute("data-handoff-source"));
+        }
+        return out;
+      }
+      function saveHandoffSettings(button) {
+        if (!window.repologDesktop || typeof window.repologDesktop.saveHandoffSettings !== "function") {
+          if (window.__rqlToast) window.__rqlToast("Agent Handoff settings are only available in the desktop shell");
+          return;
+        }
+        setBusy(button, true);
+        window.repologDesktop.saveHandoffSettings(collectHandoffSettings()).then(function () {
+          if (window.__rqlToast) window.__rqlToast("Agent Handoff saved");
+        }).catch(function (error) {
+          if (window.__rqlToast) window.__rqlToast("Agent Handoff save failed: " + humanError(error));
+        }).finally(function () {
+          setBusy(button, false);
+        });
       }
       function closeSettings() {
         if (settingsOverlay) settingsOverlay.setAttribute("data-open", "false");
@@ -4708,7 +4944,7 @@ function renderSettingsScript(): string {
             var line = parseInt(openRow.getAttribute("data-line") || "1", 10);
             window.repologDesktop.openDoc(doc, line);
           }
-          var button = target.closest("[data-ui-action], [data-ui-density], [data-ui-theme], [data-ui-font], [data-settings-tab]");
+          var button = target.closest("[data-ui-action], [data-ui-density], [data-ui-theme], [data-ui-font], [data-settings-tab], [data-handoff-provider]");
           if (!button) return;
           if (button.hasAttribute("data-settings-tab")) {
             selectSettingsTab(button.getAttribute("data-settings-tab"), true);
@@ -4752,6 +4988,11 @@ function renderSettingsScript(): string {
             }
             if (action === "open-settings") {
               openSettings();
+              return;
+            }
+            if (action === "open-handoff-settings") {
+              openSettings();
+              selectSettingsTab("prompts", true);
               return;
             }
             if (action === "close-settings") {
@@ -4836,6 +5077,10 @@ function renderSettingsScript(): string {
               }
               return;
             }
+            if (action === "save-handoff-settings") {
+              saveHandoffSettings(button);
+              return;
+            }
             if (action === "remember-startup-root") {
               if (window.repologDesktop && typeof window.repologDesktop.rememberStartupRoot === "function") {
                 window.repologDesktop.rememberStartupRoot();
@@ -4856,6 +5101,12 @@ function renderSettingsScript(): string {
             }
             if (action === "smaller") update({ scale: prefs.scale - 0.08 });
             if (action === "larger") update({ scale: prefs.scale + 0.08 });
+          }
+          if (button.hasAttribute("data-handoff-provider")) {
+            var providerButtons = document.querySelectorAll("[data-handoff-provider]");
+            for (var hp = 0; hp < providerButtons.length; hp += 1) {
+              providerButtons[hp].setAttribute("aria-pressed", providerButtons[hp] === button ? "true" : "false");
+            }
           }
           if (button.hasAttribute("data-ui-density")) {
             update({ density: button.getAttribute("data-ui-density") || "cozy" });

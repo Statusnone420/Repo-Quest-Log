@@ -78,6 +78,28 @@ describe("scanRepo", () => {
     }
   });
 
+  it("treats AGENTS.md as generic guidance when no owner is declared", async () => {
+    const cwd = join(tmpdir(), `repo-quest-log-scan-${Date.now()}-generic-agents`);
+    await mkdir(cwd, { recursive: true });
+
+    try {
+      await writeRepoFile(cwd, "AGENTS.md", "# AGENTS.md\n\n## Role\n\nBehavioral guidelines for any coding agent.\n");
+
+      const state = await scanRepo(cwd);
+
+      expect(state.agents[0]).toEqual(
+        expect.objectContaining({
+          id: "agents",
+          name: "Agent Guidance",
+          file: "AGENTS.md",
+          role: "Behavioral guidelines for any coding agent.",
+        }),
+      );
+    } finally {
+      await rm(cwd, { recursive: true, force: true });
+    }
+  });
+
   it("marks archived agent docs from frontmatter as reference docs", async () => {
     const cwd = join(tmpdir(), `repo-quest-log-scan-${Date.now()}-archived-agent`);
     await mkdir(cwd, { recursive: true });

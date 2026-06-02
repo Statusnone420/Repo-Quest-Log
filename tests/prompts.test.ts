@@ -20,15 +20,46 @@ afterEach(async () => {
 });
 
 describe("prompt helpers", () => {
-  it("builds the shared resume context and prompt presets", () => {
+  it("builds the shared resume context and provider-neutral handoff presets", () => {
     const state = sampleState();
 
     expect(buildContextPrompt(state)).toContain("Objective: Ship v0.1");
 
     const presets = buildPromptPresets(state);
     expect(presets).toHaveLength(6);
-    expect(presets[0]?.label).toBe("Resume for Claude Code");
+    expect(presets.map((preset) => preset.label)).toEqual([
+      "Resume current work",
+      "Review changes",
+      "Explain recent activity",
+      "Repair repo docs",
+      "Brief fresh session",
+      "Daily standup",
+    ]);
     expect(presets[0]?.source).toBe("builtin");
+
+    const serialized = JSON.stringify(presets);
+    expect(serialized).not.toContain("Resume for Claude Code");
+    expect(serialized).not.toContain("Resume for Codex");
+    expect(serialized).not.toContain("Resume for Gemini");
+    expect(serialized).not.toContain("Claude planner");
+    expect(serialized).not.toContain("Codex implementer");
+    expect(serialized).not.toContain("Gemini reviewer");
+  });
+
+  it("can include app-level Personal Agent Guide text without repo writes", () => {
+    const presets = buildPromptPresets(sampleState(), {
+      personalAgentGuide: "Think before coding. Keep changes surgical.",
+      includePersonalGuideDefault: true,
+      includeRepoAgentDocsDefault: true,
+      includeRecentActivityDefault: true,
+    });
+
+    const resume = presets.find((preset) => preset.id === "resume-current-work");
+
+    expect(resume?.body).toContain("Personal Agent Guide");
+    expect(resume?.body).toContain("Think before coding. Keep changes surgical.");
+    expect(resume?.body).toContain("Instruction sources");
+    expect(resume?.body).toContain("AGENTS.md");
   });
 
   it("does not paste Blocked: None as a real blocker", () => {
@@ -86,8 +117,8 @@ describe("prompt helpers", () => {
     await mkdir(repoDir, { recursive: true });
 
     await writeFile(
-      join(userDir, "resume-claude.md"),
-      "---\nid: resume-claude\nlabel: User Claude Override\nsub: x\nglyph: C\nkeywords: claude\n---\nFrom user",
+      join(userDir, "resume-current-work.md"),
+      "---\nid: resume-current-work\nlabel: User Resume Override\nsub: x\nglyph: R\nkeywords: resume\n---\nFrom user",
       "utf8",
     );
     await writeFile(
@@ -96,8 +127,8 @@ describe("prompt helpers", () => {
       "utf8",
     );
     await writeFile(
-      join(repoDir, "resume-claude.md"),
-      "---\nid: resume-claude\nlabel: Repo Claude Override\nsub: x\nglyph: C\nkeywords: claude\n---\nFrom repo",
+      join(repoDir, "resume-current-work.md"),
+      "---\nid: resume-current-work\nlabel: Repo Resume Override\nsub: x\nglyph: R\nkeywords: resume\n---\nFrom repo",
       "utf8",
     );
 
@@ -106,10 +137,10 @@ describe("prompt helpers", () => {
       userPromptDir: userDir,
     });
 
-    const claude = presets.find((p) => p.id === "resume-claude");
-    expect(claude?.label).toBe("Repo Claude Override");
-    expect(claude?.source).toBe("repo");
-    expect(claude?.body).toBe("From repo");
+    const resume = presets.find((p) => p.id === "resume-current-work");
+    expect(resume?.label).toBe("Repo Resume Override");
+    expect(resume?.source).toBe("repo");
+    expect(resume?.body).toBe("From repo");
 
     const custom = presets.find((p) => p.id === "custom");
     expect(custom?.source).toBe("user");
@@ -147,12 +178,12 @@ function sampleState(): QuestState {
     blocked: [],
     agents: [
       {
-        id: "claude",
-        name: "Claude",
-        file: "CLAUDE.md",
-        role: "Planner",
-        area: "docs/**",
-        objective: "Keep plans short",
+        id: "agents",
+        name: "Agent Guidance",
+        file: "AGENTS.md",
+        role: "Shared coding guidance",
+        area: "repo/**",
+        objective: "Keep agents aligned",
         constraints: [],
         status: "active",
       },

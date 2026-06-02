@@ -41,7 +41,21 @@ describe("web renderers", () => {
     expect(html).toContain("@media (max-height: 640px)");
     expect(html).toContain("data-palette");
     expect(html).toContain("Objective");
-    expect(html).toContain("Resume for Claude Code");
+    expect(html).toContain("Agent Handoff");
+    expect(html).toContain("Resume current work");
+    expect(html).toContain("data-handoff-provider");
+    expect(html).toContain("data-handoff-intent");
+    expect(html).toContain("data-handoff-source");
+    expect(html).toContain("Personal Agent Guide");
+    expect(html).toContain("handoff-guide-area");
+    expect(html).toContain("Configure what RepoLog includes when you copy an agent handoff.");
+    expect(html).toContain('<span class="prompt-glyph custom" aria-hidden="true"><svg');
+    expect(html).not.toContain("Prompt Palette");
+    expect(html).not.toContain("Resume for Claude Code");
+    expect(html).not.toContain("Resume for Codex");
+    expect(html).not.toContain("Resume for Gemini");
+    expect(html).not.toContain("Codex implementer");
+    expect(html).not.toContain("Gemini reviewer");
     expect(html).toContain("Standup");
   });
 
@@ -50,7 +64,7 @@ describe("web renderers", () => {
 
     expect(html).toContain("Overview<small>Analyze</small>");
     expect(html).toContain("Repo config<small>Watcher and write-back</small>");
-    expect(html).toContain("Prompts<small>Palette and standup</small>");
+    expect(html).toContain("Handoff<small>Agent copy</small>");
     expect(html).toContain("Digest<small>OpenRouter</small>");
     expect(html).toContain("Appearance<small>Theme, density, font</small>");
     expect(html).toContain("No network call. This reads repo context locally and builds a repair prompt.");
@@ -213,7 +227,11 @@ describe("web renderers", () => {
     expect(html).toContain("modify");
     expect(html).toContain("Outside scope");
     expect(html).toContain("Agent Docs");
-    expect(html).toContain("Prompt Palette");
+    expect(html).toContain("Agent Handoff");
+    expect(html).toContain("data-handoff-provider");
+    expect(html).toContain("data-handoff-intent");
+    expect(html).toContain("data-handoff-source");
+    expect(html).not.toContain("Prompt Palette");
     expect(html).toContain("data-ui-action=\"open-diff\"");
     expect(html).toContain("Declared role");
     expect(html).toContain("Last written task");
@@ -353,6 +371,17 @@ describe("web renderers", () => {
     for (const script of scripts) {
       expect(() => new Function(script)).not.toThrow();
     }
+  });
+
+  it("emits working scale controls without stale click-handler scope", () => {
+    const html = renderDesktopHtml(sampleState(), { liveBridge: "desktop" });
+
+    expect(html).toContain('data-ui-action="smaller"');
+    expect(html).toContain('data-ui-action="larger"');
+    expect(html).toContain('var prefs = read();');
+    expect(html).toContain('update({ scale: prefs.scale - 0.08 });');
+    expect(html).toContain('update({ scale: prefs.scale + 0.08 });');
+    expect(html).toContain('repolog-surface-settings');
   });
 });
 

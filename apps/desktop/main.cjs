@@ -97,6 +97,76 @@ function openRouterConfigFile() {
   return path.join(appStorageRoot(), "openrouter.json");
 }
 
+function handoffSettingsFile() {
+  return path.join(appStorageRoot(), "handoff-settings.json");
+}
+
+function defaultHandoffSettings() {
+  return {
+    personalAgentGuide: "",
+    providers: [
+      { id: "openai-codex", label: "OpenAI / Codex", icon: "openai", enabled: true },
+      { id: "anthropic-claude", label: "Anthropic / Claude", icon: "anthropic", enabled: true },
+      { id: "google-gemini", label: "Gemini", icon: "gemini", enabled: true },
+      { id: "custom", label: "Custom provider", icon: "custom", enabled: true },
+    ],
+    lastProviderId: "openai-codex",
+    lastIntentId: "resume-current-work",
+    instructionSourceSelection: ["repo-agent-docs", "recent-activity"],
+    includePersonalGuideDefault: false,
+    includeRepoAgentDocsDefault: true,
+    includeRecentActivityDefault: true,
+  };
+}
+
+function normalizeHandoffSettings(input = {}) {
+  const defaults = defaultHandoffSettings();
+  const data = input && typeof input === "object" ? input : {};
+  const providers = Array.isArray(data.providers) && data.providers.length > 0
+    ? data.providers
+      .filter((provider) => provider && typeof provider === "object")
+      .map((provider) => ({
+        id: typeof provider.id === "string" && provider.id.trim() ? provider.id.trim() : "custom",
+        label: typeof provider.label === "string" && provider.label.trim() ? provider.label.trim() : "Custom provider",
+        icon: ["openai", "anthropic", "gemini", "custom"].includes(provider.icon) ? provider.icon : "custom",
+        enabled: provider.enabled !== false,
+      }))
+    : defaults.providers;
+
+  return {
+    personalAgentGuide: typeof data.personalAgentGuide === "string" ? data.personalAgentGuide : defaults.personalAgentGuide,
+    providers,
+    lastProviderId: typeof data.lastProviderId === "string" ? data.lastProviderId : defaults.lastProviderId,
+    lastIntentId: typeof data.lastIntentId === "string" ? data.lastIntentId : defaults.lastIntentId,
+    instructionSourceSelection: Array.isArray(data.instructionSourceSelection)
+      ? data.instructionSourceSelection.filter((item) => typeof item === "string")
+      : defaults.instructionSourceSelection,
+    includePersonalGuideDefault: data.includePersonalGuideDefault === true,
+    includeRepoAgentDocsDefault: data.includeRepoAgentDocsDefault !== false,
+    includeRecentActivityDefault: data.includeRecentActivityDefault !== false,
+  };
+}
+
+function readHandoffSettings() {
+  try {
+    const file = handoffSettingsFile();
+    if (!fs.existsSync(file)) {
+      return defaultHandoffSettings();
+    }
+    return normalizeHandoffSettings(JSON.parse(fs.readFileSync(file, "utf8")));
+  } catch {
+    return defaultHandoffSettings();
+  }
+}
+
+function writeHandoffSettings(next) {
+  const settings = normalizeHandoffSettings(next);
+  const file = handoffSettingsFile();
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, JSON.stringify(settings, null, 2), "utf8");
+  return settings;
+}
+
 let openrouterConfig = { key: "", model: "nvidia/nemotron-3-super-120b-a12b:free" };
 try {
   const orPath = openRouterConfigFile();
@@ -145,6 +215,9 @@ let recentActivity = [];
 let currentState = null;
 let modulesPromise = null;
 let revealTimer = null;
+let refreshInFlight = false;
+let refreshQueued = false;
+let queuedChanges = [];
 
 async function loadModules() {
   if (!modulesPromise) {
@@ -271,31 +344,64 @@ function revealWindow() {
 }
 
 async function refresh(changes = []) {
-  const { mergeChanges, scanRepo, renderDesktopHtml, loadPromptPresets, readLastDigest } = await loadModules();
-  recentChanges = mergeChanges(changes, recentChanges);
+  if (refreshInFlight) {
+    queuedChanges = mergeChangesForRefresh(changes, queuedChanges);
+    refreshQueued = true;
+    return;
+  }
+
+  refreshInFlight = true;
+  const runChanges = mergeChangesForRefresh(changes, queuedChanges);
+  queuedChanges = [];
 
   try {
-    currentState = await scanRepo(targetRoot, {
-      recentChanges,
-      recentActivity,
-      lastTouchedFile: recentChanges[0] && recentChanges[0].file,
-    });
-    const lastDigest = await readLastDigest(appCacheRoot(), targetRoot);
-    if (lastDigest) {
-      currentState.lastDigest = lastDigest;
+    const { mergeChanges, scanRepo, renderDesktopHtml, loadPromptPresets, readLastDigest } = await loadModules();
+    recentChanges = mergeChanges(runChanges, recentChanges);
+
+    try {
+      currentState = await scanRepo(targetRoot, {
+        recentChanges,
+        recentActivity,
+        lastTouchedFile: recentChanges[0] && recentChanges[0].file,
+      });
+      const lastDigest = await readLastDigest(appCacheRoot(), targetRoot);
+      if (lastDigest) {
+        currentState.lastDigest = lastDigest;
+      }
+      const handoffSettings = readHandoffSettings();
+      const presets = await loadPromptPresets(currentState, { rootDir: targetRoot, handoffSettings });
+      const html = renderDesktopHtml(currentState, {
+        liveBridge: "desktop",
+        presets,
+        appVersion,
+        openrouterConfigured: !!(openrouterConfig.key),
+        handoffSettings,
+      });
+      await pushHtml(html);
+    } catch (error) {
+      const message = error instanceof Error ? error.stack || error.message : String(error);
+      await pushHtml(renderErrorHtml(message));
     }
-    const presets = await loadPromptPresets(currentState, { rootDir: targetRoot });
-    const html = renderDesktopHtml(currentState, {
-      liveBridge: "desktop",
-      presets,
-      appVersion,
-      openrouterConfigured: !!(openrouterConfig.key),
-    });
-    await pushHtml(html);
-  } catch (error) {
-    const message = error instanceof Error ? error.stack || error.message : String(error);
-    await pushHtml(renderErrorHtml(message));
+  } finally {
+    refreshInFlight = false;
+    if (refreshQueued) {
+      const nextChanges = queuedChanges;
+      queuedChanges = [];
+      refreshQueued = false;
+      void refresh(nextChanges);
+    }
   }
+}
+
+function mergeChangesForRefresh(next, previous) {
+  const merged = new Map();
+  for (const change of [...next, ...previous]) {
+    if (!change || typeof change.file !== "string") {
+      continue;
+    }
+    merged.set(change.file, change);
+  }
+  return [...merged.values()];
 }
 
 async function pushHtml(html) {
@@ -697,6 +803,16 @@ ipcMain.handle("repolog:get-openrouter-config", async () => {
       ? "sk-or-••••••" + openrouterConfig.key.slice(-4)
       : "",
   };
+});
+
+ipcMain.handle("repolog:get-handoff-settings", async () => {
+  return readHandoffSettings();
+});
+
+ipcMain.handle("repolog:save-handoff-settings", async (_event, payload = {}) => {
+  const settings = writeHandoffSettings(payload);
+  await refresh();
+  return { success: true, settings, file: handoffSettingsFile() };
 });
 
 ipcMain.handle("repolog:get-file-diff", async (_event, file) => {

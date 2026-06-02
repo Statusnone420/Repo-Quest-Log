@@ -172,6 +172,24 @@ export interface RepoConfigSnapshot {
   hasFrontmatter?: boolean;
 }
 
+export interface HandoffProviderProfile {
+  id: string;
+  label: string;
+  icon: "openai" | "anthropic" | "gemini" | "custom";
+  enabled: boolean;
+}
+
+export interface HandoffSettings {
+  personalAgentGuide?: string;
+  providers?: HandoffProviderProfile[];
+  lastProviderId?: string;
+  lastIntentId?: string;
+  instructionSourceSelection?: string[];
+  includePersonalGuideDefault?: boolean;
+  includeRepoAgentDocsDefault?: boolean;
+  includeRecentActivityDefault?: boolean;
+}
+
 export interface QuestState {
   schemaVersion: 2;
   name: string;

@@ -8,6 +8,7 @@ export const SCANNED_GLOBS = [
   "AGENTS.md",
   "CLAUDE.md",
   "GEMINI.md",
+  "CODEX.md",
   "*_plan.md",
   "*_implementation.md",
   "roadmap*.md",
@@ -24,8 +25,9 @@ export const HEADING_PATTERNS = {
 } as const;
 
 export const AGENT_FILES = [
+  { id: "agents", file: "AGENTS.md", name: "Agent Guidance" },
   { id: "claude", file: "CLAUDE.md" },
-  { id: "codex",  file: "AGENTS.md" },
+  { id: "codex",  file: "CODEX.md" },
   { id: "gemini", file: "GEMINI.md" },
 ] as const;
 

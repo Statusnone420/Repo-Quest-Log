@@ -1,23 +1,43 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
+let htmlCallback = null;
+let toastCallback = null;
+let bridgeListenersInstalled = false;
+
+function installBridgeListeners() {
+  if (bridgeListenersInstalled) {
+    return;
+  }
+  bridgeListenersInstalled = true;
+
+  ipcRenderer.on("repolog:html", (_event, html) => {
+    if (typeof htmlCallback === "function") {
+      htmlCallback(html);
+    }
+  });
+  ipcRenderer.on("repolog:toast", (_event, payload) => {
+    if (typeof toastCallback === "function") {
+      toastCallback(payload && payload.message ? payload.message : String(payload || ""));
+    }
+  });
+}
+
 contextBridge.exposeInMainWorld("repologDesktop", {
   onHtml(callback) {
     if (typeof callback !== "function") {
       return;
     }
 
-    ipcRenderer.on("repolog:html", (_event, html) => {
-      callback(html);
-    });
+    installBridgeListeners();
+    htmlCallback = callback;
   },
   onToast(callback) {
     if (typeof callback !== "function") {
       return;
     }
 
-    ipcRenderer.on("repolog:toast", (_event, payload) => {
-      callback(payload && payload.message ? payload.message : String(payload || ""));
-    });
+    installBridgeListeners();
+    toastCallback = callback;
   },
   requestRefresh() {
     ipcRenderer.send("repolog:refresh");
@@ -75,6 +95,12 @@ contextBridge.exposeInMainWorld("repologDesktop", {
   },
   getOpenRouterConfig() {
     return ipcRenderer.invoke("repolog:get-openrouter-config");
+  },
+  getHandoffSettings() {
+    return ipcRenderer.invoke("repolog:get-handoff-settings");
+  },
+  saveHandoffSettings(payload) {
+    return ipcRenderer.invoke("repolog:save-handoff-settings", payload);
   },
   runDigest() {
     return ipcRenderer.invoke("repolog:run-digest");

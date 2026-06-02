@@ -76,8 +76,8 @@ describe("parseRepo", () => {
     const agents = extractAgentProfiles(docs);
     expect(agents).toEqual([
       expect.objectContaining({
-        id: "codex",
-        name: "Codex",
+        id: "agents",
+        name: "Agent Guidance",
         role: "Implementer.",
         area: "src/engine/**",
         objective: "Land the parser.",

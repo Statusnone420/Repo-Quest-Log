@@ -19,7 +19,7 @@ export function extractAgentProfiles(docs: readonly ParsedDoc[]): AgentProfile[]
 
     profiles.push({
       id,
-      name: String(frontmatter.name ?? titleCase(agentMeta.id)),
+      name: String(frontmatter.name ?? ("name" in agentMeta ? agentMeta.name : titleCase(agentMeta.id))),
       file: doc.file,
       role: String(frontmatter.role ?? sectionSummary(doc.sections, /role/i) ?? "Role unavailable"),
       area: String(frontmatter.area ?? sectionSummary(doc.sections, /owned areas?|area/i) ?? "Area unavailable"),

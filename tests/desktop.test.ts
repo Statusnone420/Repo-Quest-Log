@@ -90,6 +90,9 @@ describe("desktop shell sizing", () => {
     expect(source).toContain("repolog:first-run-check");
     expect(source).toContain("repolog:wizard-dismiss");
     expect(source).toContain("first-run-state.json");
+    expect(source).toContain("handoff-settings.json");
+    expect(source).toContain("repolog:get-handoff-settings");
+    expect(source).toContain("repolog:save-handoff-settings");
     expect(source).toContain("lastWizardRun: Date.now()");
     expect(source).toContain("repolog:toast");
     expect(packageJson.build?.win?.target).toEqual(["nsis", "portable"]);
@@ -100,6 +103,8 @@ describe("desktop shell sizing", () => {
     const source = await readFile(join(process.cwd(), "apps/desktop/main.cjs"), "utf8");
 
     expect(source).toContain("startWorkspaceActivityWatcher");
+    expect(source).toContain("refreshInFlight");
+    expect(source).toContain("refreshQueued");
     expect(source).toContain("recentActivity = mergeRecentActivity(events, recentActivity)");
     expect(source).toContain("recentActivity,");
     expect(source).toContain("repolog:get-file-diff");
@@ -107,6 +112,16 @@ describe("desktop shell sizing", () => {
     expect(source).not.toContain("writeWorkspaceMode");
     expect(source).not.toContain("repolog:set-workspace-mode");
     expect(source).not.toContain('path.join(targetRoot, ".repolog", "activity');
+  });
+
+  it("does not accumulate preload HTML listeners across document rewrites", async () => {
+    const preloadSource = await readFile(join(process.cwd(), "apps", "desktop", "preload.cjs"), "utf8");
+
+    expect(preloadSource).toContain("let htmlCallback");
+    expect(preloadSource).toContain("let toastCallback");
+    expect(preloadSource).toContain("function installBridgeListeners");
+    expect(preloadSource).toContain("htmlCallback = callback");
+    expect(preloadSource).toContain("toastCallback = callback");
   });
 });
 
@@ -323,5 +338,18 @@ describe("desktop digest hardening", () => {
     expect(source).toContain("files: [repoConfigFile()]");
     expect(source).toContain("files: [charterPath]");
     expect(source).toContain("repolog:apply-generated-docs");
+  });
+
+  it("exposes app-level Agent Handoff settings without repo writes", async () => {
+    const desktopSource = await readFile(join(process.cwd(), "apps", "desktop", "main.cjs"), "utf8");
+    const preloadSource = await readFile(join(process.cwd(), "apps", "desktop", "preload.cjs"), "utf8");
+
+    expect(desktopSource).toContain("handoffSettingsFile()");
+    expect(desktopSource).toContain("readHandoffSettings()");
+    expect(desktopSource).toContain("writeHandoffSettings(");
+    expect(desktopSource).toContain("appStorageRoot()");
+    expect(desktopSource).not.toContain('path.join(targetRoot, ".repolog", "handoff');
+    expect(preloadSource).toContain("getHandoffSettings()");
+    expect(preloadSource).toContain("saveHandoffSettings(payload)");
   });
 });

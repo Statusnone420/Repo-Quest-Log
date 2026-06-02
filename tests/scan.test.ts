@@ -35,6 +35,27 @@ describe("scanRepo", () => {
     }
   });
 
+  it("includes diff stats for staged initial files in unborn HEAD repos", async () => {
+    const cwd = join(tmpdir(), `repo-quest-log-scan-${Date.now()}-unborn`);
+    await mkdir(cwd, { recursive: true });
+
+    try {
+      await writeRepoFile(cwd, "PLAN.md", "# Plan\n\n- [ ] First task\n");
+      await writeRepoFile(cwd, "STATE.md", "# State\n");
+      await writeRepoFile(cwd, "README.md", "# Readme\n");
+      await writeRepoFile(cwd, "AGENTS.md", "# Agents\n");
+      execFileSync("git", ["init"], { cwd, stdio: "ignore" });
+      execFileSync("git", ["add", "PLAN.md"], { cwd, stdio: "ignore" });
+
+      const state = await scanRepo(cwd, { recentChanges: [{ file: "PLAN.md", at: "just now" }] });
+
+      expect(state.recentChanges[0]?.file).toBe("PLAN.md");
+      expect(state.recentChanges[0]?.diff).toMatch(/^\+\d+ -0$/);
+    } finally {
+      await rm(cwd, { recursive: true, force: true });
+    }
+  });
+
   it("ignores archived markdown docs by default", async () => {
     const cwd = join(tmpdir(), `repo-quest-log-scan-${Date.now()}-archived`);
     await mkdir(join(cwd, "docs", "Archived", "agent-docs"), { recursive: true });
@@ -73,6 +94,33 @@ describe("scanRepo", () => {
       const state = await scanRepo(cwd);
 
       expect(state.scannedFiles).not.toContain("docs/Notes/todo_notes.md");
+    } finally {
+      await rm(cwd, { recursive: true, force: true });
+    }
+  });
+
+  it("filters incoming recent activity through current excludes", async () => {
+    const cwd = join(tmpdir(), `repo-quest-log-scan-${Date.now()}-activity-exclude`);
+    await mkdir(join(cwd, "docs", "Notes"), { recursive: true });
+
+    try {
+      await writeRepoFile(cwd, "PLAN.md", "# Plan\n\n## Now\n\n- [ ] First task\n");
+      await writeRepoFile(cwd, "STATE.md", "# State\n");
+      await writeRepoFile(cwd, "README.md", "# Readme\n");
+      await writeRepoFile(cwd, "AGENTS.md", "# Agents\n\n## Owned Areas\n\nsrc/**\n");
+      await writeRepoFile(cwd, ".repolog.json", JSON.stringify({ excludes: ["docs/Notes"] }, null, 2));
+      const now = Date.now();
+
+      const state = await scanRepo(cwd, {
+        recentActivity: [
+          { file: "docs/Notes/old.md", kind: "change", ts: now, outsideScope: true },
+          { file: "src/main.ts", kind: "change", ts: now - 1000 },
+        ],
+      });
+
+      expect(state.recentActivity.map((event) => event.file)).toEqual(["src/main.ts"]);
+      expect(state.workspaceSignals?.editRate).toBe(1);
+      expect(state.workspaceSignals?.filesTouched).toBe(1);
     } finally {
       await rm(cwd, { recursive: true, force: true });
     }

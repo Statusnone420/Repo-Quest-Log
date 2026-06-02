@@ -3055,7 +3055,7 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
         ${renderRecentActivityTile(state.recentActivity ?? [])}
       </div>
       <div class="col">
-        ${renderAgentHandoffTile(presets, handoffSettings)}
+        ${renderAgentHandoffTile(state, presets, handoffSettings)}
         ${renderDigestTile(state, options.openrouterConfigured ?? false)}
       </div>
       <div class="support-data" aria-hidden="true">
@@ -3980,12 +3980,20 @@ function renderWorkspaceSignalsStrip(state: QuestState): string {
 }
 
 function resolveWorkspaceMode(signals: WorkspaceSignals, state: QuestState): WorkspaceMode {
-  if (signals.editRate > 0 || hasRecentWorkspaceActivity(state)) {
+  if (signals.editRate > 0) {
     return "Building";
   }
 
   if ((state.gitContext?.dirtyFiles ?? 0) > 0) {
     return "Reviewing";
+  }
+
+  if (hasFreshDocContextActivity(state)) {
+    return "Researching";
+  }
+
+  if (hasRecentWorkspaceActivity(state)) {
+    return "Building";
   }
 
   return "Idle";
@@ -3994,6 +4002,28 @@ function resolveWorkspaceMode(signals: WorkspaceSignals, state: QuestState): Wor
 function hasRecentWorkspaceActivity(state: QuestState): boolean {
   const cutoff = Date.now() - 90_000;
   return (state.recentActivity ?? []).some((event) => Number.isFinite(event.ts) && event.ts >= cutoff);
+}
+
+function hasFreshDocContextActivity(state: QuestState): boolean {
+  if ((state.workspaceSignals?.editRate ?? 0) > 0 || (state.gitContext?.dirtyFiles ?? 0) > 0) {
+    return false;
+  }
+  const cutoff = Date.now() - 90_000;
+  return (state.recentActivity ?? []).some((event) =>
+    Number.isFinite(event.ts) &&
+    event.ts >= cutoff &&
+    isAgentContextFile(event.file)
+  );
+}
+
+function isAgentContextFile(file: string): boolean {
+  const normalized = file.replace(/\\/g, "/").split("/").pop()?.toLowerCase() ?? "";
+  return normalized === "agents.md" ||
+    normalized === "plan.md" ||
+    normalized === "state.md" ||
+    normalized === "claude.md" ||
+    normalized === "gemini.md" ||
+    normalized === "codex.md";
 }
 
 function workspaceModeEvidence(mode: WorkspaceMode, signals: WorkspaceSignals, state: QuestState): string {
@@ -4195,7 +4225,7 @@ function scopeLaneLabel(file: string): string {
   return normalized.split("/")[0] || "root";
 }
 
-function renderAgentHandoffTile(presets: readonly PromptPreset[], settings: Required<HandoffSettings>): string {
+function renderAgentHandoffTile(state: QuestState, presets: readonly PromptPreset[], settings: Required<HandoffSettings>): string {
   const rows = presets.filter((preset) => preset.id !== "standup").slice(0, 3);
   const providers = settings.providers.filter((provider) => provider.enabled !== false).slice(0, 4);
   return `<section class="tile tight" data-area="prompts">
@@ -4214,19 +4244,19 @@ function renderAgentHandoffTile(presets: readonly PromptPreset[], settings: Requ
           `).join("")}
         </div>
         <div class="handoff-source-row" aria-label="Instruction sources">
-          ${renderHandoffSource("personal-guide", "Personal Agent Guide", settings.includePersonalGuideDefault)}
+          ${renderHandoffSource("personal-agent-guide", "Personal Agent Guide", settings.includePersonalGuideDefault)}
           ${renderHandoffSource("repo-agent-docs", "Repo agent docs", settings.includeRepoAgentDocsDefault)}
           ${renderHandoffSource("recent-activity", "Recent activity", settings.includeRecentActivityDefault)}
           <button type="button" class="handoff-guide-link" data-ui-action="open-handoff-settings">Settings</button>
         </div>
       </div>
       ${rows.map((preset) => `
-        <div class="prompt-row handoff-intent-row" data-handoff-intent="${escapeHtml(preset.intentId ?? preset.id)}">
+        <div class="prompt-row handoff-intent-row" data-handoff-intent="${escapeHtml(preset.intentId ?? preset.id)}" data-selected="${(preset.intentId ?? preset.id) === settings.lastIntentId ? "true" : "false"}">
           <span>
             <span class="prompt-label">${escapeHtml(preset.label)}</span>
             <span class="prompt-sub">${escapeHtml(preset.sub)}</span>
           </span>
-          <button type="button" class="prompt-copy" data-copy-context="${escapeHtml(preset.body)}" aria-label="Copy ${escapeHtml(preset.label)} prompt">
+          <button type="button" class="prompt-copy" data-copy-context="${escapeHtml(preset.body)}"${handoffContextMapAttribute(state, preset, settings)} aria-label="Copy ${escapeHtml(preset.label)} prompt">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
           </button>
         </div>
@@ -4237,6 +4267,30 @@ function renderAgentHandoffTile(presets: readonly PromptPreset[], settings: Requ
 
 function renderHandoffSource(id: string, label: string, checked: boolean): string {
   return `<label class="handoff-source"><input type="checkbox" data-handoff-source="${escapeHtml(id)}"${checked ? " checked" : ""} />${escapeHtml(label)}</label>`;
+}
+
+function handoffContextMapAttribute(state: QuestState, preset: PromptPreset, settings: Required<HandoffSettings>): string {
+  if (preset.source && preset.source !== "builtin") {
+    return "";
+  }
+  return ` data-copy-context-map="${escapeHtml(JSON.stringify(handoffContextMap(state, preset.id, settings)))}"`;
+}
+
+function handoffContextMap(state: QuestState, presetId: string, settings: Required<HandoffSettings>): Record<string, string> {
+  const sources = ["personal-agent-guide", "repo-agent-docs", "recent-activity"];
+  const variants: Record<string, string> = {};
+  for (let mask = 0; mask < 8; mask += 1) {
+    const selected = sources.filter((_, index) => (mask & (1 << index)) !== 0);
+    const preset = buildPromptPresets(state, {
+      ...settings,
+      instructionSourceSelection: selected,
+      includePersonalGuideDefault: selected.includes("personal-agent-guide"),
+      includeRepoAgentDocsDefault: selected.includes("repo-agent-docs"),
+      includeRecentActivityDefault: selected.includes("recent-activity"),
+    }).find((candidate) => candidate.id === presetId);
+    variants[selected.join("|")] = preset?.body ?? "";
+  }
+  return variants;
 }
 
 function renderProviderIcon(provider: HandoffProviderProfile): string {
@@ -4679,12 +4733,12 @@ function renderSettingsScript(): string {
         var docs = document.querySelector("[data-handoff-field='includeRepoAgentDocsDefault']");
         var activity = document.querySelector("[data-handoff-field='includeRecentActivityDefault']");
         var selectedProvider = document.querySelector("[data-handoff-provider][aria-pressed='true']");
-        var selectedIntent = document.querySelector("[data-handoff-intent]");
+        var selectedIntent = document.querySelector("[data-handoff-intent][data-selected='true']");
         return {
           personalAgentGuide: guide && typeof guide.value === "string" ? guide.value : "",
           lastProviderId: selectedProvider ? selectedProvider.getAttribute("data-handoff-provider") : "openai-codex",
           lastIntentId: selectedIntent ? selectedIntent.getAttribute("data-handoff-intent") : "resume-current-work",
-          instructionSourceSelection: selectedSources(),
+          instructionSourceSelection: selectedSourcesFromSettings(personal, docs, activity),
           includePersonalGuideDefault: !!(personal && personal.checked),
           includeRepoAgentDocsDefault: !docs || docs.checked,
           includeRecentActivityDefault: !activity || activity.checked,
@@ -4697,6 +4751,22 @@ function renderSettingsScript(): string {
           if (nodes[i].checked) out.push(nodes[i].getAttribute("data-handoff-source"));
         }
         return out;
+      }
+      function selectedSourceKey() {
+        return selectedSources().join("|");
+      }
+      function selectedSourcesFromSettings(personal, docs, activity) {
+        var out = [];
+        if (personal && personal.checked) out.push("personal-agent-guide");
+        if (docs && docs.checked) out.push("repo-agent-docs");
+        if (activity && activity.checked) out.push("recent-activity");
+        return out;
+      }
+      function setSelected(selector, selected) {
+        var nodes = document.querySelectorAll(selector);
+        for (var i = 0; i < nodes.length; i += 1) {
+          nodes[i].setAttribute("data-selected", nodes[i] === selected ? "true" : "false");
+        }
       }
       function saveHandoffSettings(button) {
         if (!window.repologDesktop || typeof window.repologDesktop.saveHandoffSettings !== "function") {
@@ -4915,6 +4985,16 @@ function renderSettingsScript(): string {
           var copyBtn = target.closest("[data-copy-context]");
           if (copyBtn) {
             var text = copyBtn.getAttribute("data-copy-context");
+            var contextMap = copyBtn.getAttribute("data-copy-context-map");
+            if (contextMap) {
+              try {
+                var mapped = JSON.parse(contextMap);
+                var key = selectedSourceKey();
+                if (mapped && Object.prototype.hasOwnProperty.call(mapped, key)) {
+                  text = mapped[key];
+                }
+              } catch (_) {}
+            }
             copyContextText(text, copyBtn.getAttribute("aria-label") || "prompt");
             return;
           }
@@ -4958,7 +5038,7 @@ function renderSettingsScript(): string {
             var line = parseInt(openRow.getAttribute("data-line") || "1", 10);
             window.repologDesktop.openDoc(doc, line);
           }
-          var button = target.closest("[data-ui-action], [data-ui-density], [data-ui-theme], [data-ui-font], [data-settings-tab], [data-handoff-provider]");
+          var button = target.closest("[data-ui-action], [data-ui-density], [data-ui-theme], [data-ui-font], [data-settings-tab], [data-handoff-provider], [data-handoff-intent]");
           if (!button) return;
           if (button.hasAttribute("data-settings-tab")) {
             selectSettingsTab(button.getAttribute("data-settings-tab"), true);
@@ -5121,6 +5201,9 @@ function renderSettingsScript(): string {
             for (var hp = 0; hp < providerButtons.length; hp += 1) {
               providerButtons[hp].setAttribute("aria-pressed", providerButtons[hp] === button ? "true" : "false");
             }
+          }
+          if (button.hasAttribute("data-handoff-intent")) {
+            setSelected("[data-handoff-intent]", button);
           }
           if (button.hasAttribute("data-ui-density")) {
             update({ density: button.getAttribute("data-ui-density") || "cozy" });

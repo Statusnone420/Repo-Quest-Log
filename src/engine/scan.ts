@@ -56,7 +56,9 @@ export async function scanRepo(rootDir: string, options: ScanOptions = {}): Prom
     },
   });
   const workspaceScope = deriveWorkspaceScope(state.now, state.agents);
-  const recentActivity = annotateRecentActivity(options.recentActivity ?? [], workspaceScope);
+  const filteredRecentActivity = (options.recentActivity ?? [])
+    .filter((event) => !isExcludedPath(event.file, { excludes: config.excludes }));
+  const recentActivity = annotateRecentActivity(filteredRecentActivity, workspaceScope);
   state.recentActivity = recentActivity.slice(0, 40);
   state.workspaceSignals = computeWorkspaceSignals(recentActivity, workspaceScope);
   state.repoContext = repoContext;
@@ -118,8 +120,11 @@ function readBranchName(rootDir: string): string {
 }
 
 function readDiffSummary(rootDir: string, file: string): string | undefined {
+  const args = hasGitHead(rootDir)
+    ? ["diff", "HEAD", "--numstat", "--", file]
+    : ["diff", "--cached", "--numstat", "--", file];
   try {
-    const output = execFileSync("git", ["diff", "HEAD", "--numstat", "--", file], {
+    const output = execFileSync("git", args, {
       cwd: rootDir,
       encoding: "utf8",
       stdio: ["ignore", "pipe", "ignore"],
@@ -140,5 +145,17 @@ function readDiffSummary(rootDir: string, file: string): string | undefined {
     return `+${added} -${deleted}`;
   } catch {
     return undefined;
+  }
+}
+
+function hasGitHead(rootDir: string): boolean {
+  try {
+    execFileSync("git", ["rev-parse", "--verify", "HEAD"], {
+      cwd: rootDir,
+      stdio: ["ignore", "ignore", "ignore"],
+    });
+    return true;
+  } catch {
+    return false;
   }
 }

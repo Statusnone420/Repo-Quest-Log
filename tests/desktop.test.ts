@@ -1,12 +1,15 @@
 import { describe, expect, it } from "vitest";
 
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { createRequire } from "node:module";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
 import { renderDesktopHtml } from "../src/desktop/render.js";
 import { desktopUserArgv, resolveDesktopRepoRoot } from "../src/desktop/root.js";
 import type { QuestState } from "../src/engine/types.js";
+
+const require = createRequire(import.meta.url);
 
 describe("renderDesktopHtml", () => {
   it("renders the desktop HUD shell from QuestState", () => {
@@ -103,10 +106,10 @@ describe("desktop shell sizing", () => {
     const source = await readFile(join(process.cwd(), "apps/desktop/main.cjs"), "utf8");
 
     expect(source).toContain("startWorkspaceActivityWatcher");
-    expect(source).toContain("refreshInFlight");
-    expect(source).toContain("refreshQueued");
+    expect(source).toContain("createRefreshQueue");
+    expect(source).toContain("refreshQueue.enqueue(changes)");
     expect(source).toContain("recentActivity = mergeRecentActivity(events, recentActivity)");
-    expect(source).toContain("recentActivity,");
+    expect(source).toContain("recentActivity: runRecentActivity");
     expect(source).toContain("repolog:get-file-diff");
     expect(source).not.toContain("readWorkspaceMode");
     expect(source).not.toContain("writeWorkspaceMode");
@@ -132,6 +135,163 @@ describe("desktop shell sizing", () => {
     expect(preloadSource).toContain('ipcRenderer.invoke("repolog:copy-text", text)');
     expect(mainSource).toContain('ipcMain.handle("repolog:copy-text"');
     expect(mainSource).toContain("clipboard.writeText");
+  });
+
+  it("keeps the newest queued refresh change for each file", () => {
+    const { mergeChangesForRefresh } = require("../apps/desktop/refresh-queue.cjs") as {
+      mergeChangesForRefresh(next: { file: string; at: string }[], previous: { file: string; at: string }[]): { file: string; at: string }[];
+    };
+
+    const merged = mergeChangesForRefresh(
+      [{ file: "src/web/render.ts", at: "newer" }],
+      [
+        { file: "src/web/render.ts", at: "older" },
+        { file: "src/engine/prompts.ts", at: "older-only" },
+      ],
+    );
+
+    expect(merged).toEqual([
+      { file: "src/web/render.ts", at: "newer" },
+      { file: "src/engine/prompts.ts", at: "older-only" },
+    ]);
+  });
+
+  it("puts the newest refresh batch before older queued files", () => {
+    const { mergeChangesForRefresh } = require("../apps/desktop/refresh-queue.cjs") as {
+      mergeChangesForRefresh(next: { file: string; at: string }[], previous: { file: string; at: string }[]): { file: string; at: string }[];
+    };
+
+    const merged = mergeChangesForRefresh(
+      [{ file: "src/desktop/git-diff.ts", at: "newest" }],
+      [
+        { file: "src/web/render.ts", at: "older" },
+        { file: "src/engine/prompts.ts", at: "older" },
+      ],
+    );
+
+    expect(merged.map((change) => change.file)).toEqual([
+      "src/desktop/git-diff.ts",
+      "src/web/render.ts",
+      "src/engine/prompts.ts",
+    ]);
+  });
+
+  it("resolves queued refresh promises only after the queued work completes", async () => {
+    const { createRefreshQueue } = require("../apps/desktop/refresh-queue.cjs") as {
+      createRefreshQueue(worker: (changes: { file: string }[]) => Promise<void>): {
+        enqueue(changes?: { file: string }[]): Promise<void>;
+      };
+    };
+    let releaseFirst: (() => void) | undefined;
+    const calls: string[][] = [];
+    const queue = createRefreshQueue(async (changes) => {
+      calls.push(changes.map((change) => change.file));
+      if (calls.length === 1) {
+        await new Promise<void>((resolve) => {
+          releaseFirst = resolve;
+        });
+      }
+    });
+
+    const first = queue.enqueue([{ file: "first" }]);
+    let secondResolved = false;
+    const second = queue.enqueue([{ file: "second" }]).then(() => {
+      secondResolved = true;
+    });
+    await Promise.resolve();
+
+    expect(secondResolved).toBe(false);
+    releaseFirst?.();
+    await Promise.all([first, second]);
+
+    expect(secondResolved).toBe(true);
+    expect(calls).toEqual([["first"], ["second"]]);
+  });
+
+  it("runs and resolves queued refreshes even when no changes are supplied", async () => {
+    const { createRefreshQueue } = require("../apps/desktop/refresh-queue.cjs") as {
+      createRefreshQueue(worker: (changes: { file: string }[]) => Promise<void>): {
+        enqueue(changes?: { file: string }[]): Promise<void>;
+      };
+    };
+    let releaseFirst: (() => void) | undefined;
+    const calls: string[][] = [];
+    const queue = createRefreshQueue(async (changes) => {
+      calls.push(changes.map((change) => change.file));
+      if (calls.length === 1) {
+        await new Promise<void>((resolve) => {
+          releaseFirst = resolve;
+        });
+      }
+    });
+
+    const first = queue.enqueue([{ file: "first" }]);
+    const second = queue.enqueue();
+    releaseFirst?.();
+    await Promise.all([first, second]);
+
+    expect(calls).toEqual([["first"], []]);
+  });
+
+  it("settles queued refresh waiters quietly when cancelled during repo switch", async () => {
+    const { createRefreshQueue } = require("../apps/desktop/refresh-queue.cjs") as {
+      createRefreshQueue(worker: (changes: { file: string }[]) => Promise<void>): {
+        cancelQueued(): void;
+        enqueue(changes?: { file: string }[]): Promise<void>;
+      };
+    };
+    let releaseFirst: (() => void) | undefined;
+    const queue = createRefreshQueue(async (changes) => {
+      if (changes[0]?.file === "first") {
+        await new Promise<void>((resolve) => {
+          releaseFirst = resolve;
+        });
+      }
+    });
+
+    const first = queue.enqueue([{ file: "first" }]);
+    const second = queue.enqueue([{ file: "second" }]);
+    queue.cancelQueued();
+    releaseFirst?.();
+
+    await expect(first).resolves.toBeUndefined();
+    await expect(second).resolves.toBeUndefined();
+  });
+
+  it("rejects queued refresh promises when the in-flight refresh fails", async () => {
+    const { createRefreshQueue } = require("../apps/desktop/refresh-queue.cjs") as {
+      createRefreshQueue(worker: (changes: { file: string }[]) => Promise<void>): {
+        enqueue(changes?: { file: string }[]): Promise<void>;
+      };
+    };
+    let releaseFirst: (() => void) | undefined;
+    const queue = createRefreshQueue(async (changes) => {
+      if (changes[0]?.file === "first") {
+        await new Promise<void>((resolve) => {
+          releaseFirst = resolve;
+        });
+        throw new Error("first failed");
+      }
+    });
+
+    const first = queue.enqueue([{ file: "first" }]);
+    const second = queue.enqueue([{ file: "second" }]);
+    releaseFirst?.();
+
+    await expect(first).rejects.toThrow("first failed");
+    await expect(second).rejects.toThrow("first failed");
+  });
+
+  it("guards refresh callbacks by repo generation during repo switches", async () => {
+    const source = await readFile(join(process.cwd(), "apps", "desktop", "main.cjs"), "utf8");
+
+    expect(source).toContain("targetGeneration");
+    expect(source).toContain("const watchedGeneration = targetGeneration");
+    expect(source).toContain("watchedGeneration !== targetGeneration");
+    expect(source).toContain("refreshQueue.cancelQueued");
+    expect(source).toContain("runGeneration !== targetGeneration");
+    expect(source).toContain("watcherRestartId");
+    expect(source).toContain("closeIfStale");
   });
 });
 

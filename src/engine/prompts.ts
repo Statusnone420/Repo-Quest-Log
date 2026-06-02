@@ -18,31 +18,33 @@ export interface PromptPreset {
 }
 
 export function buildContextPrompt(state: QuestState): string {
+  const lastTouched = promptSafeLastTouched(state);
+  const objectiveDoc = promptSafeObjectiveDoc(state);
   return `I am resuming work on ${state.name} (branch: ${state.branch}).
 Mission: ${state.mission}
-Objective: ${state.activeQuest.title} (${state.activeQuest.progress.done}/${state.activeQuest.progress.total} · ${state.activeQuest.doc}${state.activeQuest.line ? `:${state.activeQuest.line}` : ""})
+Objective: ${state.activeQuest.title} (${formatProgress(state.activeQuest.progress.done, state.activeQuest.progress.total)} · ${objectiveDoc}${state.activeQuest.line && objectiveDoc === state.activeQuest.doc ? `:${state.activeQuest.line}` : ""})
 Current task: ${state.resumeNote.task}
-Last touched: ${state.resumeNote.lastTouched} · ${state.resumeNote.since}
-Please read ${state.resumeNote.lastTouched} and let's continue.`;
+Last touched: ${lastTouched} · ${state.resumeNote.since}
+Please read ${lastTouched} and let's continue.`;
 }
 
 export function buildPromptPresets(state: QuestState, handoffSettings: HandoffSettings = {}): PromptPreset[] {
+  const effectiveSettings = normalizeHandoffSettings(handoffSettings);
   const nowList = state.now.slice(0, 5).map((task, index) => `${index + 1}. ${task.text}${task.doc ? ` (${task.doc})` : ""}`).join("\n");
   const nextList = state.next.slice(0, 5).map((task, index) => `${index + 1}. ${task.text}`).join("\n");
   const activeBlocked = state.blocked.filter((task) => !isNoneBlocker(task.text, task.reason));
   const blockedList = activeBlocked.map((task, index) => `${index + 1}. ${task.text} — waiting on ${task.reason} (${task.since})`).join("\n");
-  const agentList = state.agents.map((agent) => `- ${agent.name} (${agent.role}): ${agent.objective}`).join("\n");
-  const activityList = (state.recentActivity ?? [])
-    .slice(0, 5)
-    .map((event) => `- ${event.kind.toUpperCase()} ${event.file}${event.outsideScope ? " (outside declared scope)" : ""}`)
-    .join("\n");
+  const activeAgents = state.agents.filter((agent) => agent.status !== "archived");
+  const agentList = activeAgents.map((agent) => `- ${agent.name} (${agent.role}): ${agent.objective}`).join("\n");
+  const activityList = recentEvidenceList(state);
+  const progress = formatProgress(state.activeQuest.progress.done, state.activeQuest.progress.total);
 
   const resumeCore = `Repo: ${state.name} (branch: ${state.branch})
 Mission: ${state.mission}
-Objective: ${state.activeQuest.title} (${state.activeQuest.progress.done}/${state.activeQuest.progress.total})
+Objective: ${state.activeQuest.title} (${progress})
 Current task: ${state.resumeNote.task}
-Last touched: ${state.resumeNote.lastTouched} · ${state.resumeNote.since}`;
-  const sourceBlock = renderInstructionSources(state, handoffSettings);
+Last touched: ${promptSafeLastTouched(state)} · ${state.resumeNote.since}`;
+  const sourceBlock = renderInstructionSources(state, effectiveSettings);
   const currentFocus = state.now.length > 0
     ? nowList
     : `No current task is set. Treat "${state.resumeNote.task}" as stale context until you verify it in the repo docs.`;
@@ -56,26 +58,36 @@ Last touched: ${state.resumeNote.lastTouched} · ${state.resumeNote.since}`;
       sub: "Continue from the current repo state",
       keywords: "resume continue current work handoff",
       intentId: "resume-current-work",
-      body: `You are taking over an in-progress local repo session.
+      body: `You are taking over an in-progress local repo session. Your job is to recover the real next action, then continue only when the repo evidence supports it.
 
+Situation:
 ${resumeCore}
-${sourceBlock}
 
 Current focus:
 ${currentFocus}
 
-First action:
-1. Open the source docs listed below and confirm the actual current task.
-2. Run a lightweight status check before editing.
-3. If the next action is ambiguous, stop and ask instead of guessing.
+Recent evidence:
+${activityList || "(none)"}
+${sourceBlock}
 
 Source docs to inspect:
 ${sourceDocs}
 
-Working rules:
-- Keep changes surgical.
-- Do not rewrite repo docs unless asked.
-- Report assumptions, files touched, and verification before handing back.`,
+Start here:
+1. Read the source docs above and confirm whether the current task is still real.
+2. Check repo status and the smallest relevant diff before editing.
+3. Name the next concrete action in one sentence.
+
+Stop and ask if:
+- The docs disagree about the current task.
+- The next action would require changing unrelated files.
+- You cannot verify the repo state cheaply.
+
+Output:
+- Assumptions you are making.
+- The next action you will take.
+- Files you expect to touch.
+- The verification you will run before handing back.`,
     },
     {
       id: "review-changes",
@@ -84,24 +96,33 @@ Working rules:
       sub: "Check recent diffs and risks",
       keywords: "review changes diff risk",
       intentId: "review-changes",
-      body: `Review contract: inspect the current repo changes and report risk.
+      body: `Review contract: inspect the current repo changes and report risk. Do not edit files during this handoff.
 
+Situation:
 ${resumeCore}
-${sourceBlock}
 
 Current focus:
 ${currentFocus}
 
-Recent activity:
+Recent evidence:
 ${activityList || "(none)"}
+${sourceBlock}
 
-Findings first:
-- Bugs or regressions.
-- Scope drift from the stated task.
+Start here:
+1. Inspect git status and the files listed in recent evidence.
+2. Compare the changes against the current task and source docs.
+3. Separate real issues from cosmetic preferences.
+
+Stop and ask if:
+- The requested review target is unclear.
+- The branch has generated or unrelated changes you cannot attribute.
+- You would need to run destructive commands to continue.
+
+Output:
+- Findings first, ordered by severity.
+- Scope drift or unrelated files.
 - Missing tests or verification.
-- Files that look unrelated.
-
-Do not rewrite code during the review. If there are no meaningful changes, say that clearly and name the next useful check.`,
+- If clean, say so and name the remaining residual risk.`,
     },
     {
       id: "explain-recent-activity",
@@ -110,21 +131,33 @@ Do not rewrite code during the review. If there are no meaningful changes, say t
       sub: "Summarize what changed and why",
       keywords: "explain recent activity summary",
       intentId: "explain-recent-activity",
-      body: `Explain what has happened in this repo recently.
+      body: `Explain what has happened in this repo recently as a plain-English timeline for a human who lost context.
 
+Situation:
 ${resumeCore}
+
+Current focus:
+${currentFocus}
+
+Recent evidence:
+${activityList || "(none)"}
 ${sourceBlock}
 
-Recent activity:
-${activityList || "(none)"}
+Start here:
+1. Group the recent evidence into a short timeline.
+2. Tie each change back to the current objective when possible.
+3. Call out what is inferred versus confirmed.
 
-If there is no recent activity, say so and use the objective, current focus, and source docs as context instead.
+Stop and ask if:
+- The user needs code changes instead of an explanation.
+- The evidence is too stale to infer what happened.
+- A claim would require reading files you have not inspected.
 
 Output:
-1. What changed.
-2. Why it probably changed.
-3. What is still uncertain.
-4. The safest next check.`,
+- What changed.
+- Why it probably changed.
+- What is still uncertain.
+- The safest next check.`,
     },
     {
       id: "repair-repo-docs",
@@ -133,10 +166,10 @@ Output:
       sub: "Make planning docs useful again",
       keywords: "repair docs planning state agents",
       intentId: "repair-repo-docs",
-      body: `Make the repo memory docs useful again without expanding scope.
+      body: `Make the repo memory docs useful again without expanding scope. Do not write repo files unless the human explicitly approves the edit.
 
+Situation:
 ${resumeCore}
-${sourceBlock}
 
 Current focus:
 ${currentFocus}
@@ -144,12 +177,25 @@ ${currentFocus}
 Blocked:
 ${blockedList || "No active blockers."}
 
-First action:
-1. Identify the smallest doc gap blocking a useful next handoff.
-2. Propose exact markdown edits.
-3. Do not write files unless explicitly asked.
+Recent evidence:
+${activityList || "(none)"}
+${sourceBlock}
 
-Keep AGENTS.md generic unless the repo already has active provider-specific docs.`,
+Start here:
+1. Identify the smallest stale or missing doc fact that blocks a useful handoff.
+2. Propose exact markdown edits for only that gap.
+3. Keep AGENTS.md generic unless active provider-specific docs already exist.
+
+Stop and ask if:
+- The docs conflict and the right source of truth is unclear.
+- The repair would rewrite product direction instead of clarifying state.
+- The human has not approved repo-file writes.
+
+Output:
+- The doc gap.
+- The proposed edit.
+- Why it is safe and scoped.
+- Whether a file write is being requested or only proposed.`,
     },
     {
       id: "brief-fresh-session",
@@ -158,12 +204,10 @@ Keep AGENTS.md generic unless the repo already has active provider-specific docs
       sub: "Onboard a fresh agent session",
       keywords: "briefing intent onboard fresh",
       intentId: "brief-fresh-session",
-      body: `Fresh-session brief for ${state.name}.
+      body: `Fresh-session brief for ${state.name}. Use this to onboard a brand-new agent without assuming they know the project.
 
-Mission: ${state.mission}
-Current objective: ${state.activeQuest.title}
-Branch: ${state.branch}
-${sourceBlock}
+Situation:
+${resumeCore}
 
 Current focus:
 ${currentFocus}
@@ -173,8 +217,26 @@ ${nextList || "(none)"}
 
 Agent docs:
 ${agentList || "(none configured)"}
+${sourceBlock}
 
-Start by restating the objective, the next concrete action, and any assumption you need confirmed before writing code.`,
+Recent evidence:
+${activityList || "(none)"}
+
+Start here:
+1. Restate the repo mission and current objective in plain language.
+2. Identify the next concrete action and the docs to read first.
+3. Name any assumption that must be confirmed before code changes.
+
+Stop and ask if:
+- There is no credible current task.
+- The agent docs appear archived or provider-specific in a way that does not apply.
+- The next action would require new product direction.
+
+Output:
+- One-paragraph project brief.
+- Current task and likely next action.
+- Docs to read first.
+- Assumptions needing confirmation.`,
     },
     {
       id: "standup",
@@ -183,9 +245,10 @@ Start by restating the objective, the next concrete action, and any assumption y
       sub: "What's in flight + what's next",
       keywords: "standup daily update",
       intentId: "daily-standup",
-      body: `Standup contract for ${state.name} (${state.branch}).
+      body: `Standup contract for ${state.name} (${state.branch}). Produce a short operator update, not a narrative.
 
-Objective: ${state.activeQuest.title} (${state.activeQuest.progress.done}/${state.activeQuest.progress.total})
+Situation:
+${resumeCore}
 
 Current focus:
 ${currentFocus}
@@ -196,27 +259,79 @@ ${nextList || "(none)"}
 Blocked:
 ${blockedList || "(none)"}
 
-Recent activity:
+Recent evidence:
 ${activityList || "(none)"}
 
+Start here:
+1. Summarize what is in flight.
+2. Summarize what changed since the last handoff.
+3. Identify the next concrete action.
+
+Stop and ask if:
+- There is no current task and the user expects a work plan.
+- Blockers are ambiguous or stale.
+- You cannot distinguish recent evidence from old repo history.
+
 Output:
-1. What is in flight.
-2. What changed since the last handoff.
+1. In flight.
+2. Recent change.
 3. Risks or asks.
-4. The next concrete action.`,
+4. Next action.`,
     },
   ].map((preset) => ({ ...preset, source: "builtin" as const }));
 }
 
+function formatProgress(done: number, total: number): string {
+  return total > 0 ? `${done}/${total}` : "progress not set";
+}
+
+function recentEvidenceList(state: QuestState): string {
+  const activity = (state.recentActivity ?? [])
+    .slice(0, 5)
+    .map((event) => `- ${event.kind.toUpperCase()} ${event.file}${event.outsideScope ? " (outside declared scope)" : ""}`);
+  if (activity.length) return activity.join("\n");
+
+  const changes = (state.recentChanges ?? [])
+    .slice(0, 5)
+    .map((change) => `- ${change.file}${change.diff ? ` (${change.diff})` : ""}${change.at ? ` · ${change.at}` : ""}`);
+  return changes.join("\n");
+}
+
 function sourceDocList(state: QuestState): string {
   const docs = new Set<string>();
-  for (const doc of [state.activeQuest.doc, state.resumeNote.lastTouched]) {
-    if (doc && !doc.includes(" ")) docs.add(doc);
+  for (const doc of [promptSafeObjectiveDoc(state), promptSafeLastTouched(state)]) {
+    if (doc && !doc.includes(" ") && !isArchivedDoc(state, doc)) docs.add(doc);
   }
   for (const agent of state.agents) {
     if (agent.status !== "archived" && agent.file) docs.add(agent.file);
   }
   return docs.size ? [...docs].map((doc) => `- ${doc}`).join("\n") : "- PLAN.md\n- STATE.md\n- AGENTS.md";
+}
+
+function isArchivedDoc(state: QuestState, doc: string): boolean {
+  return state.agents.some((agent) => agent.status === "archived" && agent.file === doc);
+}
+
+function promptSafeLastTouched(state: QuestState): string {
+  const lastTouched = state.resumeNote.lastTouched;
+  if (lastTouched && !isArchivedDoc(state, lastTouched)) {
+    return lastTouched;
+  }
+  if (state.resumeNote.doc && !isArchivedDoc(state, state.resumeNote.doc)) {
+    return state.resumeNote.doc;
+  }
+  return promptSafeObjectiveDoc(state);
+}
+
+function promptSafeObjectiveDoc(state: QuestState): string {
+  if (state.activeQuest.doc && !isArchivedDoc(state, state.activeQuest.doc)) {
+    return state.activeQuest.doc;
+  }
+  if (state.resumeNote.doc && !isArchivedDoc(state, state.resumeNote.doc)) {
+    return state.resumeNote.doc;
+  }
+  const activeAgentDoc = state.agents.find((agent) => agent.status !== "archived" && agent.file)?.file;
+  return activeAgentDoc || "PLAN.md";
 }
 
 function isNoneBlocker(text: string, reason = ""): boolean {
@@ -250,7 +365,34 @@ export async function loadPromptPresets(
   return [...byId.values()];
 }
 
-function renderInstructionSources(state: QuestState, settings: HandoffSettings): string {
+function normalizeHandoffSettings(settings: HandoffSettings): Required<Pick<HandoffSettings,
+  "instructionSourceSelection" |
+  "includePersonalGuideDefault" |
+  "includeRepoAgentDocsDefault" |
+  "includeRecentActivityDefault"
+>> & Pick<HandoffSettings, "personalAgentGuide"> {
+  const rawSelection = settings.instructionSourceSelection;
+  const hasSelection = Array.isArray(rawSelection);
+  const selection = hasSelection
+    ? rawSelection.filter((item): item is string => typeof item === "string")
+    : [];
+  const selected = new Set(selection);
+  return {
+    personalAgentGuide: settings.personalAgentGuide,
+    instructionSourceSelection: selection,
+    includePersonalGuideDefault: hasSelection
+      ? selected.has("personal-agent-guide")
+      : settings.includePersonalGuideDefault === true,
+    includeRepoAgentDocsDefault: hasSelection
+      ? selected.has("repo-agent-docs")
+      : settings.includeRepoAgentDocsDefault !== false,
+    includeRecentActivityDefault: hasSelection
+      ? selected.has("recent-activity")
+      : settings.includeRecentActivityDefault !== false,
+  };
+}
+
+function renderInstructionSources(state: QuestState, settings: ReturnType<typeof normalizeHandoffSettings>): string {
   const lines: string[] = [];
   if (settings.includePersonalGuideDefault && settings.personalAgentGuide?.trim()) {
     lines.push(`Personal Agent Guide:\n${settings.personalAgentGuide.trim()}`);
@@ -258,7 +400,10 @@ function renderInstructionSources(state: QuestState, settings: HandoffSettings):
 
   const includeDocs = settings.includeRepoAgentDocsDefault !== false;
   if (includeDocs) {
-    const docs = [...new Set(state.agents.map((agent) => agent.file).filter(Boolean))];
+    const docs = [...new Set(state.agents
+      .filter((agent) => agent.status !== "archived")
+      .map((agent) => agent.file)
+      .filter(Boolean))];
     lines.push(`Instruction sources:\n${docs.length ? docs.map((doc) => `- ${doc}`).join("\n") : "- (none discovered)"}`);
   }
 
@@ -329,6 +474,7 @@ export function renderTemplate(template: string, state: QuestState): string {
     .map((task, i) => `${i + 1}. ${task.text} — waiting on ${task.reason} (${task.since})`)
     .join("\n");
   const agentList = state.agents
+    .filter((agent) => agent.status !== "archived")
     .map((agent) => `- ${agent.name} (${agent.role}): ${agent.objective}`)
     .join("\n");
 
@@ -341,7 +487,7 @@ export function renderTemplate(template: string, state: QuestState): string {
     "objective.done": String(state.activeQuest.progress.done),
     "objective.total": String(state.activeQuest.progress.total),
     "resume.task": state.resumeNote.task,
-    "resume.lastTouched": state.resumeNote.lastTouched,
+    "resume.lastTouched": promptSafeLastTouched(state),
     "resume.since": state.resumeNote.since,
     now: nowList || "(none)",
     next: nextList || "(none)",

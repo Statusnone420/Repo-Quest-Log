@@ -1,5 +1,3 @@
-import { isAbsolute, relative } from "node:path";
-
 import chokidar from "chokidar";
 
 import { SCANNED_GLOBS } from "./fileset.js";
@@ -27,16 +25,6 @@ export async function startWatcher(options: WatcherOptions): Promise<WatcherHand
     cwd: options.cwd,
     ignoreInitial: true,
     persistent: true,
-    ignored: (watchedPath) => {
-      const relativePath = isAbsolute(watchedPath)
-        ? relative(options.cwd, watchedPath)
-        : watchedPath;
-      const normalized = normalizePath(relativePath);
-      if (!normalized || normalized === ".") {
-        return false;
-      }
-      return isExcludedPath(normalized, config);
-    },
   });
 
   const debounceMs = Math.max(options.debounceMs ?? config.watch?.debounce ?? 500, 500);
@@ -59,6 +47,9 @@ export async function startWatcher(options: WatcherOptions): Promise<WatcherHand
 
   const record = (file: string): void => {
     const normalized = normalizePath(file);
+    if (normalized !== ".repolog.json" && isExcludedPath(normalized, config)) {
+      return;
+    }
     pendingChanges.delete(normalized);
     pendingChanges.set(normalized, {
       file: normalized,
@@ -87,7 +78,13 @@ export async function startWatcher(options: WatcherOptions): Promise<WatcherHand
     }
     record(file);
   });
-  watcher.on("unlink", record);
+  watcher.on("unlink", (file) => {
+    if (normalizePath(file) === ".repolog.json") {
+      void recordConfig().catch((error: unknown) => handleWatcherError(error, ".repolog.json", "unlink"));
+      return;
+    }
+    record(file);
+  });
   watcher.on("addDir", record);
   watcher.on("unlinkDir", record);
   watcher.on("error", (error) => {

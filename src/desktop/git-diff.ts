@@ -1,5 +1,5 @@
 import { execFileSync, spawnSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { closeSync, existsSync, lstatSync, openSync, readSync } from "node:fs";
 import { relative, resolve } from "node:path";
 
 export interface FileDiffResult {
@@ -49,7 +49,10 @@ export function readFileDiff(
 }
 
 function readTrackedDiff(repoRoot: string, file: string, maxBytes: number): { text: string; truncated: boolean } {
-  const result = spawnSync("git", ["diff", "--no-ext-diff", "--unified=3", "HEAD", "--", file], {
+  const args = hasGitHead(repoRoot)
+    ? ["diff", "--no-ext-diff", "--unified=3", "HEAD", "--", file]
+    : ["diff", "--no-ext-diff", "--unified=3", "--cached", "--", file];
+  const result = spawnSync("git", args, {
     cwd: repoRoot,
     encoding: "utf8",
     maxBuffer: Math.max(maxBytes * 16, DEFAULT_MAX_BYTES),
@@ -62,6 +65,15 @@ function readTrackedDiff(repoRoot: string, file: string, maxBytes: number): { te
     text: capped.text,
     truncated: capped.truncated || !!result.error,
   };
+}
+
+function hasGitHead(repoRoot: string): boolean {
+  const result = spawnSync("git", ["rev-parse", "--verify", "HEAD"], {
+    cwd: repoRoot,
+    encoding: "utf8",
+    stdio: ["ignore", "ignore", "ignore"],
+  });
+  return result.status === 0;
 }
 
 function readUntrackedPreview(repoRoot: string, file: string, maxBytes: number): { text: string; truncated: boolean } {
@@ -78,8 +90,12 @@ function readUntrackedPreview(repoRoot: string, file: string, maxBytes: number):
   if (!existsSync(filePath)) {
     return { text: "", truncated: false };
   }
+  const stat = lstatSync(filePath);
+  if (!stat.isFile() || stat.isSymbolicLink()) {
+    throw new Error("Refusing to preview non-regular file");
+  }
 
-  const content = capUtf8(readFileSync(filePath, "utf8"), maxBytes);
+  const content = readBoundedUtf8(filePath, maxBytes);
   return {
     text: [
     `diff --git a/${file} b/${file}`,
@@ -91,6 +107,21 @@ function readUntrackedPreview(repoRoot: string, file: string, maxBytes: number):
     ].join("\n"),
     truncated: content.truncated,
   };
+}
+
+function readBoundedUtf8(filePath: string, maxBytes: number): { text: string; truncated: boolean } {
+  const limit = Math.max(0, maxBytes);
+  const buffer = Buffer.alloc(limit + 1);
+  const fd = openSync(filePath, "r");
+  try {
+    const bytesRead = readSync(fd, buffer, 0, buffer.length, 0);
+    return {
+      text: buffer.subarray(0, Math.min(bytesRead, limit)).toString("utf8"),
+      truncated: bytesRead > limit,
+    };
+  } finally {
+    closeSync(fd);
+  }
 }
 
 function safeRepoRelativePath(repoRoot: string, file: string): { ok: true; file: string } | { ok: false; reason: string } {

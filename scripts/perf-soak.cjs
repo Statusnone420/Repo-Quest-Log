@@ -8,6 +8,7 @@ const root = path.resolve(__dirname, "..");
 const args = parseArgs(process.argv.slice(2));
 const opts = {
   launch: args.launch !== false,
+  keepRepo: args["keep-repo"] === true,
   events: numberArg(args.events, 40),
   intervalMs: numberArg(args["interval-ms"], 120),
   sampleMs: numberArg(args["sample-ms"], 1000),
@@ -36,6 +37,7 @@ async function main() {
       child = spawn(electronPath, ["apps/desktop/main.cjs", "--repo-root", repo], {
         cwd: root,
         stdio: "ignore",
+        detached: process.platform !== "win32",
         windowsHide: true,
       });
       await sleep(2500);
@@ -66,8 +68,13 @@ async function main() {
     samples.push({ atMs: Date.now() - started, processes: finalSample });
     killTree(child?.pid);
     const report = buildReport(repo, samples, stoppedByLimit);
-    const reportPath = path.join(repo, "perf-soak-report.json");
+    const reportPath = opts.keepRepo
+      ? path.join(repo, "perf-soak-report.json")
+      : path.join(os.tmpdir(), `repolog-perf-soak-report-${process.pid}-${Date.now()}.json`);
     fs.writeFileSync(reportPath, JSON.stringify(report, null, 2));
+    if (!opts.keepRepo) {
+      fs.rmSync(repo, { recursive: true, force: true });
+    }
     printReport(report, reportPath);
   }
 }
@@ -130,7 +137,8 @@ Get-Process -Id $pids -ErrorAction SilentlyContinue |
 function killTree(rootPid) {
   if (!rootPid) return;
   if (process.platform !== "win32") {
-    try { process.kill(rootPid); } catch {}
+    try { process.kill(-rootPid, "SIGTERM"); } catch {}
+    try { process.kill(rootPid, "SIGTERM"); } catch {}
     return;
   }
   const command = `
@@ -182,6 +190,10 @@ function parseArgs(argv) {
     const arg = argv[i];
     if (arg === "--no-launch") {
       parsed.launch = false;
+      continue;
+    }
+    if (arg === "--keep-repo") {
+      parsed["keep-repo"] = true;
       continue;
     }
     if (!arg.startsWith("--")) continue;

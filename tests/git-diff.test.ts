@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
@@ -8,6 +8,13 @@ import { describe, expect, it } from "vitest";
 import { readFileDiff } from "../src/desktop/git-diff.js";
 
 describe("desktop read-only diff preview", () => {
+  it("does not read entire untracked files before applying the preview cap", async () => {
+    const source = await readFile(join(process.cwd(), "src", "desktop", "git-diff.ts"), "utf8");
+
+    expect(source).not.toContain('readFileSync(filePath, "utf8")');
+    expect(source).toContain("readBoundedUtf8");
+  });
+
   it("returns capped unified diff for a tracked changed file", async () => {
     const repoRoot = join(tmpdir(), `repo-quest-log-diff-${Date.now()}`);
     await mkdir(repoRoot, { recursive: true });
@@ -94,6 +101,54 @@ describe("desktop read-only diff preview", () => {
       expect(diff.text).toContain("+export const value = 1;");
     } finally {
       await rm(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("previews staged initial files in unborn HEAD repos", async () => {
+    const repoRoot = join(tmpdir(), `repo-quest-log-diff-unborn-${Date.now()}`);
+    await mkdir(repoRoot, { recursive: true });
+
+    try {
+      await writeFile(join(repoRoot, "PLAN.md"), "# Plan\n\n- [ ] First task\n", "utf8");
+      execFileSync("git", ["init"], { cwd: repoRoot, stdio: "ignore" });
+      execFileSync("git", ["add", "PLAN.md"], { cwd: repoRoot, stdio: "ignore" });
+
+      const diff = readFileDiff(repoRoot, "PLAN.md", { maxBytes: 4096 });
+
+      expect(diff.ok).toBe(true);
+      expect(diff.text).toContain("diff --git");
+      expect(diff.text).toContain("new file");
+      expect(diff.text).toContain("+# Plan");
+      expect(diff.text).not.toContain("No uncommitted diff for this file.");
+    } finally {
+      await rm(repoRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("refuses untracked symlink previews instead of reading outside content", async () => {
+    const repoRoot = join(tmpdir(), `repo-quest-log-diff-link-${Date.now()}`);
+    const outsideRoot = join(tmpdir(), `repo-quest-log-diff-outside-${Date.now()}`);
+    await mkdir(repoRoot, { recursive: true });
+    await mkdir(outsideRoot, { recursive: true });
+
+    try {
+      await writeFile(join(repoRoot, "PLAN.md"), "# Plan\n", "utf8");
+      await writeFile(join(outsideRoot, "secret.txt"), "outside secret\n", "utf8");
+      execFileSync("git", ["init"], { cwd: repoRoot, stdio: "ignore" });
+      execFileSync("git", ["config", "user.email", "test@example.com"], { cwd: repoRoot, stdio: "ignore" });
+      execFileSync("git", ["config", "user.name", "Repo Quest Log"], { cwd: repoRoot, stdio: "ignore" });
+      execFileSync("git", ["add", "."], { cwd: repoRoot, stdio: "ignore" });
+      execFileSync("git", ["commit", "-m", "initial"], { cwd: repoRoot, stdio: "ignore" });
+      await symlink(join(outsideRoot, "secret.txt"), join(repoRoot, "linked-secret.txt"));
+
+      const diff = readFileDiff(repoRoot, "linked-secret.txt", { maxBytes: 4096 });
+
+      expect(diff.ok).toBe(false);
+      expect(diff.reason).toContain("non-regular file");
+      expect(diff.text).not.toContain("outside secret");
+    } finally {
+      await rm(repoRoot, { recursive: true, force: true });
+      await rm(outsideRoot, { recursive: true, force: true });
     }
   });
 });

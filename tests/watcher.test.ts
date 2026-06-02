@@ -79,6 +79,37 @@ describe("startWatcher", () => {
     }
   });
 
+  it("reloads default config when .repolog.json is deleted", async () => {
+    const cwd = await createTempRepo();
+    await writeFile(join(cwd, ".repolog.json"), JSON.stringify({ excludes: ["PLAN.md"] }), "utf8");
+    const runs: FileChange[][] = [];
+    let configChangeCount = 0;
+
+    const handle = await startWatcher({
+      cwd,
+      globs: ["PLAN.md", ".repolog.json"],
+      debounceMs: 50,
+      runInitial: false,
+      onConfigChanged: () => {
+        configChangeCount += 1;
+      },
+      onRefresh: (changes) => {
+        runs.push([...changes]);
+      },
+    });
+
+    try {
+      await unlink(join(cwd, ".repolog.json"));
+      await waitFor(() => configChangeCount >= 1, 1500);
+      await writeFile(join(cwd, "PLAN.md"), "# Plan\n\n- [ ] visible after config delete\n", "utf8");
+      await waitFor(() => runs.some((run) => run.some((change) => change.file === "PLAN.md")), 1500);
+
+      expect(configChangeCount).toBeGreaterThanOrEqual(1);
+    } finally {
+      await handle.close();
+    }
+  });
+
   it("emits watcher errors to consumers with a loggable message", async () => {
     const cwd = await createTempRepo();
     const errors: unknown[] = [];

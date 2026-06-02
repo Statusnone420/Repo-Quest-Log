@@ -48,9 +48,15 @@ describe("web renderers", () => {
     expect(html).toContain("data-handoff-provider");
     expect(html).toContain("data-handoff-intent");
     expect(html).toContain("data-handoff-source");
+    expect(html).toContain("data-copy-context-map=");
+    expect(html).toContain("selectedSourceKey()");
+    expect(html).toContain("JSON.parse(contextMap)");
     expect(html).toContain("Personal Agent Guide");
     expect(html).toContain("handoff-guide-area");
     expect(html).toContain("Configure what RepoLog includes when you copy an agent handoff.");
+    expect(html).toContain("[data-handoff-intent][data-selected='true']");
+    expect(html).toContain('setSelected("[data-handoff-intent]", button)');
+    expect(html).toContain("[data-handoff-provider], [data-handoff-intent]");
     expect(html).toContain('<span class="prompt-glyph custom" aria-hidden="true"><svg');
     expect(html).not.toContain("Prompt Palette");
     expect(html).not.toContain("Resume for Claude Code");
@@ -74,6 +80,24 @@ describe("web renderers", () => {
     expect(html.indexOf("Top fixes first")).toBeLessThan(html.indexOf("Generated repair prompt"));
     expect(html).toContain("split(/\\s+/)");
     expect(html).not.toContain("split(/s+/)");
+  });
+
+  it("does not replace user or repo handoff overrides with built-in source maps", () => {
+    const html = renderDesktopHtml(sampleState(), {
+      liveBridge: "desktop",
+      presets: [{
+        id: "resume-current-work",
+        label: "Repo Resume Override",
+        sub: "Custom handoff",
+        glyph: "R",
+        keywords: "resume",
+        body: "CUSTOM REPO HANDOFF BODY",
+        source: "repo",
+      }],
+    });
+
+    expect(html).toContain("CUSTOM REPO HANDOFF BODY");
+    expect(html).not.toContain("data-copy-context-map=");
   });
 
   it("renders a VS Code panel document", () => {
@@ -321,6 +345,31 @@ describe("web renderers", () => {
     expect(html).toContain("<div class=\"signal-value warn\">Idle</div>");
     expect(html).toContain("No active agent work yet.");
     expect(html).not.toContain("data-workspace-mode");
+  });
+
+  it("infers researching from fresh doc context activity without edits or dirty files", () => {
+    const state = sampleState();
+    state.workspaceSignals = {
+      state: "Quiet",
+      editRate: 0,
+      filesTouched: 1,
+      lastEditAge: "12s ago",
+      scopeDriftCount: 0,
+      thrashLevel: "None",
+      repeatedFiles: [],
+      trend: Array.from({ length: 30 }, () => 0),
+      scopeActive: false,
+    };
+    state.recentActivity = [
+      { file: "AGENTS.md", kind: "change", ts: Date.now() - 12000, outsideScope: false },
+    ];
+    state.gitContext = { branch: "dev", ahead: 0, behind: 0, dirtyFiles: 0, lastCommit: "abc123" };
+
+    const html = renderDesktopHtml(state, { liveBridge: "desktop" });
+
+    expect(html).toContain("<div class=\"signal-value\">Researching</div>");
+    expect(html).toContain("Researching context around AGENTS.md");
+    expect(html).not.toContain("Agent work is changing");
   });
 
   it("labels archived agent docs as reference docs", () => {

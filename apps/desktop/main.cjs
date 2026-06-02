@@ -7,6 +7,7 @@ const { homedir } = require("node:os");
 
 const { app, BrowserWindow, Menu, dialog, ipcMain, shell, screen, clipboard } = require("electron");
 const { desktopUserArgv, resolveDesktopRepoRoot } = require(path.join(__dirname, "..", "..", "dist", "desktop", "root.js"));
+const { createRefreshQueue } = require("./refresh-queue.cjs");
 
 const repoRoot = path.resolve(__dirname, "..", "..");
 const { version: appVersion } = require(path.join(__dirname, "package.json"));
@@ -215,9 +216,9 @@ let recentActivity = [];
 let currentState = null;
 let modulesPromise = null;
 let revealTimer = null;
-let refreshInFlight = false;
-let refreshQueued = false;
-let queuedChanges = [];
+let refreshQueue;
+let targetGeneration = 0;
+let watcherRestartId = 0;
 
 async function loadModules() {
   if (!modulesPromise) {
@@ -344,64 +345,52 @@ function revealWindow() {
 }
 
 async function refresh(changes = []) {
-  if (refreshInFlight) {
-    queuedChanges = mergeChangesForRefresh(changes, queuedChanges);
-    refreshQueued = true;
-    return;
+  if (!refreshQueue) {
+    refreshQueue = createRefreshQueue(runRefresh);
   }
-
-  refreshInFlight = true;
-  const runChanges = mergeChangesForRefresh(changes, queuedChanges);
-  queuedChanges = [];
-
-  try {
-    const { mergeChanges, scanRepo, renderDesktopHtml, loadPromptPresets, readLastDigest } = await loadModules();
-    recentChanges = mergeChanges(runChanges, recentChanges);
-
-    try {
-      currentState = await scanRepo(targetRoot, {
-        recentChanges,
-        recentActivity,
-        lastTouchedFile: recentChanges[0] && recentChanges[0].file,
-      });
-      const lastDigest = await readLastDigest(appCacheRoot(), targetRoot);
-      if (lastDigest) {
-        currentState.lastDigest = lastDigest;
-      }
-      const handoffSettings = readHandoffSettings();
-      const presets = await loadPromptPresets(currentState, { rootDir: targetRoot, handoffSettings });
-      const html = renderDesktopHtml(currentState, {
-        liveBridge: "desktop",
-        presets,
-        appVersion,
-        openrouterConfigured: !!(openrouterConfig.key),
-        handoffSettings,
-      });
-      await pushHtml(html);
-    } catch (error) {
-      const message = error instanceof Error ? error.stack || error.message : String(error);
-      await pushHtml(renderErrorHtml(message));
-    }
-  } finally {
-    refreshInFlight = false;
-    if (refreshQueued) {
-      const nextChanges = queuedChanges;
-      queuedChanges = [];
-      refreshQueued = false;
-      void refresh(nextChanges);
-    }
-  }
+  await refreshQueue.enqueue(changes);
 }
 
-function mergeChangesForRefresh(next, previous) {
-  const merged = new Map();
-  for (const change of [...next, ...previous]) {
-    if (!change || typeof change.file !== "string") {
-      continue;
+async function runRefresh(runChanges = []) {
+  const runRoot = targetRoot;
+  const runGeneration = targetGeneration;
+  const runRecentChanges = [];
+  const runRecentActivity = [...recentActivity];
+  const { mergeChanges, scanRepo, renderDesktopHtml, loadPromptPresets, readLastDigest } = await loadModules();
+  runRecentChanges.push(...mergeChanges(runChanges, recentChanges));
+
+  try {
+    const nextState = await scanRepo(runRoot, {
+      recentChanges: runRecentChanges,
+      recentActivity: runRecentActivity,
+      lastTouchedFile: runRecentChanges[0] && runRecentChanges[0].file,
+    });
+    const lastDigest = await readLastDigest(appCacheRoot(), runRoot);
+    if (lastDigest) {
+      nextState.lastDigest = lastDigest;
     }
-    merged.set(change.file, change);
+    const handoffSettings = readHandoffSettings();
+    const presets = await loadPromptPresets(nextState, { rootDir: runRoot, handoffSettings });
+    const html = renderDesktopHtml(nextState, {
+      liveBridge: "desktop",
+      presets,
+      appVersion,
+      openrouterConfigured: !!(openrouterConfig.key),
+      handoffSettings,
+    });
+    if (runGeneration !== targetGeneration || runRoot !== targetRoot) {
+      return;
+    }
+    recentChanges = runRecentChanges;
+    currentState = nextState;
+    await pushHtml(html);
+  } catch (error) {
+    if (runGeneration !== targetGeneration || runRoot !== targetRoot) {
+      return;
+    }
+    const message = error instanceof Error ? error.stack || error.message : String(error);
+    await pushHtml(renderErrorHtml(message));
   }
-  return [...merged.values()];
 }
 
 async function pushHtml(html) {
@@ -447,7 +436,89 @@ function escapeHtml(value) {
 }
 
 async function startWatcherForTarget() {
+  const restartId = ++watcherRestartId;
+  await stopWatcherForTarget({ invalidate: false });
   const { startWatcher, startWorkspaceActivityWatcher } = await loadModules();
+  const watchedRoot = targetRoot;
+  const watchedGeneration = targetGeneration;
+  const isStale = () => restartId !== watcherRestartId || watchedGeneration !== targetGeneration || watchedRoot !== targetRoot;
+  let nextWatcherHandle = null;
+  let nextActivityWatcherHandle = null;
+  const closeIfStale = async () => {
+    if (!isStale()) {
+      return false;
+    }
+    if (nextWatcherHandle) {
+      await nextWatcherHandle.close();
+      nextWatcherHandle = null;
+    }
+    if (nextActivityWatcherHandle) {
+      await nextActivityWatcherHandle.close();
+      nextActivityWatcherHandle = null;
+    }
+    return true;
+  };
+  nextWatcherHandle = await startWatcher({
+    cwd: watchedRoot,
+    onRefresh: (changes) => {
+      if (isStale()) {
+        return;
+      }
+      void refresh(changes);
+    },
+    onError: (error) => {
+      if (isStale()) {
+        return;
+      }
+      process.stderr.write(`RepoLog watcher error: ${error instanceof Error ? error.message : String(error)}\n`);
+      if (win && !win.isDestroyed()) {
+        win.webContents.send("repolog:toast", { message: "File watch lost sync; re-scanning." });
+      }
+      void refresh();
+    },
+    onConfigChanged: () => {
+      if (isStale()) {
+        return;
+      }
+      if (win && !win.isDestroyed()) {
+        win.webContents.send("repolog:config-changed", { ok: true });
+      }
+    },
+  });
+  if (await closeIfStale()) {
+    return;
+  }
+  nextActivityWatcherHandle = await startWorkspaceActivityWatcher({
+    cwd: watchedRoot,
+    onActivity: (events) => {
+      if (isStale()) {
+        return;
+      }
+      recentActivity = mergeRecentActivity(events, recentActivity);
+      void refresh();
+    },
+    onError: (error) => {
+      if (isStale()) {
+        return;
+      }
+      process.stderr.write(`RepoLog activity watcher error: ${error instanceof Error ? error.message : String(error)}\n`);
+      if (win && !win.isDestroyed()) {
+        win.webContents.send("repolog:toast", { message: "Workspace activity watch lost sync; re-scanning." });
+      }
+      void refresh();
+    },
+  });
+  if (await closeIfStale()) {
+    return;
+  }
+  watcherHandle = nextWatcherHandle;
+  activityWatcherHandle = nextActivityWatcherHandle;
+}
+
+async function stopWatcherForTarget(options = {}) {
+  if (options.invalidate !== false) {
+    watcherRestartId += 1;
+  }
   if (watcherHandle) {
     await watcherHandle.close();
     watcherHandle = null;
@@ -456,38 +527,6 @@ async function startWatcherForTarget() {
     await activityWatcherHandle.close();
     activityWatcherHandle = null;
   }
-  watcherHandle = await startWatcher({
-    cwd: targetRoot,
-    onRefresh: (changes) => {
-      void refresh(changes);
-    },
-    onError: (error) => {
-      process.stderr.write(`RepoLog watcher error: ${error instanceof Error ? error.message : String(error)}\n`);
-      if (win && !win.isDestroyed()) {
-        win.webContents.send("repolog:toast", { message: "File watch lost sync; re-scanning." });
-      }
-      void refresh();
-    },
-    onConfigChanged: () => {
-      if (win && !win.isDestroyed()) {
-        win.webContents.send("repolog:config-changed", { ok: true });
-      }
-    },
-  });
-  activityWatcherHandle = await startWorkspaceActivityWatcher({
-    cwd: targetRoot,
-    onActivity: (events) => {
-      recentActivity = mergeRecentActivity(events, recentActivity);
-      void refresh();
-    },
-    onError: (error) => {
-      process.stderr.write(`RepoLog activity watcher error: ${error instanceof Error ? error.message : String(error)}\n`);
-      if (win && !win.isDestroyed()) {
-        win.webContents.send("repolog:toast", { message: "Workspace activity watch lost sync; re-scanning." });
-      }
-      void refresh();
-    },
-  });
 }
 
 function mergeRecentActivity(next, previous) {
@@ -561,15 +600,22 @@ async function firstRunCheck() {
 }
 
 async function switchRoot(newRoot) {
+  targetGeneration += 1;
+  if (refreshQueue) {
+    refreshQueue.cancelQueued(new Error("Refresh superseded by repo switch"));
+  }
+  refreshQueue = createRefreshQueue(runRefresh);
+  await stopWatcherForTarget();
   targetRoot = path.resolve(newRoot);
   recentChanges = [];
   recentActivity = [];
+  currentState = null;
   writeLastRoot(targetRoot);
   if (win && !win.isDestroyed()) {
     win.setTitle(`Repo Quest Log — ${path.basename(targetRoot)}`);
   }
-  await refresh();
   await startWatcherForTarget();
+  await refresh();
 }
 
 function buildMenu() {

@@ -204,14 +204,102 @@ describe("web renderers", () => {
     const html = renderDesktopHtml(state, { liveBridge: "desktop" });
 
     expect(html).toContain("Workspace Signals");
+    expect(html).toContain("Automatic agent work mode");
+    expect(html).toContain("Writing code");
+    expect(html).toContain("Checking diffs");
+    expect(html).toContain("Collecting context");
+    expect(html).toContain("No active agent work");
     expect(html).toContain("Recent Activity");
     expect(html).toContain("Agent Docs");
     expect(html).toContain("Prompt Palette");
+    expect(html).toContain("Activity timeline");
+    expect(html).toContain("data-timeline-window=\"5\"");
+    expect(html).toContain("data-timeline-window=\"15\"");
+    expect(html).toContain("data-timeline-window=\"30\"");
+    expect(html).toContain("Scope map");
+    expect(html).toContain("data-ui-action=\"open-diff\"");
     expect(html).toContain("Declared role");
     expect(html).toContain("Last written task");
+    expect(html).toContain("agent-health-rail");
+    expect(html.indexOf("Automatic agent work mode")).toBeGreaterThan(html.indexOf("Workspace Signals"));
+    expect(html).toContain("aria-current=\"true\"");
+    expect(html).not.toContain("data-workspace-mode");
     expect(html).not.toContain("agent-status");
     expect(html).not.toContain(">working<");
     expect(html).not.toContain(">idle<");
+  });
+
+  it("infers reviewing from dirty files when no edits are active", () => {
+    const state = sampleState();
+    state.workspaceSignals = {
+      state: "Quiet",
+      editRate: 0,
+      filesTouched: 0,
+      lastEditAge: "no activity",
+      scopeDriftCount: 0,
+      thrashLevel: "None",
+      repeatedFiles: [],
+      trend: Array.from({ length: 30 }, () => 0),
+      scopeActive: true,
+    };
+    state.recentActivity = [];
+    state.gitContext = { branch: "dev", ahead: 0, behind: 0, dirtyFiles: 17, lastCommit: "abc123" };
+
+    const html = renderDesktopHtml(state, { liveBridge: "desktop" });
+
+    expect(html).toContain("Automatic agent work mode");
+    expect(html).toContain("Reviewing 17 changed files");
+    expect(html).toContain("17 dirty files ready for diff review");
+    expect(html).toContain("<div class=\"mode-card\" aria-current=\"true\" title=\"Reviewing is inferred");
+    expect(html).not.toContain("workspace mode:");
+    expect(html).not.toContain("data-workspace-mode");
+    expect(html).not.toContain("browser history");
+  });
+
+  it("does not keep building from stale spread-window activity", () => {
+    const state = sampleState();
+    state.workspaceSignals = {
+      state: "Focused",
+      editRate: 0,
+      filesTouched: 3,
+      lastEditAge: "7m ago",
+      scopeDriftCount: 0,
+      thrashLevel: "None",
+      repeatedFiles: [],
+      trend: Array.from({ length: 30 }, () => 0),
+      scopeActive: true,
+    };
+    state.recentActivity = [];
+    state.gitContext = { branch: "dev", ahead: 0, behind: 0, dirtyFiles: 4, lastCommit: "abc123" };
+
+    const html = renderDesktopHtml(state, { liveBridge: "desktop" });
+
+    expect(html).toContain("Reviewing 4 changed files");
+    expect(html).not.toContain("Agent work is changing");
+  });
+
+  it("infers researching from planning context when there are no edits or diffs", () => {
+    const state = sampleState();
+    state.workspaceSignals = {
+      state: "Quiet",
+      editRate: 0,
+      filesTouched: 0,
+      lastEditAge: "no activity",
+      scopeDriftCount: 0,
+      thrashLevel: "None",
+      repeatedFiles: [],
+      trend: Array.from({ length: 30 }, () => 0),
+      scopeActive: false,
+    };
+    state.recentActivity = [];
+    state.recentChanges = [{ file: "PLAN.md", at: "1h", diff: "clean" }];
+    state.gitContext = { branch: "dev", ahead: 0, behind: 0, dirtyFiles: 0, lastCommit: "abc123" };
+
+    const html = renderDesktopHtml(state, { liveBridge: "desktop" });
+
+    expect(html).toContain("<div class=\"signal-value\">Researching</div>");
+    expect(html).toContain("Researching is inferred when planning context exists");
+    expect(html).not.toContain("data-workspace-mode");
   });
 
   it("labels archived agent docs as reference docs", () => {

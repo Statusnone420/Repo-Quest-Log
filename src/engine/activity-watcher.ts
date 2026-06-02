@@ -1,4 +1,5 @@
-import { isAbsolute, relative } from "node:path";
+import { stat } from "node:fs/promises";
+import { isAbsolute, join, relative } from "node:path";
 
 import chokidar from "chokidar";
 
@@ -46,6 +47,8 @@ export async function startWorkspaceActivityWatcher(
   const maxEvents = options.maxEvents ?? 500;
   const pending: RecentActivityEvent[] = [];
   let timer: NodeJS.Timeout | undefined;
+  let configPoller: NodeJS.Timeout | undefined;
+  let configMtimeMs = await readConfigMtime(options.cwd);
   let inFlight = false;
 
   const watcher = chokidar.watch(["**/*", ".repolog.json"], {
@@ -95,6 +98,7 @@ export async function startWorkspaceActivityWatcher(
     config = await readRepoConfig(options.cwd);
     excludes = [...BUILT_IN_IGNORES, ...config.excludes];
     debounceMs = Math.max(options.debounceMs ?? config.watch?.debounce ?? 500, 500);
+    configMtimeMs = await readConfigMtime(options.cwd);
     await options.onConfigChanged?.();
   };
 
@@ -118,6 +122,10 @@ export async function startWorkspaceActivityWatcher(
   await new Promise<void>((resolve) => {
     watcher.once("ready", () => resolve());
   });
+
+  configPoller = setInterval(() => {
+    void reloadConfigIfTouched().catch((error: unknown) => handleError(error, ".repolog.json", "poll"));
+  }, Math.max(debounceMs, 1000));
 
   async function flush(): Promise<void> {
     if (inFlight) {
@@ -144,6 +152,10 @@ export async function startWorkspaceActivityWatcher(
         clearTimeout(timer);
         timer = undefined;
       }
+      if (configPoller) {
+        clearInterval(configPoller);
+        configPoller = undefined;
+      }
       pending.length = 0;
       await watcher.close();
     },
@@ -155,8 +167,24 @@ export async function startWorkspaceActivityWatcher(
     process.stderr.write(`RepoLog activity watcher error (${event} ${file}): ${message}\n`);
     options.onError?.(error instanceof Error ? error : new Error(message));
   }
+
+  async function reloadConfigIfTouched(): Promise<void> {
+    const nextMtime = await readConfigMtime(options.cwd);
+    if (nextMtime === configMtimeMs) {
+      return;
+    }
+    await reloadConfig();
+  }
 }
 
 function normalizePath(file: string): string {
   return file.replace(/\\/g, "/").replace(/^\/+|\/+$/g, "");
+}
+
+async function readConfigMtime(cwd: string): Promise<number | undefined> {
+  try {
+    return (await stat(join(cwd, ".repolog.json"))).mtimeMs;
+  } catch {
+    return undefined;
+  }
 }

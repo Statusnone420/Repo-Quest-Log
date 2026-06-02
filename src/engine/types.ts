@@ -83,8 +83,19 @@ export interface WorkspaceSignals {
   thrashLevel: "None" | "Low" | "Medium" | "High";
   repeatedFiles: string[];
   trend: number[];
+  timelineWindows?: WorkspaceTimelineWindow[];
   scopeActive: boolean;
 }
+
+export interface WorkspaceTimelineWindow {
+  minutes: 5 | 15 | 30;
+  buckets: number[];
+  latestFile?: string;
+  latestAge: string;
+  intensity: "Quiet" | "Active" | "Busy" | "Burst";
+}
+
+export type WorkspaceMode = "Building" | "Reviewing" | "Researching" | "Idle";
 
 export interface Decision {
   at: string;

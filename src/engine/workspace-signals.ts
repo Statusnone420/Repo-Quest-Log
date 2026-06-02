@@ -5,6 +5,7 @@ const SCOPE_DRIFT_WINDOW_MS = 60_000;
 const SPREAD_WINDOW_MS = 10 * 60_000;
 const TREND_WINDOW_MS = 30 * 60_000;
 const TREND_BUCKETS = 30;
+const TIMELINE_WINDOWS = [5, 15, 30] as const;
 
 export function computeWorkspaceSignals(
   events: readonly RecentActivityEvent[],
@@ -37,6 +38,7 @@ export function computeWorkspaceSignals(
     thrashLevel,
     repeatedFiles: repeated,
     trend: buildTrend(recent, now),
+    timelineWindows: buildTimelineWindows(recent, now),
     scopeActive,
   };
 }
@@ -127,6 +129,38 @@ function buildTrend(events: readonly RecentActivityEvent[], now: number): number
   }
 
   return buckets;
+}
+
+function buildTimelineWindows(events: readonly RecentActivityEvent[], now: number): WorkspaceSignals["timelineWindows"] {
+  return TIMELINE_WINDOWS.map((minutes) => {
+    const windowMs = minutes * 60_000;
+    const bucketCount = minutes === 5 ? 10 : minutes;
+    const bucketMs = windowMs / bucketCount;
+    const start = now - windowMs;
+    const buckets = Array.from({ length: bucketCount }, () => 0);
+    const inWindow = events.filter((event) => event.ts >= start && event.ts <= now);
+
+    for (const event of inWindow) {
+      const index = Math.min(bucketCount - 1, Math.max(0, Math.floor((event.ts - start) / bucketMs)));
+      buckets[index] = (buckets[index] ?? 0) + 1;
+    }
+
+    return {
+      minutes,
+      buckets,
+      latestFile: inWindow[0]?.file ? normalizePath(inWindow[0].file) : undefined,
+      latestAge: formatAge(inWindow[0]?.ts, now),
+      intensity: classifyTimelineIntensity(inWindow.length, minutes),
+    };
+  });
+}
+
+function classifyTimelineIntensity(eventCount: number, minutes: number): "Quiet" | "Active" | "Busy" | "Burst" {
+  if (eventCount === 0) return "Quiet";
+  const perMinute = eventCount / minutes;
+  if (perMinute >= 4) return "Burst";
+  if (perMinute >= 1.5) return "Busy";
+  return "Active";
 }
 
 function extractScopeTokens(area: string): string[] {

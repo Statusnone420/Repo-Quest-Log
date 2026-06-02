@@ -15,7 +15,7 @@ afterEach(async () => {
 
 describe("workspace activity watcher", () => {
   it("records add, change, and unlink metadata without repo writes", async () => {
-    const root = join(tmpdir(), `repolog-activity-${Date.now()}`);
+    const root = join(tmpdir(), `repolog-activity-${Date.now()}-${Math.random().toString(16).slice(2)}`);
     roots.push(root);
     await mkdir(root, { recursive: true });
     const batches: RecentActivityEvent[][] = [];
@@ -31,14 +31,11 @@ describe("workspace activity watcher", () => {
       const file = join(root, "src", "web", "render.ts");
       await mkdir(join(root, "src", "web"), { recursive: true });
       await writeFile(file, "one", "utf8");
-      await pause(650);
-      await handle.flush();
+      await waitForKinds(batches, handle, ["add"]);
       await writeFile(file, "two", "utf8");
-      await pause(650);
-      await handle.flush();
+      await waitForKinds(batches, handle, ["add", "change"]);
       await unlink(file);
-      await pause(650);
-      await handle.flush();
+      await waitForKinds(batches, handle, ["add", "change", "unlink"]);
     } finally {
       await handle.close();
     }
@@ -47,7 +44,7 @@ describe("workspace activity watcher", () => {
     expect(events.map((event) => event.kind)).toEqual(expect.arrayContaining(["add", "change", "unlink"]));
     expect(events.every((event) => event.file === "src/web/render.ts")).toBe(true);
     expect(events.every((event) => typeof event.ts === "number" && event.ts > 0)).toBe(true);
-  });
+  }, 15_000);
 
   it("ignores built-in noisy directories", async () => {
     const root = join(tmpdir(), `repolog-activity-ignore-${Date.now()}`);
@@ -103,7 +100,7 @@ describe("workspace activity watcher", () => {
 
     try {
       await writeFile(join(root, ".repolog.json"), JSON.stringify({ excludes: ["src"] }), "utf8");
-      await configReloaded;
+      await waitFor(configReloaded, 5_000, "config reload");
       await writeFile(join(root, "src", "ignored.ts"), "ignored", "utf8");
       await pause(650);
       await handle.flush();
@@ -112,9 +109,33 @@ describe("workspace activity watcher", () => {
     }
 
     expect(batches.flat().some((event) => event.file === "src/ignored.ts")).toBe(false);
-  });
+  }, 15_000);
 });
 
 function pause(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function waitFor<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_resolve, reject) => setTimeout(() => reject(new Error(`Timed out waiting for ${label}`)), ms)),
+  ]);
+}
+
+async function waitForKinds(
+  batches: RecentActivityEvent[][],
+  handle: { flush(): Promise<void> },
+  kinds: RecentActivityEvent["kind"][],
+): Promise<void> {
+  const deadline = Date.now() + 4_000;
+  while (Date.now() < deadline) {
+    await pause(100);
+    await handle.flush();
+    const seen = new Set(batches.flat().map((event) => event.kind));
+    if (kinds.every((kind) => seen.has(kind))) {
+      return;
+    }
+  }
+  await handle.flush();
 }

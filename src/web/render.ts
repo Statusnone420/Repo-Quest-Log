@@ -1,5 +1,5 @@
 import { buildContextPrompt, buildPromptPresets, type PromptPreset } from "../engine/prompts.js";
-import type { AgentProfile, BlockedTask, Decision, FileChange, QuestState, RecentActivityEvent, Task, WorkspaceSignals } from "../engine/types.js";
+import type { AgentProfile, BlockedTask, Decision, FileChange, QuestState, RecentActivityEvent, Task, WorkspaceMode, WorkspaceSignals, WorkspaceTimelineWindow } from "../engine/types.js";
 
 export interface SurfaceHtmlOptions {
   liveBridge?: "desktop" | "vscode";
@@ -246,11 +246,33 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
        border-color: var(--tile-border);
        background: rgba(88,166,255,0.07);
      }
-     .topbar-action.repo-switch:hover {
-       color: var(--accent);
-       border-color: rgba(88,166,255,0.42);
-       background: rgba(88,166,255,0.12);
-     }
+      .topbar-action.repo-switch:hover {
+        color: var(--accent);
+        border-color: rgba(88,166,255,0.42);
+        background: rgba(88,166,255,0.12);
+      }
+    .timeline-tabs button,
+    .diff-action {
+      appearance: none;
+      border: 1px solid var(--tile-border);
+      background: rgba(255,255,255,0.025);
+      color: var(--muted);
+      border-radius: 5px;
+      padding: 4px 7px;
+      font: inherit;
+      font-size: var(--tiny-size);
+      cursor: pointer;
+    }
+    .timeline-tabs button[aria-pressed="true"] {
+      color: var(--accent);
+      border-color: rgba(138,180,255,0.52);
+      background: rgba(88,166,255,0.12);
+    }
+    .timeline-tabs button:hover,
+    .diff-action:hover {
+      color: var(--ink);
+      border-color: rgba(138,180,255,0.42);
+    }
      .topbar-action .kbd-inline {
        display: inline-flex;
        align-items: center;
@@ -2043,7 +2065,7 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     .signals-strip {
       margin: 0 var(--pad-x);
       display: grid;
-      grid-template-columns: 1.1fr repeat(4, minmax(0, 1fr)) 1.2fr;
+      grid-template-columns: minmax(260px, 0.86fr) minmax(460px, 1.36fr) minmax(360px, 1.12fr);
       gap: 0;
       align-items: stretch;
       border: 1px solid var(--tile-border);
@@ -2053,13 +2075,19 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     }
     .signal-cell {
       min-width: 0;
-      padding: 13px 18px;
+      padding: 14px 18px;
       border: 0;
       border-left: 1px solid var(--tile-border);
       border-radius: 0;
       background: transparent;
     }
     .signal-cell:first-child { border-left: 0; }
+    .signal-overview {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 12px;
+    }
     .signal-label {
       color: var(--muted);
       font-family: var(--sans);
@@ -2067,6 +2095,14 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       text-transform: none;
       letter-spacing: 0;
       margin-bottom: 6px;
+    }
+    .signal-label.inline {
+      margin: 0;
+      color: var(--dim);
+      font-family: var(--mono);
+      font-size: var(--tiny-size);
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
     }
     .signal-value {
       color: var(--ok);
@@ -2086,23 +2122,176 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       text-overflow: ellipsis;
       white-space: nowrap;
     }
-    .trend-bars {
-      height: 22px;
+    .signal-current-note {
+      color: var(--ink);
+      font-size: var(--small-size);
+      line-height: 1.35;
+    }
+    .signal-trust-note {
+      color: var(--dim);
+      font-size: var(--tiny-size);
+      line-height: 1.35;
+    }
+    .workspace-mode {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+    }
+    .mode-card {
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr);
+      gap: 4px;
+      min-width: 0;
+      min-height: 92px;
+      padding: 10px 11px;
+      border: 1px solid var(--tile-border);
+      border-radius: 7px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.012));
+      color: var(--muted);
+      text-align: left;
+    }
+    .mode-card[aria-current="true"] {
+      color: var(--ink);
+      border-color: rgba(138,180,255,0.68);
+      background:
+        linear-gradient(180deg, rgba(88,166,255,0.20), rgba(88,166,255,0.055));
+      box-shadow: inset 0 2px 0 rgba(138,214,168,0.78);
+    }
+    .mode-card-title {
+      color: var(--ink);
+      font-size: var(--small-size);
+      font-weight: 750;
+      line-height: 1.1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .mode-card-action {
+      color: var(--accent);
+      font-size: var(--tiny-size);
+      font-family: var(--mono);
+      line-height: 1.2;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .mode-card-detail {
+      color: var(--muted);
+      font-size: var(--tiny-size);
+      line-height: 1.35;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
+    .signal-evidence-panel {
+      display: grid;
+      grid-template-rows: auto auto 1fr;
+      gap: 8px;
+    }
+    .signal-metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 7px;
+    }
+    .signal-metric {
+      min-width: 0;
+      padding: 8px 9px;
+      border: 1px solid rgba(138,180,255,0.14);
+      border-radius: 6px;
+      background: rgba(255,255,255,0.018);
+    }
+    .signal-metric strong {
+      display: block;
+      color: var(--ok);
+      font-size: calc(17px * var(--rql-density));
+      line-height: 1.05;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .signal-metric span {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--dim);
+      font-family: var(--mono);
+      font-size: var(--tiny-size);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .signal-metric em {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-style: normal;
+      font-size: var(--tiny-size);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .timeline-panel {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 7px 10px;
+      align-items: center;
+    }
+    .timeline-tabs {
+      display: inline-flex;
+      gap: 4px;
+      justify-content: end;
+    }
+    .timeline-window {
+      grid-column: 1 / -1;
+      display: none;
+    }
+    .timeline-window[data-visible="true"] { display: block; }
+    .timeline-bars {
+      height: 24px;
       display: flex;
       align-items: end;
       gap: 2px;
-      margin-top: 2px;
     }
-    .trend-bars span {
+    .timeline-bucket {
       flex: 1;
       min-width: 2px;
-      border-radius: 2px 2px 0 0;
-      background: rgba(138,180,255,0.28);
+      border-radius: 3px 3px 0 0;
+      background: rgba(138,180,255,0.18);
+      transform-origin: bottom;
     }
-    .trend-bars span.hot { background: rgba(138,214,168,0.72); }
+    .timeline-bucket.active { background: rgba(138,180,255,0.42); }
+    .timeline-bucket.hot { background: rgba(138,214,168,0.72); }
+    .timeline-bucket.latest { box-shadow: 0 0 0 1px rgba(138,214,168,0.24); }
+    .timeline-bucket.pulse { animation: rqlPulse 900ms ease-out 1; }
+    .timeline-empty {
+      color: var(--dim);
+      font-size: var(--tiny-size);
+      font-family: var(--sans);
+      padding-top: 5px;
+    }
+    .timeline-summary {
+      grid-column: 1 / -1;
+      color: var(--muted);
+      font-size: var(--tiny-size);
+      font-family: var(--sans);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    @keyframes rqlPulse {
+      0% { transform: scaleY(1); filter: brightness(1); }
+      35% { transform: scaleY(1.18); filter: brightness(1.35); }
+      100% { transform: scaleY(1); filter: brightness(1); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .timeline-bucket.pulse { animation: none; }
+    }
     .activity-row {
       display: grid;
-      grid-template-columns: 58px minmax(0, 1fr) auto;
+      grid-template-columns: 58px minmax(0, 1fr) auto auto;
       gap: 8px;
       align-items: center;
       padding: 4px 0;
@@ -2124,6 +2313,135 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
     }
     .activity-file.outside { color: var(--warn); }
     .activity-age { color: var(--dim); font-family: var(--mono); font-size: var(--tiny-size); }
+    .scope-map {
+      display: grid;
+      gap: 8px;
+    }
+    .scope-lane {
+      display: grid;
+      grid-template-columns: 72px minmax(0, 1fr) 28px;
+      gap: 8px;
+      align-items: center;
+      font-size: var(--small-size);
+    }
+    .scope-lane-label {
+      color: var(--muted);
+      font-family: var(--mono);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .scope-lane-track {
+      height: 7px;
+      border-radius: 999px;
+      background: rgba(138,180,255,0.12);
+      overflow: hidden;
+    }
+    .scope-lane-fill {
+      display: block;
+      height: 100%;
+      min-width: 2px;
+      border-radius: inherit;
+      background: rgba(138,180,255,0.58);
+    }
+    .scope-lane.outside .scope-lane-fill { background: rgba(233,185,115,0.72); }
+    .scope-lane-count { color: var(--dim); font-family: var(--mono); font-size: var(--tiny-size); text-align: right; }
+    .agent-health-rail {
+      display: inline-block;
+      width: 3px;
+      height: 18px;
+      margin-right: 7px;
+      border-radius: 99px;
+      vertical-align: middle;
+      background: var(--ok);
+      box-shadow: 0 0 12px rgba(138,214,168,0.22);
+    }
+    .agent-health-rail.reference { background: var(--muted); box-shadow: none; }
+    .agent-health-rail.stale { background: var(--warn); box-shadow: 0 0 12px rgba(233,185,115,0.16); }
+    .readiness-meters {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin: 9px 0;
+    }
+    .readiness-meter {
+      display: grid;
+      gap: 5px;
+      min-width: 0;
+    }
+    .readiness-meter-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      color: var(--muted);
+      font-size: var(--tiny-size);
+    }
+    .readiness-track {
+      height: 6px;
+      border-radius: 99px;
+      background: rgba(138,180,255,0.12);
+      overflow: hidden;
+    }
+    .readiness-fill {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: var(--accent);
+    }
+    .readiness-fill.warn { background: var(--warn); }
+    .readiness-fill.danger { background: var(--danger); }
+    .diff-drawer {
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      width: min(760px, calc(100vw - 32px));
+      max-height: min(72vh, 720px);
+      display: none;
+      grid-template-rows: auto minmax(0, 1fr);
+      border: 1px solid rgba(138,180,255,0.28);
+      border-radius: 8px;
+      background: var(--bg-elevated);
+      box-shadow: 0 22px 70px rgba(0,0,0,0.45);
+      z-index: 80;
+      overflow: hidden;
+    }
+    .diff-drawer[data-open="true"] { display: grid; }
+    .diff-drawer-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--tile-border);
+    }
+    .diff-drawer-title {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-family: var(--mono);
+      color: var(--ink);
+    }
+    .diff-drawer-close {
+      appearance: none;
+      border: 1px solid var(--tile-border);
+      border-radius: 5px;
+      background: rgba(255,255,255,0.025);
+      color: var(--muted);
+      cursor: pointer;
+      padding: 4px 8px;
+    }
+    .diff-drawer-body {
+      margin: 0;
+      padding: 12px;
+      overflow: auto;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      color: var(--ink);
+      font-family: var(--mono);
+      font-size: var(--tiny-size);
+      line-height: 1.55;
+    }
     .prompt-row {
       display: grid;
       grid-template-columns: 26px minmax(0, 1fr) auto;
@@ -2449,14 +2767,20 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       .strip-headline { -webkit-line-clamp: 2; }
       .strip-tags { margin-top: 5px; gap: 5px; }
       .signals-strip {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 7px;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 0;
       }
       .board {
         grid-template-columns: minmax(0, 0.9fr) minmax(0, 1fr) minmax(360px, 1.05fr);
       }
-      .signal-cell { padding: 8px 10px; }
-      .trend-bars { height: 18px; }
+      .signal-cell {
+        padding: 10px 12px;
+        border-left: 0;
+        border-top: 1px solid var(--tile-border);
+      }
+      .signal-cell:first-child { border-top: 0; }
+      .workspace-mode { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .timeline-bars { height: 18px; }
     }
     @media (min-width: 1560px) {
       .board {
@@ -2482,6 +2806,8 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       .signals-strip,
       .col,
       .col:nth-child(1) { grid-template-columns: minmax(0, 1fr); }
+      .workspace-mode,
+      .signal-metrics-grid { grid-template-columns: minmax(0, 1fr); }
     }
     @media (max-height: 780px) {
       .shell {
@@ -2506,13 +2832,14 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       .strip-cell.focus .strip-why { -webkit-line-clamp: 1; }
       .strip-tags { margin-top: 5px; }
       .signal-cell { padding-top: 8px; padding-bottom: 8px; }
+      .mode-card { min-height: 78px; }
       .tile-header { min-height: 38px; }
       .tile-body { padding-top: 7px; padding-bottom: 7px; }
       .prompt-sub { display: none; }
     }
     @media (max-height: 640px) {
       .header-strip { grid-template-columns: minmax(0, 1fr); }
-      .signals-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .signals-strip { grid-template-columns: minmax(0, 1fr); }
     }
   </style>
 </head>
@@ -2585,7 +2912,7 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
         ${renderAgentDocsTile(state)}
     </section>
 
-      ${renderWorkspaceSignalsStrip(state.workspaceSignals)}
+      ${renderWorkspaceSignalsStrip(state)}
 
       <section class="board">
       <div class="col">
@@ -2594,6 +2921,7 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       </div>
       <div class="col">
         ${renderRecentActivityTile(state.recentActivity ?? [])}
+        ${renderScopeMapTile(state.recentActivity ?? [])}
         ${renderChangesTile(state.recentChanges)}
       </div>
       <div class="col">
@@ -2617,6 +2945,13 @@ export function renderDesktopHtml(state: QuestState, options: SurfaceHtmlOptions
       </div>
     </div>
   </div>
+  <section class="diff-drawer" data-diff-drawer data-open="false" aria-label="Diff preview">
+    <div class="diff-drawer-head">
+      <div class="diff-drawer-title" data-diff-title>Diff preview</div>
+      <button type="button" class="diff-drawer-close" data-ui-action="close-diff" aria-label="Close diff">Close</button>
+    </div>
+    <pre class="diff-drawer-body" data-diff-body>Choose a changed file to preview its diff.</pre>
+  </section>
 
   <div class="toast" data-toast>copied</div>
 
@@ -3031,7 +3366,7 @@ function renderAgentDocsTile(state: QuestState): string {
         </div>
         ${agents.map((agent) => `
           <div class="agent-doc-row">
-            <span class="agent-doc-file">${escapeHtml(agent.file)}</span>
+            <span class="agent-doc-file"><span class="agent-health-rail ${agent.status === "archived" ? "reference" : agent.lastTask || agent.currentTask ? "" : "stale"}"></span>${escapeHtml(agent.file)}</span>
             <span class="agent-doc-status ${agent.status === "archived" ? "archived" : ""}">${escapeHtml(agent.status === "archived" ? "Reference" : "Active")}</span>
             <span class="agent-doc-role">${escapeHtml(agent.role || agent.area || "Unspecified")}</span>
             <span class="agent-doc-task">${escapeHtml(resolveAgentTask(agent, state.agentActivity) || agent.currentTask || agent.lastTask || agent.objective || "No task declared")}</span>
@@ -3392,8 +3727,8 @@ function renderSettingsPanel(state: QuestState, liveBridge?: SurfaceHtmlOptions[
 
 }
 
-function renderWorkspaceSignalsStrip(signals: WorkspaceSignals | undefined): string {
-  const data = signals ?? {
+function renderWorkspaceSignalsStrip(state: QuestState): string {
+  const data = state.workspaceSignals ?? {
     state: "Quiet",
     editRate: 0,
     filesTouched: 0,
@@ -3402,48 +3737,213 @@ function renderWorkspaceSignalsStrip(signals: WorkspaceSignals | undefined): str
     thrashLevel: "None",
     repeatedFiles: [],
     trend: Array.from({ length: 30 }, () => 0),
+    timelineWindows: defaultTimelineWindows(),
     scopeActive: false,
   } satisfies WorkspaceSignals;
+  const resolvedMode = resolveWorkspaceMode(data, state);
+  const activeLine = workspaceModeEvidence(resolvedMode, data, state);
+  const latestFile = state.recentActivity?.[0]?.file ?? state.recentChanges[0]?.file ?? "none";
 
   return `<section class="signals-strip" aria-label="Workspace Signals">
-    <div class="signal-cell">
+    <div class="signal-cell signal-overview">
+      <div>
       <div class="signal-label">Workspace Signals</div>
-      <div class="signal-value">${escapeHtml(data.state)}</div>
-      <div class="signal-note">last edit ${escapeHtml(data.lastEditAge)}</div>
+        <div class="signal-value">${escapeHtml(resolvedMode)}</div>
+        <div class="signal-current-note">${escapeHtml(activeLine)}</div>
+      </div>
+      <div>
+        <div class="signal-label inline">Signal state</div>
+        <div class="signal-note">${escapeHtml(data.state)} · last edit ${escapeHtml(data.lastEditAge)}</div>
+        <div class="signal-trust-note">Automatic, read-only signal from watcher and Git facts. Viewing and switching repos do not write repo files.</div>
+        <span class="sr-only">${escapeHtml(`${resolvedMode} inferred automatically`)}</span>
+      </div>
     </div>
     <div class="signal-cell">
-      <div class="signal-label">Edits / min</div>
-      <div class="signal-value">${data.editRate}</div>
-      <div class="signal-note">change events only</div>
+      <div class="signal-label">Automatic agent work mode</div>
+      ${renderWorkspaceModeCards(resolvedMode, data, state)}
     </div>
-    <div class="signal-cell">
-      <div class="signal-label">Files touched</div>
-      <div class="signal-value">${data.filesTouched}</div>
-      <div class="signal-note">last 10m spread</div>
-    </div>
-    <div class="signal-cell">
-      <div class="signal-label">Outside scope</div>
-      <div class="signal-value">${data.scopeActive ? data.scopeDriftCount : "off"}</div>
-      <div class="signal-note">${data.scopeActive ? "declared areas active" : "no declared areas"}</div>
-    </div>
-    <div class="signal-cell">
-      <div class="signal-label">Edit churn</div>
-      <div class="signal-value">${escapeHtml(data.thrashLevel)}</div>
-      <div class="signal-note">${escapeHtml(data.repeatedFiles[0] ?? "no repeated file")}</div>
-    </div>
-    <div class="signal-cell">
-      <div class="signal-label">30m trend</div>
-      ${renderTrendBars(data.trend)}
+    <div class="signal-cell signal-evidence-panel">
+      <div>
+        <div class="signal-label">Live evidence</div>
+        <div class="signal-metrics-grid">
+          <div class="signal-metric"><span>Edits/min</span><strong>${data.editRate}</strong><em>change events</em></div>
+          <div class="signal-metric"><span>Files</span><strong>${data.filesTouched}</strong><em>last 10m spread</em></div>
+          <div class="signal-metric"><span>Outside</span><strong>${data.scopeActive ? data.scopeDriftCount : "off"}</strong><em>${data.scopeActive ? "declared scope" : "no declared areas"}</em></div>
+          <div class="signal-metric"><span>Churn</span><strong>${escapeHtml(data.thrashLevel)}</strong><em>${escapeHtml(data.repeatedFiles[0] ?? latestFile)}</em></div>
+        </div>
+      </div>
+      <div class="signal-label">Activity timeline</div>
+      ${renderTimeline(data.timelineWindows ?? timelineFromTrend(data.trend))}
     </div>
   </section>`;
 }
 
-function renderTrendBars(trend: readonly number[]): string {
-  const max = Math.max(1, ...trend);
-  return `<div class="trend-bars">${trend.map((value) => {
-    const height = Math.max(3, Math.round((value / max) * 28));
-    return `<span class="${value >= max && value > 0 ? "hot" : ""}" style="height:${height}px"></span>`;
-  }).join("")}</div>`;
+function resolveWorkspaceMode(signals: WorkspaceSignals, state: QuestState): WorkspaceMode {
+  if (signals.editRate > 0 || hasRecentWorkspaceActivity(state)) {
+    return "Building";
+  }
+
+  if ((state.gitContext?.dirtyFiles ?? 0) > 0) {
+    return "Reviewing";
+  }
+
+  if (state.now.length > 0 || hasMeaningfulPlanningContext(state)) {
+    return "Researching";
+  }
+
+  return "Idle";
+}
+
+function renderWorkspaceModeCards(
+  resolvedMode: WorkspaceMode,
+  signals: WorkspaceSignals,
+  state: QuestState,
+): string {
+  const modes: WorkspaceMode[] = ["Building", "Reviewing", "Researching", "Idle"];
+  return `<div class="workspace-mode" aria-label="Workspace mode">
+    ${modes.map((candidate) => {
+      const copy = workspaceModeCopy(candidate, signals, state);
+      return `<div class="mode-card" aria-current="${candidate === resolvedMode ? "true" : "false"}" title="${escapeHtml(copy.title)}">
+        <span class="mode-card-title">${candidate}</span>
+        <span class="mode-card-action">${escapeHtml(copy.action)}</span>
+        <span class="mode-card-detail">${escapeHtml(copy.detail)}</span>
+      </div>`;
+    }).join("")}
+  </div>`;
+}
+
+function hasRecentWorkspaceActivity(state: QuestState): boolean {
+  const cutoff = Date.now() - 90_000;
+  return (state.recentActivity ?? []).some((event) => Number.isFinite(event.ts) && event.ts >= cutoff);
+}
+
+function hasMeaningfulPlanningContext(state: QuestState): boolean {
+  const objective = state.activeQuest?.title || state.objective?.title;
+  return Boolean(objective && objective.trim() && objective.trim().toLowerCase() !== "no objective set yet");
+}
+
+function workspaceModeCopy(
+  mode: WorkspaceMode,
+  signals: WorkspaceSignals,
+  state: QuestState,
+): { action: string; detail: string; title: string } {
+  const dirtyFiles = state.gitContext?.dirtyFiles ?? state.recentChanges.length;
+  const latestFile = state.recentActivity?.[0]?.file ?? state.recentChanges[0]?.file;
+  if (mode === "Building") {
+    return {
+      action: "Writing code",
+      detail: signals.filesTouched > 0
+        ? `${signals.editRate} edits/min across ${signals.filesTouched} file${signals.filesTouched === 1 ? "" : "s"}`
+        : "Inferred when file edits start",
+      title: "Building is inferred from recent watcher activity",
+    };
+  }
+  if (mode === "Reviewing") {
+    return {
+      action: "Checking diffs",
+      detail: dirtyFiles > 0
+        ? `${dirtyFiles} dirty file${dirtyFiles === 1 ? "" : "s"} ready for diff review`
+        : "Inferred when changed files are waiting",
+      title: "Reviewing is inferred from dirty files or recent changes without active edits",
+    };
+  }
+  if (mode === "Researching") {
+    return {
+      action: "Collecting context",
+      detail: latestFile ? `Reading around ${latestFile}` : "Inferred from active task context before edits",
+      title: "Researching is inferred when planning context exists without edits or dirty files",
+    };
+  }
+  return {
+    action: "No active agent work",
+    detail: signals.lastEditAge === "no activity" ? "No active agent work yet" : `Last edit ${signals.lastEditAge}`,
+    title: "Idle is inferred when no active edits, diffs, or task context are present",
+  };
+}
+
+function workspaceModeEvidence(mode: WorkspaceMode, signals: WorkspaceSignals, state: QuestState): string {
+  const latestFile = state.recentActivity?.[0]?.file ?? state.recentChanges[0]?.file;
+  if (mode === "Building") {
+    return signals.filesTouched > 0
+      ? `Agent work is changing ${signals.filesTouched} file${signals.filesTouched === 1 ? "" : "s"} at ${signals.editRate} edits/min.`
+      : "Ready for implementation; no file edits have landed in this activity window.";
+  }
+  if (mode === "Reviewing") {
+    const dirtyFiles = state.gitContext?.dirtyFiles ?? state.recentChanges.length;
+    return dirtyFiles > 0
+      ? `Reviewing ${dirtyFiles} changed file${dirtyFiles === 1 ? "" : "s"}; open a Diff from Recent changes.`
+      : "Reviewing is inferred, but there are no changed files to inspect yet.";
+  }
+  if (mode === "Researching") {
+    return latestFile
+      ? `Researching context around ${latestFile}; file activity is only shown when it happens.`
+      : "Researching is inferred from task context before edits.";
+  }
+  return signals.lastEditAge === "no activity"
+    ? "No active agent work yet."
+    : `Idle now; last file activity was ${signals.lastEditAge}.`;
+}
+
+function renderTimeline(windows: readonly WorkspaceTimelineWindow[]): string {
+  const ordered = [5, 15, 30].map((minutes) => windows.find((window) => window.minutes === minutes)).filter((window): window is WorkspaceTimelineWindow => !!window);
+  const defaultWindow = ordered.find((window) => window.minutes === 15) ?? ordered[0] ?? defaultTimelineWindows()[1]!;
+  return `<div class="timeline-panel" data-timeline>
+    <span class="timeline-summary" data-timeline-summary>${escapeHtml(timelineSummary(defaultWindow))}</span>
+    <div class="timeline-tabs" aria-label="Activity timeline window">
+      ${ordered.map((window) => `<button type="button" data-timeline-window="${window.minutes}" aria-pressed="${window.minutes === defaultWindow.minutes ? "true" : "false"}">${window.minutes}m</button>`).join("")}
+    </div>
+    ${ordered.map((window) => renderTimelineWindow(window, window.minutes === defaultWindow.minutes)).join("")}
+  </div>`;
+}
+
+function renderTimelineWindow(window: WorkspaceTimelineWindow, visible: boolean): string {
+  const max = Math.max(1, ...window.buckets);
+  const activeIndexes = window.buckets.map((value, index) => value > 0 ? index : -1).filter((index) => index >= 0);
+  const latestActive = activeIndexes[activeIndexes.length - 1];
+  const bars = window.buckets.map((value, index) => {
+    const height = value > 0 ? Math.max(4, Math.round((value / max) * 24)) : 3;
+    const classes = [
+      "timeline-bucket",
+      value > 0 ? "active" : "",
+      value >= max && value > 0 ? "hot" : "",
+      index === latestActive ? "latest pulse" : "",
+    ].filter(Boolean).join(" ");
+    return `<span class="${classes}" style="height:${height}px" title="${value} event${value === 1 ? "" : "s"}"></span>`;
+  }).join("");
+  const isEmpty = window.buckets.every((value) => value === 0);
+  return `<div class="timeline-window" data-timeline-panel="${window.minutes}" data-visible="${visible ? "true" : "false"}" data-summary="${escapeHtml(timelineSummary(window))}">
+    ${isEmpty ? `<div class="timeline-empty">No file activity in this window.</div>` : `<div class="timeline-bars">${bars}</div>`}
+  </div>`;
+}
+
+function timelineSummary(window: WorkspaceTimelineWindow): string {
+  if (window.intensity === "Quiet") {
+    return `${window.minutes}m window: Quiet`;
+  }
+  return `${window.minutes}m window: ${window.intensity} · latest ${window.latestFile ?? "workspace"} ${window.latestAge}`;
+}
+
+function defaultTimelineWindows(): WorkspaceTimelineWindow[] {
+  return [5, 15, 30].map((minutes) => ({
+    minutes: minutes as 5 | 15 | 30,
+    buckets: Array.from({ length: minutes === 5 ? 10 : minutes }, () => 0),
+    latestAge: "no activity",
+    intensity: "Quiet",
+  }));
+}
+
+function timelineFromTrend(trend: readonly number[]): WorkspaceTimelineWindow[] {
+  const thirty = {
+    minutes: 30 as const,
+    buckets: [...trend],
+    latestAge: "no activity",
+    intensity: trend.some((value) => value > 0) ? "Active" as const : "Quiet" as const,
+  };
+  return [
+    { minutes: 5, buckets: trend.slice(-5), latestAge: thirty.latestAge, intensity: thirty.intensity },
+    { minutes: 15, buckets: trend.slice(-15), latestAge: thirty.latestAge, intensity: thirty.intensity },
+    thirty,
+  ];
 }
 
 function renderRecentActivityTile(activity: readonly RecentActivityEvent[]): string {
@@ -3455,16 +3955,61 @@ function renderRecentActivityTile(activity: readonly RecentActivityEvent[]): str
     </div>
     <div class="tile-body">
       ${rows.length === 0
-        ? `<div class="activity-row"><span class="activity-kind">none</span><span class="activity-file">No workspace activity yet</span><span class="activity-age"></span></div>`
+        ? `<div class="activity-row"><span class="activity-kind">none</span><span class="activity-file">No workspace activity yet</span><span class="activity-age"></span><span></span></div>`
         : rows.map((event) => `
           <div class="activity-row">
             <span class="activity-kind">${escapeHtml(event.kind)}</span>
             <span class="activity-file${event.outsideScope ? " outside" : ""}">${escapeHtml(event.file)}</span>
             <span class="activity-age">${escapeHtml(formatActivityAge(event.ts))}</span>
+            <button type="button" class="diff-action" data-ui-action="open-diff" data-diff-file="${escapeHtml(event.file)}">Diff</button>
           </div>
         `).join("")}
     </div>
   </section>`;
+}
+
+function renderScopeMapTile(activity: readonly RecentActivityEvent[]): string {
+  const lanes = buildScopeLanes(activity);
+  const max = Math.max(1, ...lanes.map((lane) => lane.count));
+  return `<section class="tile tight" data-area="scope-map">
+    <div class="tile-header">
+      <h3 class="tile-title changes"><span class="accent-bar"></span>Scope map</h3>
+      <span class="tile-meta">${lanes.reduce((sum, lane) => sum + lane.count, 0)}</span>
+    </div>
+    <div class="tile-body scope-map">
+      ${lanes.length === 0 ? `<div class="activity-row"><span class="activity-kind">none</span><span class="activity-file">No scoped activity yet</span><span></span><span></span></div>` : lanes.map((lane) => `
+        <div class="scope-lane${lane.outside ? " outside" : ""}">
+          <span class="scope-lane-label">${escapeHtml(lane.label)}</span>
+          <span class="scope-lane-track"><span class="scope-lane-fill" style="width:${Math.max(8, Math.round((lane.count / max) * 100))}%"></span></span>
+          <span class="scope-lane-count">${lane.count}</span>
+        </div>
+      `).join("")}
+    </div>
+  </section>`;
+}
+
+function buildScopeLanes(activity: readonly RecentActivityEvent[]): Array<{ label: string; count: number; outside: boolean }> {
+  const lanes = new Map<string, { label: string; count: number; outside: boolean }>();
+  for (const event of activity) {
+    const label = scopeLaneLabel(event.file);
+    const existing = lanes.get(label) ?? { label, count: 0, outside: false };
+    existing.count += 1;
+    existing.outside = existing.outside || !!event.outsideScope;
+    lanes.set(label, existing);
+  }
+
+  return [...lanes.values()]
+    .sort((left, right) => right.count - left.count || left.label.localeCompare(right.label))
+    .slice(0, 6);
+}
+
+function scopeLaneLabel(file: string): string {
+  const normalized = file.replace(/\\/g, "/");
+  if (/^docs?\//i.test(normalized) || /\.md$/i.test(normalized)) return "docs";
+  if (/^tests?\//i.test(normalized) || /\.test\./i.test(normalized)) return "tests";
+  if (/^src\/([^/]+)/i.test(normalized)) return normalized.split("/").slice(0, 2).join("/");
+  if (/package\.json|tsconfig|vite|eslint|postcss|tailwind/i.test(normalized)) return "config";
+  return normalized.split("/")[0] || "root";
 }
 
 function renderPromptPaletteTile(presets: readonly PromptPreset[]): string {
@@ -3525,6 +4070,7 @@ function renderRepoContextTile(state: QuestState): string {
         <div class="repo-context-row"><span>Missing</span><code>${escapeHtml(missingText)}</code></div>
         <div class="repo-context-row"><span>Source</span><code>${escapeHtml(source)}</code></div>
       </div>
+      ${renderReadinessMeters(readiness)}
       <div class="onboarding-docs" aria-label="Detected docs">${docsHtml}</div>
       <p class="repo-context-summary">${escapeHtml(helpCopy)}</p>
       <div class="repo-context-actions">
@@ -3536,6 +4082,28 @@ function renderRepoContextTile(state: QuestState): string {
       <textarea class="repo-context-preview" data-onboarding-prompt readonly hidden aria-label="Generated setup prompt"></textarea>
     </div>
   </section>`;
+}
+
+function renderReadinessMeters(readiness: QuestState["readiness"]): string {
+  if (!readiness) {
+    return "";
+  }
+
+  const meters = [
+    ["Structure", readiness.repoLogStructureScore],
+    ["Context", readiness.contextUsefulnessScore],
+    ["Agent ready", readiness.agentReadinessScore],
+  ] as const;
+
+  return `<div class="readiness-meters" aria-label="Repo readiness">
+    ${meters.map(([label, score]) => {
+      const severity = score < 50 ? "danger" : score < 70 ? "warn" : "";
+      return `<div class="readiness-meter">
+        <div class="readiness-meter-head"><span>${escapeHtml(label)}</span><span>${score}</span></div>
+        <div class="readiness-track"><span class="readiness-fill ${severity}" style="width:${Math.max(0, Math.min(100, score))}%"></span></div>
+      </div>`;
+    }).join("")}
+  </div>`;
 }
 
 function renderDecisionsTile(decisions: Decision[] | undefined): string {
@@ -3574,7 +4142,7 @@ function renderChangesTile(changes: FileChange[]): string {
         <div class="change-row">
           <span class="change-file">${escapeHtml(change.file)}</span>
           ${renderChangeDiff(change.diff)}
-          <span class="change-age">${escapeHtml(change.at)}</span>
+          <span class="change-age">${escapeHtml(change.at)} <button type="button" class="diff-action" data-ui-action="open-diff" data-diff-file="${escapeHtml(change.file)}">Diff</button></span>
         </div>
       `).join("")}
     </div>
@@ -4023,6 +4591,28 @@ function renderSettingsScript(): string {
           if (target.closest && target.closest("[data-writeback-toggle]")) {
             return;
           }
+          var timelineButton = target.closest("[data-timeline-window]");
+          if (timelineButton) {
+            var minutes = timelineButton.getAttribute("data-timeline-window");
+            var timeline = timelineButton.closest("[data-timeline]");
+            if (timeline) {
+              var buttons = timeline.querySelectorAll("[data-timeline-window]");
+              for (var tb = 0; tb < buttons.length; tb++) {
+                buttons[tb].setAttribute("aria-pressed", buttons[tb] === timelineButton ? "true" : "false");
+              }
+              var panels = timeline.querySelectorAll("[data-timeline-panel]");
+              for (var tp = 0; tp < panels.length; tp++) {
+                var active = panels[tp].getAttribute("data-timeline-panel") === minutes;
+                panels[tp].setAttribute("data-visible", active ? "true" : "false");
+                if (active) {
+                  var summary = timeline.querySelector("[data-timeline-summary]");
+                  if (summary) summary.textContent = panels[tp].getAttribute("data-summary") || "";
+                }
+              }
+              try { window.localStorage.setItem("repolog-timeline-window", minutes || "15"); } catch (_) {}
+            }
+            return;
+          }
           var openRow = target.closest("[data-open-doc]");
           if (openRow && window.repologDesktop && typeof window.repologDesktop.openDoc === "function") {
             var doc = openRow.getAttribute("data-open-doc");
@@ -4042,6 +4632,33 @@ function renderSettingsScript(): string {
               if (window.repologDesktop && typeof window.repologDesktop.requestRefresh === "function") {
                 window.repologDesktop.requestRefresh();
               }
+              return;
+            }
+            if (action === "open-diff") {
+              var diffFile = button.getAttribute("data-diff-file") || "";
+              var drawer = document.querySelector("[data-diff-drawer]");
+              var title = document.querySelector("[data-diff-title]");
+              var body = document.querySelector("[data-diff-body]");
+              if (drawer) drawer.setAttribute("data-open", "true");
+              if (title) title.textContent = diffFile || "Diff preview";
+              if (body) body.textContent = "Loading diff...";
+              if (window.repologDesktop && typeof window.repologDesktop.getFileDiff === "function") {
+                Promise.resolve(window.repologDesktop.getFileDiff(diffFile)).then(function (result) {
+                  if (title) title.textContent = result && result.file ? result.file : diffFile;
+                  if (body) body.textContent = result && result.ok
+                    ? (result.text + (result.truncated ? "\\n\\n--- Diff truncated ---" : ""))
+                    : ("Diff unavailable: " + ((result && result.reason) || "no diff"));
+                }).catch(function (error) {
+                  if (body) body.textContent = "Diff failed: " + humanError(error);
+                });
+              } else if (body) {
+                body.textContent = "Diff preview is available in the desktop shell.";
+              }
+              return;
+            }
+            if (action === "close-diff") {
+              var closeDrawer = document.querySelector("[data-diff-drawer]");
+              if (closeDrawer) closeDrawer.setAttribute("data-open", "false");
               return;
             }
             if (action === "open-settings") {

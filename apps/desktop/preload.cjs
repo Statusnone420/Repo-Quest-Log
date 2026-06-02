@@ -79,4 +79,7 @@ contextBridge.exposeInMainWorld("repologDesktop", {
   runDigest() {
     return ipcRenderer.invoke("repolog:run-digest");
   },
+  getFileDiff(file) {
+    return ipcRenderer.invoke("repolog:get-file-diff", file);
+  },
 });

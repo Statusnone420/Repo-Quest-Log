@@ -164,7 +164,8 @@ async function loadModules() {
       importModule("dist/engine/safe-fs.js"),
       importModule("dist/engine/digest-cache.js"),
       importModule("dist/engine/digest.js"),
-    ]).then(([config, init, changes, editor, doctor, scan, watcher, activityWatcher, writeback, standup, web, prompts, safeFs, digestCache, digest]) => ({
+      importModule("dist/desktop/git-diff.js"),
+    ]).then(([config, init, changes, editor, doctor, scan, watcher, activityWatcher, writeback, standup, web, prompts, safeFs, digestCache, digest, gitDiff]) => ({
       readRepoConfig: config.readRepoConfig,
       writeRepoConfig: config.writeRepoConfig,
       writeInitTemplates: init.writeInitTemplates,
@@ -188,6 +189,7 @@ async function loadModules() {
       readLastDigest: digestCache.readLastDigest,
       writeLastDigest: digestCache.writeLastDigest,
       runOpenRouterDigest: digest.runOpenRouterDigest,
+      readFileDiff: gitDiff.readFileDiff,
     })).then(async (mods) => {
       const tuneup = await importModule("dist/engine/tuneup.js");
       return { ...mods, buildTuneup: tuneup.buildTuneup };
@@ -283,7 +285,12 @@ async function refresh(changes = []) {
       currentState.lastDigest = lastDigest;
     }
     const presets = await loadPromptPresets(currentState, { rootDir: targetRoot });
-    const html = renderDesktopHtml(currentState, { liveBridge: "desktop", presets, appVersion, openrouterConfigured: !!(openrouterConfig.key) });
+    const html = renderDesktopHtml(currentState, {
+      liveBridge: "desktop",
+      presets,
+      appVersion,
+      openrouterConfigured: !!(openrouterConfig.key),
+    });
     await pushHtml(html);
   } catch (error) {
     const message = error instanceof Error ? error.stack || error.message : String(error);
@@ -690,6 +697,11 @@ ipcMain.handle("repolog:get-openrouter-config", async () => {
       ? "sk-or-••••••" + openrouterConfig.key.slice(-4)
       : "",
   };
+});
+
+ipcMain.handle("repolog:get-file-diff", async (_event, file) => {
+  const { readFileDiff } = await loadModules();
+  return readFileDiff(targetRoot, typeof file === "string" ? file : "");
 });
 
 ipcMain.handle("repolog:run-digest", async () => {

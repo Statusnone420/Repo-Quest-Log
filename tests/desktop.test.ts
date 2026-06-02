@@ -102,6 +102,10 @@ describe("desktop shell sizing", () => {
     expect(source).toContain("startWorkspaceActivityWatcher");
     expect(source).toContain("recentActivity = mergeRecentActivity(events, recentActivity)");
     expect(source).toContain("recentActivity,");
+    expect(source).toContain("repolog:get-file-diff");
+    expect(source).not.toContain("readWorkspaceMode");
+    expect(source).not.toContain("writeWorkspaceMode");
+    expect(source).not.toContain("repolog:set-workspace-mode");
     expect(source).not.toContain('path.join(targetRoot, ".repolog", "activity');
   });
 });

@@ -25,6 +25,9 @@ describe("workspace signals", () => {
     expect(signals.lastEditAge).toBe("12s ago");
     expect(signals.state).toBe("Focused");
     expect(signals.trend).toHaveLength(30);
+    expect(signals.timelineWindows?.map((window) => window.minutes)).toEqual([5, 15, 30]);
+    expect(signals.timelineWindows?.find((window) => window.minutes === 15)?.latestFile).toBe("src/web/render.ts");
+    expect(signals.timelineWindows?.find((window) => window.minutes === 15)?.intensity).toBe("Active");
   });
 
   it("marks scope drift only when a usable scope exists", () => {
